@@ -13,6 +13,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,15 +21,35 @@ export default function Auth() {
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        if (password !== confirmPassword) {
+          throw new Error("Passwords do not match");
+        }
+
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: window.location.origin,
+          }
         });
+
         if (error) throw error;
+
+        if (data.user && data.user.identities?.length === 0) {
+          toast({
+            title: "Account exists",
+            description: "An account with this email already exists. Please sign in.",
+            variant: "destructive",
+          });
+          setIsSignUp(false);
+          return;
+        }
+
         toast({
           title: "Success!",
-          description: "Please check your email to verify your account.",
+          description: "Registration successful! You can now sign in.",
         });
+        setIsSignUp(false); // Switch to sign in mode
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -69,7 +90,18 @@ export default function Auth() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            minLength={6}
           />
+          {isSignUp && (
+            <Input
+              type="password"
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              minLength={6}
+            />
+          )}
           <Button
             type="submit"
             className="w-full"
@@ -81,7 +113,12 @@ export default function Auth() {
         <p className="mt-4 text-center text-sm text-gray-600">
           {isSignUp ? "Already have an account? " : "Don't have an account? "}
           <button
-            onClick={() => setIsSignUp(!isSignUp)}
+            type="button"
+            onClick={() => {
+              setIsSignUp(!isSignUp);
+              setPassword("");
+              setConfirmPassword("");
+            }}
             className="text-primary hover:underline"
           >
             {isSignUp ? "Sign In" : "Sign Up"}
