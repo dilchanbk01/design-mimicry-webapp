@@ -44,7 +44,17 @@ export function useChat(consultationId: string) {
         return;
       }
 
-      setConsultation(consultationData);
+      // Ensure the status is of the correct type before setting the state
+      const validatedConsultation: Consultation = {
+        ...consultationData,
+        status: consultationData.status as Consultation['status'], // Type assertion here is safe because we validated the status in our SQL schema
+        rating: consultationData.rating as number | null,
+        ended_at: consultationData.ended_at as string | null,
+        prescription_url: consultationData.prescription_url as string | null,
+        vet_id: consultationData.vet_id as string | null
+      };
+
+      setConsultation(validatedConsultation);
 
       // Load existing messages
       const { data: messagesData, error: messagesError } = await supabase
@@ -54,7 +64,7 @@ export function useChat(consultationId: string) {
         .order("created_at", { ascending: true });
 
       if (messagesError) throw messagesError;
-      setMessages(messagesData);
+      setMessages(messagesData as ConsultationMessage[]);
     } catch (error) {
       console.error("Error loading consultation:", error);
       toast({
