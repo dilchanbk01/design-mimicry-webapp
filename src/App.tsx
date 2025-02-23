@@ -13,6 +13,8 @@ import AdminAuth from "./pages/AdminAuth";
 import AdminDashboard from "./pages/AdminDashboard";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import VetOnboarding from "./pages/VetOnboarding";
+import VetAuth from "./pages/VetAuth";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +33,8 @@ const App = () => (
           <Route path="/admin/auth" element={<AdminAuth />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/vet-onboarding" element={<VetOnboarding />} />
+          <Route path="/vet-auth" element={<VetAuth />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
