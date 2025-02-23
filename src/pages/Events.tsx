@@ -38,7 +38,11 @@ export default function Events() {
           .order("date", { ascending: true });
 
         if (error) throw error;
-        setEvents(data || []);
+        // Add type assertion to ensure events conform to Event interface
+        setEvents((data || []).map(event => ({
+          ...event,
+          status: event.status as 'pending' | 'approved' | 'rejected'
+        })));
       } catch (error) {
         console.error("Error fetching events:", error);
         toast({

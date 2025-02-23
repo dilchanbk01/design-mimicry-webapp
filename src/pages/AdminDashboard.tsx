@@ -78,7 +78,11 @@ export default function AdminDashboard() {
         .order('created_at', { ascending: false });
 
       if (eventsData) {
-        setEvents(eventsData);
+        // Add type assertion to ensure events conform to Event interface
+        setEvents(eventsData.map(event => ({
+          ...event,
+          status: event.status as 'pending' | 'approved' | 'rejected'
+        })));
       }
 
       // Fetch analytics
@@ -87,14 +91,17 @@ export default function AdminDashboard() {
         .select('*');
 
       if (analyticsData) {
-        setEventAnalytics(analyticsData);
+        setEventAnalytics(analyticsData.map(event => ({
+          ...event,
+          status: event.status as 'pending' | 'approved' | 'rejected'
+        })));
         
         // Calculate summary statistics
         const summary = {
           total_events: eventsData?.length || 0,
           pending_events: eventsData?.filter(e => e.status === 'pending').length || 0,
-          total_tickets: analyticsData.reduce((sum, event) => sum + event.tickets_sold, 0),
-          total_revenue: analyticsData.reduce((sum, event) => sum + event.total_amount, 0)
+          total_tickets: analyticsData.reduce((sum, event) => sum + (event.tickets_sold || 0), 0),
+          total_revenue: analyticsData.reduce((sum, event) => sum + (event.total_amount || 0), 0)
         };
         setAnalytics(summary);
       }

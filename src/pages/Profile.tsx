@@ -51,7 +51,11 @@ export default function Profile() {
           .order('date', { ascending: false });
 
         if (eventsError) throw eventsError;
-        setUserEvents(events || []);
+        // Add type assertion to ensure events conform to UserEvent interface
+        setUserEvents((events || []).map(event => ({
+          ...event,
+          status: event.status as 'pending' | 'approved' | 'rejected'
+        })));
 
         // Fetch user's bookings with event details
         const { data: bookings, error: bookingsError } = await supabase
