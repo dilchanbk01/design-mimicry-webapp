@@ -46,7 +46,10 @@ export default function AdminUsers() {
           .select(`
             user_id,
             role,
-            created_at
+            created_at,
+            users:user_id (
+              email
+            )
           `);
 
         if (error) throw error;
@@ -56,26 +59,10 @@ export default function AdminUsers() {
           id: user.user_id,
           role: user.role,
           created_at: user.created_at,
-          email: 'Loading...' // We'll update this in the next step
+          email: user.users?.email || 'No email'
         }));
 
         setUsers(formattedUsers);
-
-        // Fetch email addresses
-        for (const user of formattedUsers) {
-          const { data: userData, error: userError } = await supabase.auth.admin.getUserById(user.id);
-          if (userError) {
-            console.error('Error fetching user:', userError);
-            continue;
-          }
-          if (userData?.user?.email) {
-            setUsers(prevUsers => 
-              prevUsers.map(u => 
-                u.id === user.id ? { ...u, email: userData.user.email } : u
-              )
-            );
-          }
-        }
       } catch (error) {
         console.error('Error fetching users:', error);
         toast({
