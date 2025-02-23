@@ -15,17 +15,21 @@ export function useConsultation() {
   }, []);
 
   const loadVetStatus = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await supabase
-        .from("vet_profiles")
-        .select("is_online")
-        .eq("user_id", user.id)
-        .single();
-      
-      if (data) {
-        setIsOnline(data.is_online || false);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from("vet_profiles")
+          .select("is_online")
+          .eq("user_id", user.id)
+          .single();
+        
+        if (data) {
+          setIsOnline(!!data.is_online);
+        }
       }
+    } catch (error) {
+      console.error("Error loading vet status:", error);
     }
   };
 
@@ -37,13 +41,17 @@ export function useConsultation() {
         return;
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("vet_profiles")
         .update({ is_online: !isOnline })
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .select()
+        .single();
 
       if (error) throw error;
-      setIsOnline(!isOnline);
+      if (data) {
+        setIsOnline(!!data.is_online);
+      }
 
       toast({
         title: !isOnline ? "You are now online" : "You are now offline",

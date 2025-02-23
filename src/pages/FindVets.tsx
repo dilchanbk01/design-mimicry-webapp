@@ -26,7 +26,14 @@ export default function FindVets() {
         .eq("application_status", "approved");
 
       if (error) throw error;
-      setVets(data || []);
+      
+      // Ensure each vet profile has the is_online field
+      const vetsWithOnlineStatus = (data || []).map(vet => ({
+        ...vet,
+        is_online: vet.is_online ?? false
+      }));
+      
+      setVets(vetsWithOnlineStatus);
     } catch (error) {
       console.error("Error loading vets:", error);
       toast({

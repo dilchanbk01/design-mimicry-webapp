@@ -52,7 +52,7 @@ export default function VetDashboard() {
         throw new Error("No authenticated user");
       }
 
-      const { data: profile, error } = await supabase
+      const { data, error } = await supabase
         .from("vet_profiles")
         .select("*")
         .eq("user_id", user.id)
@@ -60,7 +60,10 @@ export default function VetDashboard() {
 
       if (error) throw error;
       
-      setProfile(profile);
+      setProfile({
+        ...data,
+        is_online: data.is_online ?? false
+      });
     } catch (error) {
       console.error("Error loading profile:", error);
       toast({

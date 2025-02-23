@@ -214,6 +214,7 @@ export type Database = {
           contact_number: string
           created_at: string | null
           id: string
+          is_online: boolean | null
           license_number: string
           specializations: string[] | null
           user_id: string | null
@@ -229,6 +230,7 @@ export type Database = {
           contact_number: string
           created_at?: string | null
           id?: string
+          is_online?: boolean | null
           license_number: string
           specializations?: string[] | null
           user_id?: string | null
@@ -244,6 +246,7 @@ export type Database = {
           contact_number?: string
           created_at?: string | null
           id?: string
+          is_online?: boolean | null
           license_number?: string
           specializations?: string[] | null
           user_id?: string | null
