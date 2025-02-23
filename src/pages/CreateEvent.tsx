@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,22 @@ export default function CreateEvent() {
     image: null as File | null,
   });
 
+  // Check authentication on component mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "Please sign in to create an event.",
+          variant: "destructive",
+        });
+        navigate("/events");
+      }
+    };
+    checkAuth();
+  }, [navigate, toast]);
+
   const eventTypes = [
     "Meetup",
     "Adoption Drive",
@@ -53,12 +69,17 @@ export default function CreateEvent() {
     setLoading(true);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
       // First upload the image
       let imageUrl = "";
       if (formData.image) {
         const fileExt = formData.image.name.split(".").pop();
         const fileName = `${Math.random()}.${fileExt}`;
-        const { error: uploadError, data } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from("events")
           .upload(fileName, formData.image);
 
@@ -83,7 +104,7 @@ export default function CreateEvent() {
           location: formData.location,
           price: formData.price,
           capacity: formData.capacity,
-          image_url: imageUrl,
+          image_url: imageUrl || 'https://placehold.co/600x400?text=No+Image',
           duration: 120, // Default duration in minutes
           event_type: formData.type,
           organizer_name: formData.organizerName,
@@ -92,6 +113,7 @@ export default function CreateEvent() {
           organizer_website: formData.organizerWebsite,
           pet_types: formData.petTypes,
           pet_requirements: formData.petRequirements,
+          organizer_id: user.id, // Set the organizer_id to the current user's ID
         },
       ]);
 
