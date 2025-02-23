@@ -52,6 +52,21 @@ export default function Events() {
     fetchEvents();
   }, [toast]);
 
+  const handleCreateEventClick = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to create an event.",
+      });
+      navigate("/auth");
+      return;
+    }
+    
+    navigate("/events/create");
+  };
+
   const filteredEvents = events.filter((event) =>
     event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -73,7 +88,7 @@ export default function Events() {
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold text-white">Petsu</h1>
           <Button
-            onClick={() => navigate("/events/create")}
+            onClick={handleCreateEventClick}
             className="bg-[#FFD700] hover:bg-[#FFD700]/90 text-blue-900 gap-2 rounded-full px-6 py-6 text-lg font-semibold"
           >
             <Plus className="w-6 h-6" />
