@@ -10,7 +10,10 @@ const Index = () => {
   const navigate = useNavigate();
 
   const handleVetPartnerClick = () => {
-    navigate("/vet-onboarding");
+    toast({
+      title: "Coming Soon",
+      description: "The vet partner registration will be available soon!",
+    });
   };
 
   return (

@@ -135,54 +135,6 @@ export type Database = {
         }
         Relationships: []
       }
-      vet_profiles: {
-        Row: {
-          address: string
-          application_status:
-            | Database["public"]["Enums"]["vet_application_status"]
-            | null
-          bio: string | null
-          clinic_name: string
-          contact_number: string
-          created_at: string | null
-          id: string
-          license_number: string
-          specializations: string[] | null
-          user_id: string | null
-          years_of_experience: number
-        }
-        Insert: {
-          address: string
-          application_status?:
-            | Database["public"]["Enums"]["vet_application_status"]
-            | null
-          bio?: string | null
-          clinic_name: string
-          contact_number: string
-          created_at?: string | null
-          id?: string
-          license_number: string
-          specializations?: string[] | null
-          user_id?: string | null
-          years_of_experience: number
-        }
-        Update: {
-          address?: string
-          application_status?:
-            | Database["public"]["Enums"]["vet_application_status"]
-            | null
-          bio?: string | null
-          clinic_name?: string
-          contact_number?: string
-          created_at?: string | null
-          id?: string
-          license_number?: string
-          specializations?: string[] | null
-          user_id?: string | null
-          years_of_experience?: number
-        }
-        Relationships: []
-      }
     }
     Views: {
       event_analytics: {
@@ -205,16 +157,9 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_vet: {
-        Args: {
-          user_id: string
-        }
-        Returns: boolean
-      }
     }
     Enums: {
       app_role: "admin" | "user"
-      vet_application_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
