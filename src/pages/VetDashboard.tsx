@@ -126,13 +126,13 @@ export default function VetDashboard() {
       />
       
       <div className="ml-64 p-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-7xl mx-auto space-y-6">
           <ProfileSection profile={profile} />
+          <DashboardStats />
           <ConsultationsSection 
             pendingConsultations={pendingConsultations}
             handleConsultation={handleConsultation}
           />
-          <DashboardStats />
         </div>
       </div>
     </div>
