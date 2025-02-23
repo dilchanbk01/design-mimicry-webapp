@@ -10,10 +10,7 @@ const Index = () => {
   const navigate = useNavigate();
 
   const handleVetPartnerClick = () => {
-    toast({
-      title: "Coming Soon",
-      description: "The vet partner registration will be available soon!",
-    });
+    navigate("/vet-onboarding");
   };
 
   return (
@@ -41,7 +38,7 @@ const Index = () => {
           <Card
             title="Find Vets"
             icon="/lovable-uploads/01f1af17-4a11-4809-9674-01e898a01385.png"
-            onClick={() => toast({ title: "Vet finder coming soon!" })}
+            onClick={() => navigate("/find-vets")}
           />
           <Card
             title="Pet Essentials"
