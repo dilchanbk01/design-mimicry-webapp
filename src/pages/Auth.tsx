@@ -45,11 +45,32 @@ export default function Auth() {
           return;
         }
 
+        // Check if this is the first user and make them admin
+        const { count } = await supabase
+          .from('user_roles')
+          .select('*', { count: 'exact' });
+
+        if (count === 0 && data.user) {
+          // First user becomes admin
+          const { error: roleError } = await supabase
+            .from('user_roles')
+            .insert({ user_id: data.user.id, role: 'admin' });
+
+          if (roleError) throw roleError;
+        } else if (data.user) {
+          // Subsequent users become regular users
+          const { error: roleError } = await supabase
+            .from('user_roles')
+            .insert({ user_id: data.user.id, role: 'user' });
+
+          if (roleError) throw roleError;
+        }
+
         toast({
           title: "Success!",
           description: "Registration successful! You can now sign in.",
         });
-        setIsSignUp(false); // Switch to sign in mode
+        setIsSignUp(false);
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
