@@ -63,11 +63,15 @@ export default function AdminUsers() {
 
         // Fetch email addresses
         for (const user of formattedUsers) {
-          const { data: userData } = await supabase.auth.admin.getUserById(user.id);
-          if (userData) {
+          const { data: userData, error: userError } = await supabase.auth.admin.getUserById(user.id);
+          if (userError) {
+            console.error('Error fetching user:', userError);
+            continue;
+          }
+          if (userData?.user?.email) {
             setUsers(prevUsers => 
               prevUsers.map(u => 
-                u.id === user.id ? { ...u, email: userData.email || 'No email' } : u
+                u.id === user.id ? { ...u, email: userData.user.email } : u
               )
             );
           }
