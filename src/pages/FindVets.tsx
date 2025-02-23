@@ -57,16 +57,14 @@ export default function FindVets() {
       }
 
       // Create a new consultation request
-      const { data: consultation, error } = await supabase
+      const { error: insertError } = await supabase
         .from("consultations")
         .insert({
           user_id: user.id,
           status: "pending"
-        })
-        .select()
-        .single();
+        });
 
-      if (error) throw error;
+      if (insertError) throw insertError;
 
       // Show waiting message
       toast({
@@ -74,19 +72,20 @@ export default function FindVets() {
         description: "Please wait while we connect you with a vet...",
       });
 
-      // Subscribe to status changes
+      // Subscribe to the "consultations" channel to listen for updates
       const channel = supabase
-        .channel(`consultation_${consultation.id}`)
+        .channel('consultation-updates')
         .on(
           'postgres_changes',
           {
             event: 'UPDATE',
             schema: 'public',
             table: 'consultations',
-            filter: `id=eq.${consultation.id}`,
+            filter: `user_id=eq.${user.id}`,
           },
           (payload) => {
-            if (payload.new.status === 'active' && payload.new.vet_id) {
+            const consultation = payload.new;
+            if (consultation.status === 'active' && consultation.vet_id) {
               // Redirect to chat when a vet accepts
               navigate(`/consultation/${consultation.id}`);
             }
@@ -96,17 +95,18 @@ export default function FindVets() {
 
       // Set a timeout to handle no vet accepting
       setTimeout(async () => {
-        const { data: currentConsultation } = await supabase
+        const { data: pendingConsultations } = await supabase
           .from("consultations")
-          .select("status")
-          .eq("id", consultation.id)
-          .single();
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("status", "pending")
+          .limit(1);
 
-        if (currentConsultation?.status === "pending") {
+        if (pendingConsultations && pendingConsultations.length > 0) {
           await supabase
             .from("consultations")
             .update({ status: "expired" })
-            .eq("id", consultation.id);
+            .eq("id", pendingConsultations[0].id);
 
           toast({
             title: "No Vets Available",

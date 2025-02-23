@@ -17,6 +17,7 @@ import VetOnboarding from "./pages/VetOnboarding";
 import VetAuth from "./pages/VetAuth";
 import VetDashboard from "./pages/VetDashboard";
 import FindVets from "./pages/FindVets";
+import ConsultationChat from "./pages/ConsultationChat";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
           <Route path="/vet-auth" element={<VetAuth />} />
           <Route path="/vet-dashboard" element={<VetDashboard />} />
           <Route path="/find-vets" element={<FindVets />} />
+          <Route path="/consultation/:id" element={<ConsultationChat />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
