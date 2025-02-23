@@ -19,12 +19,14 @@ export function useConsultation() {
         return;
       }
 
-      const { error: insertError } = await supabase
+      const { data: newConsultation, error: insertError } = await supabase
         .from("consultations")
         .insert({
           user_id: user.id,
           status: "pending"
-        });
+        })
+        .select()
+        .single();
 
       if (insertError) throw insertError;
 
@@ -34,37 +36,38 @@ export function useConsultation() {
       });
 
       const channel = supabase
-        .channel('consultation-updates')
+        .channel(`consultation-updates-${newConsultation.id}`)
         .on(
           'postgres_changes',
           {
             event: 'UPDATE',
             schema: 'public',
             table: 'consultations',
-            filter: `user_id=eq.${user.id}`,
+            filter: `id=eq.${newConsultation.id}`,
           },
-          (payload: any) => {
-            const consultation = payload.new;
-            if (consultation.status === 'active' && consultation.vet_id) {
-              navigate(`/consultation/${consultation.id}`);
+          (payload) => {
+            const updatedConsultation = payload.new;
+            if (updatedConsultation.status === 'active' && updatedConsultation.vet_id) {
+              navigate(`/consultation/${updatedConsultation.id}`);
+              supabase.removeChannel(channel);
             }
           }
         )
         .subscribe();
 
+      // Set a timeout to check if consultation is still pending after 2 minutes
       setTimeout(async () => {
-        const { data: pendingConsultations } = await supabase
+        const { data: consultation } = await supabase
           .from("consultations")
-          .select("id")
-          .eq("user_id", user.id)
-          .eq("status", "pending")
-          .limit(1);
+          .select("*")
+          .eq("id", newConsultation.id)
+          .single();
 
-        if (pendingConsultations && pendingConsultations.length > 0) {
+        if (consultation?.status === "pending") {
           await supabase
             .from("consultations")
             .update({ status: "expired" })
-            .eq("id", pendingConsultations[0].id);
+            .eq("id", newConsultation.id);
 
           toast({
             title: "No Vets Available",
@@ -72,9 +75,8 @@ export function useConsultation() {
             variant: "destructive",
           });
           setStartingConsultation(false);
+          supabase.removeChannel(channel);
         }
-
-        supabase.removeChannel(channel);
       }, 120000);
     } catch (error) {
       console.error("Error starting consultation:", error);

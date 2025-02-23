@@ -48,6 +48,74 @@ export type Database = {
           },
         ]
       }
+      consultation_messages: {
+        Row: {
+          consultation_id: string
+          content: string
+          created_at: string | null
+          file_url: string | null
+          id: string
+          sender_id: string
+        }
+        Insert: {
+          consultation_id: string
+          content: string
+          created_at?: string | null
+          file_url?: string | null
+          id?: string
+          sender_id: string
+        }
+        Update: {
+          consultation_id?: string
+          content?: string
+          created_at?: string | null
+          file_url?: string | null
+          id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultation_messages_consultation_id_fkey"
+            columns: ["consultation_id"]
+            isOneToOne: false
+            referencedRelation: "consultations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consultations: {
+        Row: {
+          created_at: string | null
+          ended_at: string | null
+          id: string
+          prescription_url: string | null
+          rating: number | null
+          status: string
+          user_id: string
+          vet_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          prescription_url?: string | null
+          rating?: number | null
+          status?: string
+          user_id: string
+          vet_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          prescription_url?: string | null
+          rating?: number | null
+          status?: string
+          user_id?: string
+          vet_id?: string | null
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           capacity: number

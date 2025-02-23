@@ -44,7 +44,7 @@ export function useChat(consultationId: string) {
         return;
       }
 
-      setConsultation(consultationData as Consultation);
+      setConsultation(consultationData);
 
       // Load existing messages
       const { data: messagesData, error: messagesError } = await supabase
@@ -54,7 +54,7 @@ export function useChat(consultationId: string) {
         .order("created_at", { ascending: true });
 
       if (messagesError) throw messagesError;
-      setMessages(messagesData as ConsultationMessage[]);
+      setMessages(messagesData);
     } catch (error) {
       console.error("Error loading consultation:", error);
       toast({
@@ -79,7 +79,8 @@ export function useChat(consultationId: string) {
           filter: `consultation_id=eq.${consultationId}`,
         },
         (payload) => {
-          setMessages((current) => [...current, payload.new as ConsultationMessage]);
+          const newMessage = payload.new as ConsultationMessage;
+          setMessages((current) => [...current, newMessage]);
         }
       )
       .subscribe();
@@ -102,7 +103,7 @@ export function useChat(consultationId: string) {
         .insert({
           consultation_id: consultationId,
           sender_id: user.id,
-          content: newMessage,
+          content: newMessage
         });
 
       if (error) throw error;
