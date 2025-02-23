@@ -1,7 +1,6 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Calendar, MapPin, Clock, Users, Mail, Phone, Globe, PawPrint, Ticket } from "lucide-react";
+import { Calendar, MapPin, Clock, Users, Mail, Phone, Globe, PawPrint, Ticket, Minus, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -34,6 +33,8 @@ export default function EventDetail() {
   const [loading, setLoading] = useState(true);
   const [bookingInProgress, setBookingInProgress] = useState(false);
   const [remainingTickets, setRemainingTickets] = useState<number | null>(null);
+  const [numberOfTickets, setNumberOfTickets] = useState(1);
+  const [showTicketAnimation, setShowTicketAnimation] = useState(false);
 
   useEffect(() => {
     async function fetchEventAndBookings() {
@@ -86,10 +87,10 @@ export default function EventDetail() {
       return;
     }
 
-    if (remainingTickets === 0) {
+    if (!remainingTickets || remainingTickets < numberOfTickets) {
       toast({
-        title: "Event Full",
-        description: "Sorry, this event is fully booked.",
+        title: "Not Enough Tickets",
+        description: "Sorry, there aren't enough tickets available.",
         variant: "destructive",
       });
       return;
@@ -97,18 +98,34 @@ export default function EventDetail() {
 
     setBookingInProgress(true);
     try {
+      // Create multiple booking entries based on number of tickets
+      const bookings = Array(numberOfTickets).fill({
+        event_id: id,
+        user_id: user.id,
+        status: 'confirmed'
+      });
+
       const { error } = await supabase
         .from("bookings")
-        .insert([{ event_id: id, user_id: user.id }]);
+        .insert(bookings);
 
       if (error) throw error;
 
       // Update remaining tickets count
-      setRemainingTickets(prev => prev !== null ? prev - 1 : null);
+      setRemainingTickets(prev => prev !== null ? prev - numberOfTickets : null);
+      
+      // Show ticket animation
+      setShowTicketAnimation(true);
+
+      // Hide animation after 3 seconds and navigate to profile
+      setTimeout(() => {
+        setShowTicketAnimation(false);
+        navigate("/profile");
+      }, 3000);
 
       toast({
         title: "Success!",
-        description: "Your booking has been confirmed.",
+        description: `${numberOfTickets} ticket${numberOfTickets > 1 ? 's' : ''} booked successfully!`,
       });
     } catch (error) {
       console.error("Error booking event:", error);
@@ -119,6 +136,14 @@ export default function EventDetail() {
       });
     } finally {
       setBookingInProgress(false);
+    }
+  };
+
+  const adjustTickets = (increment: boolean) => {
+    if (increment && remainingTickets && numberOfTickets < remainingTickets) {
+      setNumberOfTickets(prev => prev + 1);
+    } else if (!increment && numberOfTickets > 1) {
+      setNumberOfTickets(prev => prev - 1);
     }
   };
 
@@ -179,14 +204,38 @@ export default function EventDetail() {
                   </span>
                 </div>
               </div>
-              <Button
-                onClick={handleBooking}
-                disabled={bookingInProgress || remainingTickets === 0}
-                className="bg-[#00D26A] hover:bg-[#00D26A]/90 text-white px-8"
-              >
-                {bookingInProgress ? "Processing..." : remainingTickets === 0 ? "Sold Out" : "Book Now"}
-              </Button>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-2">
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => adjustTickets(false)}
+                    disabled={numberOfTickets <= 1}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <span className="min-w-[2rem] text-center">{numberOfTickets}</span>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => adjustTickets(true)}
+                    disabled={!remainingTickets || numberOfTickets >= remainingTickets}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <Button
+                  onClick={handleBooking}
+                  disabled={bookingInProgress || remainingTickets === 0}
+                  className="bg-[#00D26A] hover:bg-[#00D26A]/90 text-white px-8"
+                >
+                  {bookingInProgress ? "Processing..." : remainingTickets === 0 ? "Sold Out" : "Book Now"}
+                </Button>
+              </div>
             </div>
+            <p className="text-sm text-gray-600 mt-2">
+              Total: ${(event.price * numberOfTickets).toFixed(2)}
+            </p>
           </div>
 
           <div className="p-8">
@@ -281,6 +330,21 @@ export default function EventDetail() {
           </div>
         </div>
       </div>
+
+      {/* Ticket Booking Animation */}
+      {showTicketAnimation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl transform animate-[scale-in_0.5s_ease-out] flex flex-col items-center">
+            <Ticket className="w-16 h-16 text-[#00D26A] animate-[bounce_1s_ease-in-out_infinite]" />
+            <h2 className="text-2xl font-bold mt-4 animate-[fade-in_0.5s_ease-out]">
+              Ticket Booked!
+            </h2>
+            <p className="text-gray-600 mt-2 animate-[fade-in_0.5s_ease-out_0.2s]">
+              Your booking has been confirmed
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
