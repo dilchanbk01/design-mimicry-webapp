@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 interface UserEvent {
   id: string;
@@ -13,14 +14,26 @@ interface UserEvent {
   location: string;
 }
 
+interface Booking {
+  id: string;
+  event: {
+    id: string;
+    title: string;
+    date: string;
+    image_url: string;
+    location: string;
+  };
+}
+
 export default function Profile() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [userEvents, setUserEvents] = useState<UserEvent[]>([]);
+  const [userBookings, setUserBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuthAndFetchEvents = async () => {
+    const checkAuthAndFetchData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -29,18 +42,38 @@ export default function Profile() {
       }
 
       try {
-        const { data: events, error } = await supabase
+        // Fetch events created by user
+        const { data: events, error: eventsError } = await supabase
           .from("events")
           .select("*")
           .eq("organizer_id", user.id);
 
-        if (error) throw error;
+        if (eventsError) throw eventsError;
         setUserEvents(events || []);
+
+        // Fetch user's bookings with event details
+        const { data: bookings, error: bookingsError } = await supabase
+          .from("bookings")
+          .select(`
+            id,
+            event:events (
+              id,
+              title,
+              date,
+              image_url,
+              location
+            )
+          `)
+          .eq("user_id", user.id)
+          .eq("status", "confirmed");
+
+        if (bookingsError) throw bookingsError;
+        setUserBookings(bookings || []);
       } catch (error) {
-        console.error("Error fetching events:", error);
+        console.error("Error fetching data:", error);
         toast({
           title: "Error",
-          description: "Failed to load your events.",
+          description: "Failed to load your data.",
           variant: "destructive",
         });
       } finally {
@@ -48,7 +81,7 @@ export default function Profile() {
       }
     };
 
-    checkAuthAndFetchEvents();
+    checkAuthAndFetchData();
   }, [navigate, toast]);
 
   const handleSignOut = async () => {
@@ -80,8 +113,49 @@ export default function Profile() {
           </div>
 
           <div className="space-y-8">
+            {/* Your Bookings Section */}
             <section>
-              <h2 className="text-2xl font-semibold mb-4">Your Events</h2>
+              <h2 className="text-2xl font-semibold mb-4">Your Bookings</h2>
+              {userBookings.length === 0 ? (
+                <p className="text-gray-600">
+                  You haven't booked any events yet.{" "}
+                  <Button
+                    variant="link"
+                    onClick={() => navigate("/events")}
+                    className="p-0"
+                  >
+                    Browse events
+                  </Button>
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {userBookings.map((booking) => (
+                    <div
+                      key={booking.id}
+                      className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                      onClick={() => navigate(`/events/${booking.event.id}`)}
+                    >
+                      <img
+                        src={booking.event.image_url}
+                        alt={booking.event.title}
+                        className="w-full h-48 object-cover"
+                      />
+                      <div className="p-4">
+                        <h3 className="font-semibold mb-2">{booking.event.title}</h3>
+                        <p className="text-sm text-gray-600">{booking.event.location}</p>
+                        <p className="text-sm text-gray-600">
+                          {format(new Date(booking.event.date), "PPP")}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Your Events Section */}
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Events You're Hosting</h2>
               {userEvents.length === 0 ? (
                 <p className="text-gray-600">
                   You haven't created any events yet.{" "}
@@ -110,7 +184,7 @@ export default function Profile() {
                         <h3 className="font-semibold mb-2">{event.title}</h3>
                         <p className="text-sm text-gray-600">{event.location}</p>
                         <p className="text-sm text-gray-600">
-                          {new Date(event.date).toLocaleDateString()}
+                          {format(new Date(event.date), "PPP")}
                         </p>
                       </div>
                     </div>

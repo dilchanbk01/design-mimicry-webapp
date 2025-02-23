@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Calendar, MapPin, Clock, Users, Mail, Phone, Globe, PawPrint } from "lucide-react";
+import { Calendar, MapPin, Clock, Users, Mail, Phone, Globe, PawPrint, Ticket } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -33,18 +33,30 @@ export default function EventDetail() {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [bookingInProgress, setBookingInProgress] = useState(false);
+  const [remainingTickets, setRemainingTickets] = useState<number | null>(null);
 
   useEffect(() => {
-    async function fetchEvent() {
+    async function fetchEventAndBookings() {
       try {
-        const { data, error } = await supabase
+        const { data: eventData, error: eventError } = await supabase
           .from("events")
           .select("*")
           .eq("id", id)
           .single();
 
-        if (error) throw error;
-        setEvent(data);
+        if (eventError) throw eventError;
+
+        // Get total bookings for this event
+        const { count, error: bookingsError } = await supabase
+          .from("bookings")
+          .select("*", { count: 'exact' })
+          .eq("event_id", id)
+          .eq("status", "confirmed");
+
+        if (bookingsError) throw bookingsError;
+
+        setEvent(eventData);
+        setRemainingTickets(eventData.capacity - (count || 0));
       } catch (error) {
         console.error("Error fetching event:", error);
         toast({
@@ -58,7 +70,7 @@ export default function EventDetail() {
       }
     }
 
-    fetchEvent();
+    fetchEventAndBookings();
   }, [id, navigate, toast]);
 
   const handleBooking = async () => {
@@ -68,6 +80,16 @@ export default function EventDetail() {
       toast({
         title: "Authentication Required",
         description: "Please sign in to book this event.",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    if (remainingTickets === 0) {
+      toast({
+        title: "Event Full",
+        description: "Sorry, this event is fully booked.",
         variant: "destructive",
       });
       return;
@@ -80,6 +102,9 @@ export default function EventDetail() {
         .insert([{ event_id: id, user_id: user.id }]);
 
       if (error) throw error;
+
+      // Update remaining tickets count
+      setRemainingTickets(prev => prev !== null ? prev - 1 : null);
 
       toast({
         title: "Success!",
@@ -138,6 +163,32 @@ export default function EventDetail() {
             alt={event.title}
             className="w-full h-64 object-cover"
           />
+
+          {/* Booking Section - Moved to top */}
+          <div className="p-6 bg-blue-50 border-b">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-2xl font-bold text-[#00D26A]">
+                  ${event.price}
+                </span>
+                <span className="text-gray-500 ml-2">per ticket</span>
+                <div className="mt-2 flex items-center text-sm">
+                  <Ticket className="w-4 h-4 mr-2 text-blue-600" />
+                  <span className="text-blue-600 font-medium">
+                    {remainingTickets !== null ? `${remainingTickets} tickets remaining` : 'Loading...'}
+                  </span>
+                </div>
+              </div>
+              <Button
+                onClick={handleBooking}
+                disabled={bookingInProgress || remainingTickets === 0}
+                className="bg-[#00D26A] hover:bg-[#00D26A]/90 text-white px-8"
+              >
+                {bookingInProgress ? "Processing..." : remainingTickets === 0 ? "Sold Out" : "Book Now"}
+              </Button>
+            </div>
+          </div>
+
           <div className="p-8">
             <div className="mb-4">
               <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
@@ -167,7 +218,7 @@ export default function EventDetail() {
                   </div>
                   <div className="flex items-center text-gray-600">
                     <Users className="w-5 h-5 mr-3" />
-                    <span>{event.capacity} spots available</span>
+                    <span>Capacity: {event.capacity} people</span>
                   </div>
                 </div>
               </div>
@@ -226,23 +277,6 @@ export default function EventDetail() {
                   </div>
                 )}
               </div>
-            </div>
-
-            {/* Booking Section */}
-            <div className="flex items-center justify-between border-t pt-6">
-              <div>
-                <span className="text-2xl font-bold text-[#00D26A]">
-                  ${event.price}
-                </span>
-                <span className="text-gray-500 ml-2">per ticket</span>
-              </div>
-              <Button
-                onClick={handleBooking}
-                disabled={bookingInProgress}
-                className="bg-[#00D26A] hover:bg-[#00D26A]/90 text-white"
-              >
-                {bookingInProgress ? "Processing..." : "Book Now"}
-              </Button>
             </div>
           </div>
         </div>
