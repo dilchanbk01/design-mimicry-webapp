@@ -113,7 +113,7 @@ export default function CreateEvent() {
           organizer_website: formData.organizerWebsite,
           pet_types: formData.petTypes,
           pet_requirements: formData.petRequirements,
-          organizer_id: user.id, // Set the organizer_id to the current user's ID
+          organizer_id: user.id,
         },
       ]);
 
