@@ -2,9 +2,11 @@
 import { Card } from "@/components/Card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleVetPartnerClick = () => {
     toast({
@@ -28,7 +30,7 @@ const Index = () => {
           <Card
             title="Events"
             icon="/lovable-uploads/01f1af17-4a11-4809-9674-01e898a01385.png"
-            onClick={() => toast({ title: "Events coming soon!" })}
+            onClick={() => navigate("/events")}
           />
           <Card
             title="Find Vets"
