@@ -1,10 +1,13 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Stethoscope, User, Calendar, MessageSquare, BookOpen, ChartBar, LogOut } from "lucide-react";
+import { 
+  Stethoscope, User, Calendar, MessageSquare, 
+  BookOpen, ChartBar, LogOut, Plug, X, Check 
+} from "lucide-react";
+import { useConsultation } from "@/hooks/use-consultation";
 
 interface VetProfile {
   clinic_name: string;
@@ -12,6 +15,12 @@ interface VetProfile {
   specializations: string[];
   years_of_experience: number;
   bio: string | null;
+  is_online: boolean;
+}
+
+interface PendingConsultation {
+  id: string;
+  created_at: string;
 }
 
 export default function VetDashboard() {
@@ -19,10 +28,13 @@ export default function VetDashboard() {
   const { toast } = useToast();
   const [profile, setProfile] = useState<VetProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pendingConsultations, setPendingConsultations] = useState<PendingConsultation[]>([]);
+  const { isOnline, toggleAvailability, handleConsultation } = useConsultation();
 
   useEffect(() => {
     checkAuth();
     loadVetProfile();
+    subscribeToConsultations();
   }, []);
 
   const checkAuth = async () => {
@@ -59,6 +71,28 @@ export default function VetDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const subscribeToConsultations = () => {
+    const channel = supabase
+      .channel('pending-consultations')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'consultations',
+          filter: 'status=eq.pending',
+        },
+        (payload) => {
+          setPendingConsultations(current => [...current, payload.new as PendingConsultation]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   };
 
   const handleLogout = async () => {
@@ -120,7 +154,15 @@ export default function VetDashboard() {
           </nav>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 p-6">
+        <div className="absolute bottom-0 left-0 right-0 p-6 space-y-2">
+          <Button 
+            variant={isOnline ? "default" : "outline"}
+            className="w-full justify-start"
+            onClick={toggleAvailability}
+          >
+            <Plug className={`mr-2 ${isOnline ? 'text-white' : ''}`} />
+            {isOnline ? 'Online' : 'Offline'}
+          </Button>
           <Button 
             variant="outline" 
             className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
@@ -135,6 +177,7 @@ export default function VetDashboard() {
       {/* Main content */}
       <div className="ml-64 p-8">
         <div className="max-w-4xl mx-auto">
+          {/* Profile Section */}
           <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
             <h1 className="text-2xl font-semibold mb-4">Welcome, Dr. {profile?.clinic_name}</h1>
             <div className="text-sm text-gray-500">
@@ -159,7 +202,46 @@ export default function VetDashboard() {
             </div>
           </div>
 
-          {/* Placeholder sections for future features */}
+          {/* Pending Consultations */}
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h2 className="text-lg font-semibold mb-4">Pending Consultations</h2>
+            {pendingConsultations.length === 0 ? (
+              <p className="text-gray-500">No pending consultation requests</p>
+            ) : (
+              <div className="space-y-4">
+                {pendingConsultations.map((consultation) => (
+                  <div key={consultation.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <p className="font-medium">New Consultation Request</p>
+                      <p className="text-sm text-gray-500">
+                        Received: {new Date(consultation.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="default"
+                        className="bg-green-500 hover:bg-green-600"
+                        onClick={() => handleConsultation(consultation.id, 'accept')}
+                      >
+                        <Check className="h-4 w-4" />
+                        Accept
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="text-red-500 hover:text-red-600 border-red-500 hover:border-red-600"
+                        onClick={() => handleConsultation(consultation.id, 'decline')}
+                      >
+                        <X className="h-4 w-4" />
+                        Decline
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Other Sections */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h2 className="text-lg font-semibold mb-4">Recent Appointments</h2>

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +7,82 @@ export function useConsultation() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [startingConsultation, setStartingConsultation] = useState(false);
+  const [isOnline, setIsOnline] = useState(false);
+
+  const toggleAvailability = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate("/vet-auth");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("vet_profiles")
+        .update({ is_online: !isOnline })
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+      setIsOnline(!isOnline);
+
+      toast({
+        title: !isOnline ? "You are now online" : "You are now offline",
+        description: !isOnline ? "You can now receive consultation requests" : "You won't receive any consultation requests",
+      });
+    } catch (error) {
+      console.error("Error toggling availability:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update availability status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleConsultation = async (consultationId: string, action: 'accept' | 'decline') => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate("/vet-auth");
+        return;
+      }
+
+      if (action === 'accept') {
+        const { error } = await supabase
+          .from("consultations")
+          .update({
+            status: "active",
+            vet_id: user.id
+          })
+          .eq("id", consultationId)
+          .eq("status", "pending");
+
+        if (error) throw error;
+
+        navigate(`/consultation/${consultationId}`);
+      } else {
+        const { error } = await supabase
+          .from("consultations")
+          .update({ status: "expired" })
+          .eq("id", consultationId)
+          .eq("status", "pending");
+
+        if (error) throw error;
+
+        toast({
+          title: "Consultation declined",
+          description: "The consultation request has been declined",
+        });
+      }
+    } catch (error) {
+      console.error("Error handling consultation:", error);
+      toast({
+        title: "Error",
+        description: `Failed to ${action} consultation`,
+        variant: "destructive",
+      });
+    }
+  };
 
   const startConsultation = async () => {
     try {
@@ -91,6 +166,9 @@ export function useConsultation() {
 
   return {
     startingConsultation,
-    startConsultation
+    startConsultation,
+    isOnline,
+    toggleAvailability,
+    handleConsultation
   };
 }
