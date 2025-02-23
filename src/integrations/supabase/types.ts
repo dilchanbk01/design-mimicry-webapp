@@ -36,6 +36,13 @@ export type Database = {
             foreignKeyName: "bookings_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
+            referencedRelation: "event_analytics"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "bookings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
@@ -60,6 +67,7 @@ export type Database = {
           pet_requirements: string | null
           pet_types: string | null
           price: number
+          status: string
           title: string
         }
         Insert: {
@@ -80,6 +88,7 @@ export type Database = {
           pet_requirements?: string | null
           pet_types?: string | null
           price: number
+          status?: string
           title: string
         }
         Update: {
@@ -100,6 +109,7 @@ export type Database = {
           pet_requirements?: string | null
           pet_types?: string | null
           price?: number
+          status?: string
           title?: string
         }
         Relationships: []
@@ -127,7 +137,17 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      event_analytics: {
+        Row: {
+          event_id: string | null
+          price: number | null
+          status: string | null
+          tickets_sold: number | null
+          title: string | null
+          total_amount: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
