@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Ticket, Calendar, User, LogOut, Lock, Mail, Edit2 } from "lucide-react";
+import { Ticket, Calendar, User, LogOut, Lock, Mail, Edit2, MapPin } from "lucide-react";
 
 interface UserEvent {
   id: string;
@@ -190,7 +189,6 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-[#00D26A]">
-      {/* Fixed Header */}
       <header className="fixed top-0 left-0 right-0 bg-white shadow-md z-50">
         <div className="container mx-auto px-4 py-3">
           <div className="flex justify-between items-center">
@@ -211,7 +209,6 @@ export default function Profile() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="pt-16 px-4 pb-20">
         <div className="container mx-auto max-w-lg">
           <Tabs defaultValue="tickets" className="bg-white rounded-xl shadow-lg mt-4">
