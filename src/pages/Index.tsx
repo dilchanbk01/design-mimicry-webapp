@@ -3,6 +3,7 @@ import { Card } from "@/components/Card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
+import { AuthButton } from "@/components/AuthButton";
 
 const Index = () => {
   const { toast } = useToast();
@@ -17,16 +18,21 @@ const Index = () => {
 
   return (
     <div className="min-h-screen w-full bg-primary">
-      <div className="container mx-auto px-4 py-12 flex flex-col items-center gap-16">
+      <div className="container mx-auto px-4 py-12">
+        {/* Auth Button */}
+        <div className="absolute top-4 left-4">
+          <AuthButton />
+        </div>
+
         {/* Logo */}
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-md mx-auto">
           <h1 className="text-6xl font-bold text-center text-secondary filter drop-shadow-md">
             Petsu
           </h1>
         </div>
 
         {/* Cards Grid */}
-        <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl">
+        <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto mt-16">
           <Card
             title="Events"
             icon="/lovable-uploads/01f1af17-4a11-4809-9674-01e898a01385.png"
@@ -45,7 +51,7 @@ const Index = () => {
         </div>
 
         {/* Vet Partner Section */}
-        <div className="w-full max-w-2xl bg-accent rounded-2xl p-8 text-white">
+        <div className="w-full max-w-2xl mx-auto mt-16 bg-accent rounded-2xl p-8 text-white">
           <h2 className="text-2xl font-semibold mb-4">Are you a veterinarian?</h2>
           <p className="mb-6 text-gray-200">
             Join our network of professional vets and connect with pet owners.
