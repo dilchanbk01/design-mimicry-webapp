@@ -75,17 +75,43 @@ export function useConsultation() {
         return;
       }
 
+      // First check if the vet is online and the consultation is still pending
+      const { data: vetProfile } = await supabase
+        .from("vet_profiles")
+        .select("is_online")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!vetProfile?.is_online && action === 'accept') {
+        toast({
+          title: "Error",
+          description: "You must be online to accept consultations",
+          variant: "destructive",
+        });
+        return;
+      }
+
       if (action === 'accept') {
-        const { error } = await supabase
+        const { data: consultation, error } = await supabase
           .from("consultations")
           .update({
             status: "active",
             vet_id: user.id
           })
           .eq("id", consultationId)
-          .eq("status", "pending");
+          .eq("status", "pending")
+          .select()
+          .single();
 
         if (error) throw error;
+        if (!consultation) {
+          toast({
+            title: "Error",
+            description: "This consultation is no longer available",
+            variant: "destructive",
+          });
+          return;
+        }
 
         navigate(`/consultation/${consultationId}`);
       } else {
@@ -119,6 +145,25 @@ export function useConsultation() {
       
       if (!user) {
         navigate("/auth");
+        return;
+      }
+
+      // Check if there are any online vets before creating consultation
+      const { data: onlineVets, error: vetsError } = await supabase
+        .from("vet_profiles")
+        .select("id")
+        .eq("is_online", true)
+        .eq("application_status", "approved");
+
+      if (vetsError) throw vetsError;
+
+      if (!onlineVets?.length) {
+        toast({
+          title: "No Vets Available",
+          description: "Please try again later when vets are online.",
+          variant: "destructive",
+        });
+        setStartingConsultation(false);
         return;
       }
 
@@ -180,7 +225,7 @@ export function useConsultation() {
           setStartingConsultation(false);
           supabase.removeChannel(channel);
         }
-      }, 120000);
+      }, 120000); // 2 minutes timeout
     } catch (error) {
       console.error("Error starting consultation:", error);
       toast({
@@ -192,11 +237,41 @@ export function useConsultation() {
     }
   };
 
+  const endConsultation = async (consultationId: string) => {
+    try {
+      const { error } = await supabase
+        .from("consultations")
+        .update({
+          status: "completed",
+          ended_at: new Date().toISOString()
+        })
+        .eq("id", consultationId)
+        .eq("status", "active");
+
+      if (error) throw error;
+
+      toast({
+        title: "Consultation Ended",
+        description: "Thank you for using our service!",
+      });
+
+      navigate("/");
+    } catch (error) {
+      console.error("Error ending consultation:", error);
+      toast({
+        title: "Error",
+        description: "Failed to end consultation",
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     startingConsultation,
     startConsultation,
     isOnline,
     toggleAvailability,
-    handleConsultation
+    handleConsultation,
+    endConsultation
   };
 }
