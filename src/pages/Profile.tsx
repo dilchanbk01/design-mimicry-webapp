@@ -12,6 +12,7 @@ interface UserEvent {
   date: string;
   image_url: string;
   location: string;
+  status: 'pending' | 'approved' | 'rejected';
 }
 
 interface Booking {
@@ -46,7 +47,8 @@ export default function Profile() {
         const { data: events, error: eventsError } = await supabase
           .from("events")
           .select("*")
-          .eq("organizer_id", user.id);
+          .eq("organizer_id", user.id)
+          .order('date', { ascending: false });
 
         if (eventsError) throw eventsError;
         setUserEvents(events || []);
@@ -97,6 +99,17 @@ export default function Profile() {
     }
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return 'bg-green-100 text-green-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-yellow-100 text-yellow-800';
+    }
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -113,6 +126,51 @@ export default function Profile() {
           </div>
 
           <div className="space-y-8">
+            {/* Your Events Section */}
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Events You're Hosting</h2>
+              {userEvents.length === 0 ? (
+                <p className="text-gray-600">
+                  You haven't created any events yet.{" "}
+                  <Button
+                    variant="link"
+                    onClick={() => navigate("/events/create")}
+                    className="p-0"
+                  >
+                    Create your first event
+                  </Button>
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {userEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                      onClick={() => navigate(`/events/${event.id}`)}
+                    >
+                      <img
+                        src={event.image_url}
+                        alt={event.title}
+                        className="w-full h-48 object-cover"
+                      />
+                      <div className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="font-semibold">{event.title}</h3>
+                          <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(event.status)}`}>
+                            {event.status}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600">{event.location}</p>
+                        <p className="text-sm text-gray-600">
+                          {format(new Date(event.date), "PPP")}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
             {/* Your Bookings Section */}
             <section>
               <h2 className="text-2xl font-semibold mb-4">Your Bookings</h2>
@@ -128,7 +186,7 @@ export default function Profile() {
                   </Button>
                 </p>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {userBookings.map((booking) => (
                     <div
                       key={booking.id}
@@ -145,46 +203,6 @@ export default function Profile() {
                         <p className="text-sm text-gray-600">{booking.event.location}</p>
                         <p className="text-sm text-gray-600">
                           {format(new Date(booking.event.date), "PPP")}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
-
-            {/* Your Events Section */}
-            <section>
-              <h2 className="text-2xl font-semibold mb-4">Events You're Hosting</h2>
-              {userEvents.length === 0 ? (
-                <p className="text-gray-600">
-                  You haven't created any events yet.{" "}
-                  <Button
-                    variant="link"
-                    onClick={() => navigate("/events/create")}
-                    className="p-0"
-                  >
-                    Create your first event
-                  </Button>
-                </p>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {userEvents.map((event) => (
-                    <div
-                      key={event.id}
-                      className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                      onClick={() => navigate(`/events/${event.id}`)}
-                    >
-                      <img
-                        src={event.image_url}
-                        alt={event.title}
-                        className="w-full h-48 object-cover"
-                      />
-                      <div className="p-4">
-                        <h3 className="font-semibold mb-2">{event.title}</h3>
-                        <p className="text-sm text-gray-600">{event.location}</p>
-                        <p className="text-sm text-gray-600">
-                          {format(new Date(event.date), "PPP")}
                         </p>
                       </div>
                     </div>

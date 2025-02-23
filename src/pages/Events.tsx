@@ -18,6 +18,7 @@ interface Event {
   location: string;
   price: number;
   capacity: number;
+  status: 'pending' | 'approved' | 'rejected';
 }
 
 export default function Events() {
@@ -33,6 +34,7 @@ export default function Events() {
         const { data, error } = await supabase
           .from("events")
           .select("*")
+          .eq('status', 'approved')
           .order("date", { ascending: true });
 
         if (error) throw error;

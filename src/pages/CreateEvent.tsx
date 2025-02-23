@@ -117,6 +117,7 @@ export default function CreateEvent() {
           pet_types: formData.petTypes,
           pet_requirements: formData.petRequirements,
           organizer_id: user.id,
+          status: 'pending'
         },
       ]);
 
@@ -124,10 +125,10 @@ export default function CreateEvent() {
 
       toast({
         title: "Success!",
-        description: "Event created successfully.",
+        description: "Event submitted for approval. You can track its status in your profile.",
       });
 
-      navigate("/events");
+      navigate("/profile");
     } catch (error) {
       console.error("Error creating event:", error);
       toast({
