@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Calendar, MapPin, Clock, Users } from "lucide-react";
+import { Calendar, MapPin, Clock, Users, Mail, Phone, Globe, PawPrint } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,13 @@ interface Event {
   location: string;
   price: number;
   capacity: number;
+  event_type: string;
+  organizer_name: string;
+  organizer_email: string;
+  organizer_phone: string;
+  organizer_website: string;
+  pet_types: string;
+  pet_requirements: string;
 }
 
 export default function EventDetail() {
@@ -92,7 +99,7 @@ export default function EventDetail() {
 
   if (loading) {
     return (
-      <div className="loading-overlay">
+      <div className="min-h-screen bg-[#00D26A] flex items-center justify-center">
         <div className="loading-spinner" />
       </div>
     );
@@ -100,12 +107,12 @@ export default function EventDetail() {
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-primary flex items-center justify-center">
+      <div className="min-h-screen bg-[#00D26A] flex items-center justify-center">
         <div className="text-white text-center">
           <h1 className="text-2xl font-bold mb-4">Event not found</h1>
           <Button
             onClick={() => navigate("/events")}
-            className="bg-white text-accent hover:bg-gray-100"
+            className="bg-white text-[#00D26A] hover:bg-gray-100"
           >
             Back to Events
           </Button>
@@ -115,7 +122,7 @@ export default function EventDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-primary py-12 px-4">
+    <div className="min-h-screen bg-[#00D26A] py-12 px-4">
       <div className="container mx-auto max-w-4xl">
         <Button
           onClick={() => navigate("/events")}
@@ -132,40 +139,109 @@ export default function EventDetail() {
             className="w-full h-64 object-cover"
           />
           <div className="p-8">
-            <h1 className="text-3xl font-bold text-accent mb-4">{event.title}</h1>
-            <p className="text-gray-600 mb-6">{event.description}</p>
+            <div className="mb-4">
+              <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                {event.event_type}
+              </span>
+            </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <h1 className="text-3xl font-bold text-gray-800 mb-4">{event.title}</h1>
+            <p className="text-gray-600 mb-8">{event.description}</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+              {/* Event Details */}
               <div className="space-y-4">
-                <div className="flex items-center text-gray-600">
-                  <Calendar className="w-5 h-5 mr-3" />
-                  <span>{format(new Date(event.date), "PPP")}</span>
-                </div>
-                <div className="flex items-center text-gray-600">
-                  <Clock className="w-5 h-5 mr-3" />
-                  <span>{event.duration} minutes</span>
+                <h2 className="text-xl font-semibold text-gray-800">Event Details</h2>
+                <div className="space-y-3">
+                  <div className="flex items-center text-gray-600">
+                    <Calendar className="w-5 h-5 mr-3" />
+                    <span>{format(new Date(event.date), "PPP")}</span>
+                  </div>
+                  <div className="flex items-center text-gray-600">
+                    <Clock className="w-5 h-5 mr-3" />
+                    <span>{format(new Date(event.date), "p")}</span>
+                  </div>
+                  <div className="flex items-center text-gray-600">
+                    <MapPin className="w-5 h-5 mr-3" />
+                    <span>{event.location}</span>
+                  </div>
+                  <div className="flex items-center text-gray-600">
+                    <Users className="w-5 h-5 mr-3" />
+                    <span>{event.capacity} spots available</span>
+                  </div>
                 </div>
               </div>
+
+              {/* Organizer Information */}
               <div className="space-y-4">
-                <div className="flex items-center text-gray-600">
-                  <MapPin className="w-5 h-5 mr-3" />
-                  <span>{event.location}</span>
-                </div>
-                <div className="flex items-center text-gray-600">
-                  <Users className="w-5 h-5 mr-3" />
-                  <span>{event.capacity} spots available</span>
+                <h2 className="text-xl font-semibold text-gray-800">Organizer Details</h2>
+                <div className="space-y-3">
+                  <div className="text-gray-600">
+                    <strong className="block">Organized by:</strong>
+                    <span>{event.organizer_name}</span>
+                  </div>
+                  <div className="flex items-center text-gray-600">
+                    <Mail className="w-5 h-5 mr-3" />
+                    <a href={`mailto:${event.organizer_email}`} className="text-blue-600 hover:underline">
+                      {event.organizer_email}
+                    </a>
+                  </div>
+                  {event.organizer_phone && (
+                    <div className="flex items-center text-gray-600">
+                      <Phone className="w-5 h-5 mr-3" />
+                      <a href={`tel:${event.organizer_phone}`} className="text-blue-600 hover:underline">
+                        {event.organizer_phone}
+                      </a>
+                    </div>
+                  )}
+                  {event.organizer_website && (
+                    <div className="flex items-center text-gray-600">
+                      <Globe className="w-5 h-5 mr-3" />
+                      <a href={event.organizer_website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        Visit Website
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
+            {/* Pet Information */}
+            <div className="mb-8 p-6 bg-gray-50 rounded-lg">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                <div className="flex items-center">
+                  <PawPrint className="w-6 h-6 mr-2" />
+                  Pet Information
+                </div>
+              </h2>
+              <div className="space-y-3">
+                <div>
+                  <strong className="text-gray-700">Allowed Pets:</strong>
+                  <span className="ml-2 text-gray-600">{event.pet_types}</span>
+                </div>
+                {event.pet_requirements && (
+                  <div>
+                    <strong className="text-gray-700">Special Requirements:</strong>
+                    <p className="mt-1 text-gray-600">{event.pet_requirements}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Booking Section */}
             <div className="flex items-center justify-between border-t pt-6">
-              <div className="text-2xl font-bold text-accent">${event.price}</div>
+              <div>
+                <span className="text-2xl font-bold text-[#00D26A]">
+                  ${event.price}
+                </span>
+                <span className="text-gray-500 ml-2">per ticket</span>
+              </div>
               <Button
                 onClick={handleBooking}
                 disabled={bookingInProgress}
-                className="bg-accent text-white hover:bg-accent/90"
+                className="bg-[#00D26A] hover:bg-[#00D26A]/90 text-white"
               >
-                {bookingInProgress ? "Booking..." : "Book Now"}
+                {bookingInProgress ? "Processing..." : "Book Now"}
               </Button>
             </div>
           </div>

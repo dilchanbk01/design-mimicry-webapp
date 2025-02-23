@@ -48,10 +48,17 @@ export type Database = {
           date: string
           description: string
           duration: number
+          event_type: string | null
           id: string
           image_url: string
           location: string
+          organizer_email: string | null
           organizer_id: string | null
+          organizer_name: string | null
+          organizer_phone: string | null
+          organizer_website: string | null
+          pet_requirements: string | null
+          pet_types: string | null
           price: number
           title: string
         }
@@ -61,10 +68,17 @@ export type Database = {
           date: string
           description: string
           duration: number
+          event_type?: string | null
           id?: string
           image_url: string
           location: string
+          organizer_email?: string | null
           organizer_id?: string | null
+          organizer_name?: string | null
+          organizer_phone?: string | null
+          organizer_website?: string | null
+          pet_requirements?: string | null
+          pet_types?: string | null
           price: number
           title: string
         }
@@ -74,10 +88,17 @@ export type Database = {
           date?: string
           description?: string
           duration?: number
+          event_type?: string | null
           id?: string
           image_url?: string
           location?: string
+          organizer_email?: string | null
           organizer_id?: string | null
+          organizer_name?: string | null
+          organizer_phone?: string | null
+          organizer_website?: string | null
+          pet_requirements?: string | null
+          pet_types?: string | null
           price?: number
           title?: string
         }
