@@ -47,7 +47,7 @@ export default function AdminUsers() {
             user_id,
             role,
             created_at,
-            users:user_id (
+            users (
               email
             )
           `);
