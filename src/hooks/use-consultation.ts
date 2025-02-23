@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -8,6 +9,25 @@ export function useConsultation() {
   const { toast } = useToast();
   const [startingConsultation, setStartingConsultation] = useState(false);
   const [isOnline, setIsOnline] = useState(false);
+
+  useEffect(() => {
+    loadVetStatus();
+  }, []);
+
+  const loadVetStatus = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase
+        .from("vet_profiles")
+        .select("is_online")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (data) {
+        setIsOnline(data.is_online || false);
+      }
+    }
+  };
 
   const toggleAvailability = async () => {
     try {

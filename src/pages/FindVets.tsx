@@ -6,14 +6,7 @@ import { Stethoscope } from "lucide-react";
 import { VetCard } from "@/components/find-vets/VetCard";
 import { ConsultationButton } from "@/components/find-vets/ConsultationButton";
 import { useConsultation } from "@/hooks/use-consultation";
-
-interface VetProfile {
-  id: string;
-  clinic_name: string;
-  specializations: string[];
-  years_of_experience: number;
-  bio: string | null;
-}
+import type { VetProfile } from "@/types/vet";
 
 export default function FindVets() {
   const { toast } = useToast();
