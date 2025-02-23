@@ -15,6 +15,7 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import VetOnboarding from "./pages/VetOnboarding";
 import VetAuth from "./pages/VetAuth";
+import VetDashboard from "./pages/VetDashboard";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/profile" element={<Profile />} />
           <Route path="/vet-onboarding" element={<VetOnboarding />} />
           <Route path="/vet-auth" element={<VetAuth />} />
+          <Route path="/vet-dashboard" element={<VetDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
