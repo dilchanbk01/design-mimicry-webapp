@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -50,6 +49,11 @@ interface Booking {
 interface UserProfile {
   email: string;
   full_name: string;
+}
+
+interface BookingResponse {
+  id: string;
+  event: EventData[];
 }
 
 export default function Profile() {
@@ -108,15 +112,9 @@ export default function Profile() {
         if (bookingsError) throw bookingsError;
         
         // Transform the data to match the Booking interface
-        const transformedBookings: Booking[] = (bookings || []).map(booking => ({
+        const transformedBookings: Booking[] = (bookings as BookingResponse[] || []).map(booking => ({
           id: booking.id,
-          event: {
-            id: booking.event.id,
-            title: booking.event.title,
-            date: booking.event.date,
-            image_url: booking.event.image_url,
-            location: booking.event.location
-          }
+          event: booking.event[0] // Access the first event from the array
         }));
 
         setUserBookings(transformedBookings);
