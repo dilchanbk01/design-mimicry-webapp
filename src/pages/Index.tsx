@@ -74,22 +74,24 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-center space-y-4">
             {/* Social Media Icons */}
-            <div className="flex space-x-4">
+            <div className="flex space-x-6">
               <a 
                 href="https://instagram.com/petsu" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-white hover:text-white/80 transition-colors"
+                className="flex items-center gap-2 text-white hover:text-white/80 transition-colors text-xs"
               >
                 <Instagram size={16} />
+                <span>Follow on Instagram</span>
               </a>
               <a 
                 href="https://linkedin.com/company/petsu" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-white hover:text-white/80 transition-colors"
+                className="flex items-center gap-2 text-white hover:text-white/80 transition-colors text-xs"
               >
                 <Linkedin size={16} />
+                <span>Follow on LinkedIn</span>
               </a>
             </div>
 
