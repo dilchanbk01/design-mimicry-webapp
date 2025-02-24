@@ -2,33 +2,16 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-
-const SPECIALIZATIONS = [
-  "Dog Grooming",
-  "Cat Grooming",
-  "Pet Spa",
-  "Mobile Grooming",
-  "Show Grooming",
-  "Natural Grooming"
-];
+import { GroomerFormFields } from "@/components/groomer-onboarding/GroomerFormFields";
+import { GroomerFormData, initialFormData } from "@/components/groomer-onboarding/schema";
 
 export default function GroomerOnboarding() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    salonName: "",
-    experienceYears: "",
-    specializations: [] as string[],
-    address: "",
-    contactNumber: "",
-    bio: ""
-  });
+  const [formData, setFormData] = useState<GroomerFormData>(initialFormData);
 
   useEffect(() => {
     checkAuth();
@@ -62,6 +45,10 @@ export default function GroomerOnboarding() {
       console.error("Auth check error:", error);
       navigate("/groomer-auth");
     }
+  };
+
+  const handleFormDataChange = (updates: Partial<GroomerFormData>) => {
+    setFormData(prev => ({ ...prev, ...updates }));
   };
 
   const handleSpecializationToggle = (specialization: string) => {
@@ -123,77 +110,11 @@ export default function GroomerOnboarding() {
             Join as a Grooming Partner
           </h1>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="salonName">Salon Name</Label>
-              <Input
-                id="salonName"
-                value={formData.salonName}
-                onChange={(e) => setFormData(prev => ({ ...prev, salonName: e.target.value }))}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="experienceYears">Years of Experience</Label>
-              <Input
-                id="experienceYears"
-                type="number"
-                min="0"
-                value={formData.experienceYears}
-                onChange={(e) => setFormData(prev => ({ ...prev, experienceYears: e.target.value }))}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Specializations</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {SPECIALIZATIONS.map((specialization) => (
-                  <Button
-                    key={specialization}
-                    type="button"
-                    variant={formData.specializations.includes(specialization) ? "default" : "outline"}
-                    onClick={() => handleSpecializationToggle(specialization)}
-                    className="justify-start"
-                  >
-                    {specialization}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              <Textarea
-                id="address"
-                value={formData.address}
-                onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="contactNumber">Contact Number</Label>
-              <Input
-                id="contactNumber"
-                type="tel"
-                value={formData.contactNumber}
-                onChange={(e) => setFormData(prev => ({ ...prev, contactNumber: e.target.value }))}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="bio">Bio</Label>
-              <Textarea
-                id="bio"
-                value={formData.bio}
-                onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
-                placeholder="Tell us about your grooming experience and services..."
-                className="h-32"
-              />
-            </div>
-
+            <GroomerFormFields
+              formData={formData}
+              onFormDataChange={handleFormDataChange}
+              onSpecializationToggle={handleSpecializationToggle}
+            />
             <Button
               type="submit"
               className="w-full"
