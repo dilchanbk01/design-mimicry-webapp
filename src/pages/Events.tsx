@@ -25,6 +25,7 @@ export default function Events() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -97,41 +98,58 @@ export default function Events() {
       {/* Transparent Header */}
       <header className="fixed top-0 left-0 right-0 bg-transparent z-50">
         <div className="container mx-auto px-4 py-3">
-          <div className="flex flex-col items-center justify-center">
-            <img 
-              src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
-              alt="Petsu"
-              className="h-12 mb-2"
-            />
+          <div className="flex items-center justify-between">
             <Button
               onClick={handleCreateEventClick}
               className="bg-[#FFD700] hover:bg-[#FFD700]/90 text-blue-900 gap-2 rounded-full shadow-lg"
-              size="lg"
+              size="sm"
             >
               <Plus className="w-5 h-5" />
               Create Event
             </Button>
+
+            <img 
+              src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
+              alt="Petsu"
+              className="h-12 cursor-pointer"
+              onClick={() => navigate('/')}
+            />
+
+            <div className="relative">
+              {isSearchOpen ? (
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-64">
+                  <Input
+                    type="text"
+                    placeholder="Search events..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pr-10 rounded-full bg-white shadow-lg"
+                    autoFocus
+                    onBlur={() => setIsSearchOpen(false)}
+                  />
+                  <Search 
+                    className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"
+                    onClick={() => setIsSearchOpen(true)}
+                  />
+                </div>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/20"
+                  onClick={() => setIsSearchOpen(true)}
+                >
+                  <Search className="h-5 w-5" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="pt-36 px-4 pb-20">
+      <main className="pt-24 px-4 pb-20">
         <div className="container mx-auto max-w-lg">
-          {/* Search Bar */}
-          <div className="sticky top-32 bg-[#00D26A] pt-4 pb-2 z-40">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="Search events..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-6 rounded-full bg-white text-base shadow-lg"
-              />
-            </div>
-          </div>
-
           {/* Events List */}
           <div className="mt-6 space-y-4">
             {filteredEvents.length === 0 ? (
