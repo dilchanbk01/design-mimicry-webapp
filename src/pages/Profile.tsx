@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -33,15 +34,17 @@ interface UserEvent {
   };
 }
 
+interface EventData {
+  id: string;
+  title: string;
+  date: string;
+  image_url: string;
+  location: string;
+}
+
 interface Booking {
   id: string;
-  event: {
-    id: string;
-    title: string;
-    date: string;
-    image_url: string;
-    location: string;
-  };
+  event: EventData;
 }
 
 interface UserProfile {
@@ -82,10 +85,10 @@ export default function Profile() {
           .order('date', { ascending: false });
 
         if (eventsError) throw eventsError;
-        setUserEvents((events || []).map(event => ({
+        setUserEvents(events?.map(event => ({
           ...event,
           status: event.status as 'pending' | 'approved' | 'rejected'
-        })));
+        })) || []);
 
         const { data: bookings, error: bookingsError } = await supabase
           .from("bookings")
@@ -103,7 +106,20 @@ export default function Profile() {
           .eq("status", "confirmed");
 
         if (bookingsError) throw bookingsError;
-        setUserBookings(bookings || []);
+        
+        // Transform the data to match the Booking interface
+        const transformedBookings: Booking[] = (bookings || []).map(booking => ({
+          id: booking.id,
+          event: {
+            id: booking.event.id,
+            title: booking.event.title,
+            date: booking.event.date,
+            image_url: booking.event.image_url,
+            location: booking.event.location
+          }
+        }));
+
+        setUserBookings(transformedBookings);
       } catch (error) {
         console.error("Error fetching data:", error);
         toast({
