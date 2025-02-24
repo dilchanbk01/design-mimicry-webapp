@@ -33,27 +33,20 @@ interface UserEvent {
   };
 }
 
-interface EventData {
-  id: string;
-  title: string;
-  date: string;
-  image_url: string;
-  location: string;
-}
-
 interface Booking {
   id: string;
-  event: EventData;
+  event: {
+    id: string;
+    title: string;
+    date: string;
+    image_url: string;
+    location: string;
+  };
 }
 
 interface UserProfile {
   email: string;
   full_name: string;
-}
-
-interface BookingResponse {
-  id: string;
-  event: EventData[];
 }
 
 export default function Profile() {
@@ -89,10 +82,10 @@ export default function Profile() {
           .order('date', { ascending: false });
 
         if (eventsError) throw eventsError;
-        setUserEvents(events?.map(event => ({
+        setUserEvents((events || []).map(event => ({
           ...event,
           status: event.status as 'pending' | 'approved' | 'rejected'
-        })) || []);
+        })));
 
         const { data: bookings, error: bookingsError } = await supabase
           .from("bookings")
@@ -110,14 +103,7 @@ export default function Profile() {
           .eq("status", "confirmed");
 
         if (bookingsError) throw bookingsError;
-        
-        // Transform the data to match the Booking interface
-        const transformedBookings: Booking[] = (bookings as BookingResponse[] || []).map(booking => ({
-          id: booking.id,
-          event: booking.event[0] // Access the first event from the array
-        }));
-
-        setUserBookings(transformedBookings);
+        setUserBookings(bookings || []);
       } catch (error) {
         console.error("Error fetching data:", error);
         toast({
