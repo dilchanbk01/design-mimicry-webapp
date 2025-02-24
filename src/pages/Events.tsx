@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, MapPin, Clock, Plus, Search, User } from "lucide-react";
+import { Calendar, MapPin, Clock, Plus, Search, User, ArrowLeft, Instagram } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
 import { useInterval } from "@/hooks/use-interval";
-import { Instagram, Linkedin } from "lucide-react";
+import { Linkedin } from "lucide-react";
 
 interface Event {
   id: string;
@@ -261,18 +261,18 @@ export default function Events() {
             <div className="container mx-auto px-4 py-3">
               <div className="flex items-center justify-between">
                 <Button
-                  onClick={handleCreateEventClick}
-                  className="bg-[#FFD700] hover:bg-[#FFD700]/90 text-blue-900 gap-2 rounded-full shadow-lg"
-                  size="sm"
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/20"
+                  onClick={() => navigate(-1)}
                 >
-                  <Plus className="w-5 h-5" />
-                  Create Event
+                  <ArrowLeft className="h-6 w-6" />
                 </Button>
 
                 <img 
                   src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
                   alt="Petsu"
-                  className="h-16 cursor-pointer"
+                  className="h-20 cursor-pointer"
                   onClick={() => navigate('/')}
                 />
 
@@ -352,16 +352,19 @@ export default function Events() {
                       <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
                       <span className="line-clamp-1">{event.location}</span>
                     </div>
+                    <div className="flex items-center text-gray-600">
+                      <span className="font-semibold">₹{event.price}</span>
+                    </div>
                   </div>
                   <Button
                     className={`w-full mt-6 ${
                       isEventBooked(event.id)
-                        ? "bg-gray-500 hover:bg-gray-600"
+                        ? "bg-green-500 hover:bg-green-600"
                         : "bg-blue-900 hover:bg-blue-800"
                     } text-white`}
                     disabled={isEventBooked(event.id)}
                   >
-                    {isEventBooked(event.id) ? "Already Registered" : "Register Now"}
+                    {isEventBooked(event.id) ? "Booked" : "Book Now"}
                   </Button>
                 </div>
               </div>
@@ -378,9 +381,10 @@ export default function Events() {
                 href="https://instagram.com/petsu" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-white hover:text-white/80 transition-colors"
+                className="text-white hover:text-white/80 transition-colors flex items-center gap-2"
               >
                 <Instagram size={16} />
+                <span className="text-sm">Follow us</span>
               </a>
               <a 
                 href="https://linkedin.com/company/petsu" 
