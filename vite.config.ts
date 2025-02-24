@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     host: "::",
     // Handle client-side routing
-    middleware: (req: Connect.IncomingMessage, res: Connect.ServerResponse, next: Connect.NextFunction) => {
+    middleware: (req: Connect.IncomingMessage, res: Connect.ServerResponse<Connect.IncomingMessage>, next: Connect.NextFunction) => {
       // Serve index.html for any non-asset requests
       if (!req.url?.includes('.')) {
         req.url = '/';
