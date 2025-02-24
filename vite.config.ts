@@ -3,6 +3,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+import type { Connect } from "vite";
 
 export default defineConfig(({ mode }) => ({
   plugins: [
@@ -22,7 +23,7 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     host: "::",
     // Handle client-side routing
-    middleware: (req, res, next) => {
+    middleware: (req: Connect.IncomingMessage, res: Connect.ServerResponse, next: Connect.NextFunction) => {
       // Serve index.html for any non-asset requests
       if (!req.url?.includes('.')) {
         req.url = '/';
