@@ -182,6 +182,54 @@ export type Database = {
         }
         Relationships: []
       }
+      groomer_profiles: {
+        Row: {
+          address: string
+          application_status:
+            | Database["public"]["Enums"]["groomer_status"]
+            | null
+          bio: string | null
+          contact_number: string
+          created_at: string | null
+          experience_years: number
+          id: string
+          salon_name: string
+          specializations: string[]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          address: string
+          application_status?:
+            | Database["public"]["Enums"]["groomer_status"]
+            | null
+          bio?: string | null
+          contact_number: string
+          created_at?: string | null
+          experience_years: number
+          id?: string
+          salon_name: string
+          specializations: string[]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string
+          application_status?:
+            | Database["public"]["Enums"]["groomer_status"]
+            | null
+          bio?: string | null
+          contact_number?: string
+          created_at?: string | null
+          experience_years?: number
+          id?: string
+          salon_name?: string
+          specializations?: string[]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       hero_banners: {
         Row: {
           active: boolean | null
@@ -306,6 +354,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_groomer: {
+        Args: {
+          user_id: string
+        }
+        Returns: boolean
+      }
       is_vet: {
         Args: {
           user_id: string
@@ -315,6 +369,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      groomer_status: "pending" | "approved" | "rejected"
       vet_application_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {

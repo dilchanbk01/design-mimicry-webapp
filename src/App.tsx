@@ -18,6 +18,9 @@ import VetAuth from "./pages/VetAuth";
 import VetDashboard from "./pages/VetDashboard";
 import FindVets from "./pages/FindVets";
 import ConsultationChat from "./pages/ConsultationChat";
+import GroomerAuth from "./pages/GroomerAuth";
+import GroomerOnboarding from "./pages/GroomerOnboarding";
+import GroomerDashboard from "./pages/GroomerDashboard";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +44,9 @@ const App = () => (
           <Route path="/vet-dashboard" element={<VetDashboard />} />
           <Route path="/find-vets" element={<FindVets />} />
           <Route path="/consultation/:id" element={<ConsultationChat />} />
+          <Route path="/groomer-auth" element={<GroomerAuth />} />
+          <Route path="/groomer-onboarding" element={<GroomerOnboarding />} />
+          <Route path="/groomer-dashboard" element={<GroomerDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
