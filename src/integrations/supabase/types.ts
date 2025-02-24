@@ -230,6 +230,33 @@ export type Database = {
         }
         Relationships: []
       }
+      help_requests: {
+        Row: {
+          created_at: string | null
+          description: string
+          email: string
+          id: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          email: string
+          id?: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          email?: string
+          id?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       hero_banners: {
         Row: {
           active: boolean | null
