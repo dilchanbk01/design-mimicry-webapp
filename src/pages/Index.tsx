@@ -110,15 +110,19 @@ const Index = () => {
               onClick={() => navigate("/find-vets")}
               className="aspect-square bg-white hover:scale-[1.02]"
             />
+            <Card
+              title="Pet Essentials"
+              icon="/lovable-uploads/2737b2dd-8bd8-496f-8a36-6329dc70fe41.png"
+              onClick={() => setIsNotifyDialogOpen(true)}
+              className="aspect-square bg-white hover:scale-[1.02]"
+            />
+            <Card
+              title="Pet Grooming"
+              icon="/lovable-uploads/01f1af17-4a11-4809-9674-01e898a01385.png"
+              onClick={() => navigate("/pet-grooming")}
+              className="aspect-square bg-white hover:scale-[1.02]"
+            />
           </div>
-
-          {/* Pet Essentials Card */}
-          <Card
-            title="Pet Essentials"
-            icon="/lovable-uploads/2737b2dd-8bd8-496f-8a36-6329dc70fe41.png"
-            onClick={() => setIsNotifyDialogOpen(true)}
-            className="bg-white hover:scale-[1.02] aspect-[2/1]"
-          />
 
           {/* Vet Partner Rectangle Card */}
           <div className="bg-accent rounded-3xl p-8 text-white">
