@@ -7,6 +7,7 @@ import { format, isPast } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
+import { useQuery } from "@tanstack/react-query";
 
 interface Event {
   id: string;
@@ -21,6 +22,13 @@ interface Event {
   status: 'pending' | 'approved' | 'rejected';
 }
 
+interface HeroBanner {
+  id: string;
+  image_url: string;
+  title: string;
+  description: string;
+}
+
 export default function Events() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,6 +36,20 @@ export default function Events() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Fetch hero banner
+  const { data: heroBanner } = useQuery({
+    queryKey: ['heroBanner', 'events'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('hero_banners')
+        .select('*')
+        .eq('active', true)
+        .eq('page', 'events')
+        .single();
+      return data as HeroBanner;
+    }
+  });
 
   useEffect(() => {
     async function fetchEvents() {
@@ -40,7 +62,6 @@ export default function Events() {
 
         if (error) throw error;
 
-        // Filter out past events
         const currentEvents = (data || [])
           .filter(event => !isPast(new Date(event.date)))
           .map(event => ({
@@ -154,55 +175,76 @@ export default function Events() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="pt-24 px-4 pb-20">
-        <div className="container mx-auto">
-          {/* Events Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredEvents.length === 0 ? (
-              <div className="text-center py-8 col-span-full">
-                <p className="text-white text-lg">No events found</p>
+      {/* Hero Banner */}
+      {heroBanner && (
+        <div className="relative pt-16">
+          <div className="w-full h-[300px] relative">
+            <img
+              src={heroBanner.image_url}
+              alt="Hero Banner"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent">
+              <div className="container mx-auto px-4 h-full flex flex-col justify-end pb-8">
+                <h1 className="text-4xl font-bold text-white mb-2">
+                  {heroBanner.title}
+                </h1>
+                <p className="text-white/90 text-lg">
+                  {heroBanner.description}
+                </p>
               </div>
-            ) : (
-              filteredEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="bg-white rounded-3xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 cursor-pointer transform hover:-translate-y-1"
-                  onClick={() => navigate(`/events/${event.id}`)}
-                >
-                  <img
-                    src={event.image_url}
-                    alt={event.title}
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="p-6">
-                    <h3 className="text-xl font-semibold text-gray-800 mb-4 line-clamp-1">
-                      {event.title}
-                    </h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center text-gray-600">
-                        <Calendar className="w-4 h-4 mr-2 flex-shrink-0" />
-                        <span>{format(new Date(event.date), "PPP")}</span>
-                      </div>
-                      <div className="flex items-center text-gray-600">
-                        <Clock className="w-4 h-4 mr-2 flex-shrink-0" />
-                        <span>{format(new Date(event.date), "p")}</span>
-                      </div>
-                      <div className="flex items-center text-gray-600">
-                        <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
-                        <span className="line-clamp-1">{event.location}</span>
-                      </div>
-                    </div>
-                    <Button
-                      className="w-full mt-6 bg-blue-900 hover:bg-blue-800 text-white"
-                    >
-                      Register Now
-                    </Button>
-                  </div>
-                </div>
-              ))
-            )}
+            </div>
           </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8">
+        {/* Events Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filteredEvents.length === 0 ? (
+            <div className="text-center py-8 col-span-full">
+              <p className="text-white text-lg">No events found</p>
+            </div>
+          ) : (
+            filteredEvents.map((event) => (
+              <div
+                key={event.id}
+                className="bg-white rounded-3xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 cursor-pointer transform hover:-translate-y-1"
+                onClick={() => navigate(`/events/${event.id}`)}
+              >
+                <img
+                  src={event.image_url}
+                  alt={event.title}
+                  className="w-full h-48 object-cover"
+                />
+                <div className="p-6">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-4 line-clamp-1">
+                    {event.title}
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center text-gray-600">
+                      <Calendar className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <span>{format(new Date(event.date), "PPP")}</span>
+                    </div>
+                    <div className="flex items-center text-gray-600">
+                      <Clock className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <span>{format(new Date(event.date), "p")}</span>
+                    </div>
+                    <div className="flex items-center text-gray-600">
+                      <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <span className="line-clamp-1">{event.location}</span>
+                    </div>
+                  </div>
+                  <Button
+                    className="w-full mt-6 bg-blue-900 hover:bg-blue-800 text-white"
+                  >
+                    Register Now
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </main>
     </div>

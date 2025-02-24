@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -126,6 +125,10 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleUpdateBanner = async (bannerId: string) => {
+    // Implement logic to update banner
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -145,6 +148,37 @@ export default function AdminDashboard() {
             >
               Sign Out
             </Button>
+          </div>
+
+          {/* Hero Banner Management */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4">Hero Banner Management</h2>
+            <div className="bg-gray-50 p-6 rounded-lg">
+              <div className="grid grid-cols-1 gap-4">
+                {eventAnalytics.map((banner) => (
+                  <div key={banner.event_id} className="bg-white p-4 rounded-lg shadow">
+                    <div className="flex items-center gap-4">
+                      <img
+                        src={banner.image_url}
+                        alt={banner.title}
+                        className="w-32 h-20 object-cover rounded"
+                      />
+                      <div className="flex-1">
+                        <h3 className="font-semibold">{banner.title}</h3>
+                        <p className="text-sm text-gray-500">{banner.description}</p>
+                      </div>
+                      <Button
+                        onClick={() => handleUpdateBanner(banner.id)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Update
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Analytics Overview */}
