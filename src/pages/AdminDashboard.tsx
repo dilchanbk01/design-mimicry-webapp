@@ -1,9 +1,9 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { toast } from "react-toastify";
 
 interface Event {
   id: string;
@@ -38,6 +38,13 @@ interface HeroBanner {
   page: string;
 }
 
+interface BannerUploadForm {
+  title: string;
+  description: string;
+  page: 'events' | 'home' | 'vets' | 'groomers';
+  file: File | null;
+}
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -50,6 +57,13 @@ export default function AdminDashboard() {
     total_revenue: 0
   });
   const [eventAnalytics, setEventAnalytics] = useState<EventAnalytics[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [formData, setFormData] = useState<BannerUploadForm>({
+    title: '',
+    description: '',
+    page: 'events',
+    file: null
+  });
 
   useEffect(() => {
     checkAdminStatus();
@@ -81,7 +95,6 @@ export default function AdminDashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch events
       const { data: eventsData } = await supabase
         .from('events')
         .select('*')
@@ -94,7 +107,6 @@ export default function AdminDashboard() {
         })));
       }
 
-      // Fetch hero banners
       const { data: bannersData } = await supabase
         .from('hero_banners')
         .select('*');
@@ -103,7 +115,6 @@ export default function AdminDashboard() {
         setBanners(bannersData);
       }
 
-      // Fetch analytics
       const { data: analyticsData } = await supabase
         .from('event_analytics')
         .select('*');
@@ -135,7 +146,6 @@ export default function AdminDashboard() {
 
       if (error) throw error;
 
-      // Refresh dashboard data
       fetchDashboardData();
     } catch (error) {
       console.error('Error updating event status:', error);
@@ -144,6 +154,94 @@ export default function AdminDashboard() {
 
   const handleUpdateBanner = async (bannerId: string) => {
     console.log('Update banner:', bannerId);
+  };
+
+  const handleBannerUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.file) {
+      toast({
+        title: "Error",
+        description: "Please select an image to upload",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fileExt = formData.file.name.split('.').pop();
+      const filePath = `${crypto.randomUUID()}.${fileExt}`;
+      
+      const { error: uploadError, data } = await supabase.storage
+        .from('banners')
+        .upload(filePath, formData.file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('banners')
+        .getPublicUrl(filePath);
+
+      const { error: dbError } = await supabase
+        .from('hero_banners')
+        .insert({
+          title: formData.title,
+          description: formData.description,
+          image_url: publicUrl,
+          page: formData.page,
+          active: true
+        });
+
+      if (dbError) throw dbError;
+
+      toast({
+        title: "Success",
+        description: "Banner uploaded successfully",
+      });
+
+      setFormData({
+        title: '',
+        description: '',
+        page: 'events',
+        file: null
+      });
+
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Error uploading banner:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload banner",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleBannerToggle = async (bannerId: string, active: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('hero_banners')
+        .update({ active })
+        .eq('id', bannerId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Banner ${active ? 'activated' : 'deactivated'} successfully`,
+      });
+
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Error toggling banner:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update banner status",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -170,6 +268,61 @@ export default function AdminDashboard() {
           {/* Hero Banner Management */}
           <div className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">Hero Banner Management</h2>
+            
+            <form onSubmit={handleBannerUpload} className="bg-white p-6 rounded-lg shadow mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Title</label>
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full p-2 border rounded"
+                    placeholder="Banner title"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Page</label>
+                  <select
+                    value={formData.page}
+                    onChange={e => setFormData(prev => ({ ...prev, page: e.target.value as BannerUploadForm['page'] }))}
+                    className="w-full p-2 border rounded"
+                  >
+                    <option value="events">Events</option>
+                    <option value="home">Home</option>
+                    <option value="vets">Vets</option>
+                    <option value="groomers">Groomers</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium mb-2">Description</label>
+                  <textarea
+                    value={formData.description}
+                    onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    className="w-full p-2 border rounded"
+                    rows={3}
+                    placeholder="Banner description"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium mb-2">Image</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => setFormData(prev => ({ ...prev, file: e.target.files?.[0] || null }))}
+                    className="w-full p-2 border rounded"
+                  />
+                </div>
+              </div>
+              <Button
+                type="submit"
+                disabled={uploading}
+                className="mt-4"
+              >
+                {uploading ? 'Uploading...' : 'Upload Banner'}
+              </Button>
+            </form>
+
             <div className="bg-gray-50 p-6 rounded-lg">
               <div className="grid grid-cols-1 gap-4">
                 {banners.map((banner) => (
@@ -181,16 +334,19 @@ export default function AdminDashboard() {
                         className="w-32 h-20 object-cover rounded"
                       />
                       <div className="flex-1">
-                        <h3 className="font-semibold">{banner.title}</h3>
-                        <p className="text-sm text-gray-500">{banner.description}</p>
+                        <h3 className="font-semibold">{banner.title || 'Untitled'}</h3>
+                        <p className="text-sm text-gray-500">{banner.description || 'No description'}</p>
+                        <p className="text-sm text-gray-500">Page: {banner.page}</p>
                       </div>
-                      <Button
-                        onClick={() => handleUpdateBanner(banner.id)}
-                        variant="outline"
-                        size="sm"
-                      >
-                        Update
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          onClick={() => handleBannerToggle(banner.id, !banner.active)}
+                          variant={banner.active ? "destructive" : "default"}
+                          size="sm"
+                        >
+                          {banner.active ? 'Deactivate' : 'Activate'}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}

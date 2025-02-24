@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar, MapPin, Clock, Plus, Search, User } from "lucide-react";
@@ -52,7 +51,7 @@ export default function Events() {
 
   // Fetch hero banners
   const { data: heroBanners = [] } = useQuery({
-    queryKey: ['heroBanners', 'events'],
+    queryKey: ['heroBanners'],
     queryFn: async () => {
       try {
         const { data, error } = await supabase
@@ -74,12 +73,12 @@ export default function Events() {
     }
   });
 
-  // Auto-slide carousel every 3 seconds
+  // Auto-slide carousel every 4 seconds
   useInterval(() => {
     if (heroBanners.length > 0) {
       setCurrentSlide((prev) => (prev + 1) % heroBanners.length);
     }
-  }, 3000);
+  }, 4000);
 
   useEffect(() => {
     async function fetchEvents() {
