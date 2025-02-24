@@ -66,44 +66,34 @@ export default function CreateEvent() {
     };
     checkAuth();
 
-    if (!autocompleteInitialized.current) {
-      const existingScript = document.getElementById('google-maps-script');
-      if (!existingScript) {
-        const script = document.createElement("script");
-        script.id = 'google-maps-script';
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places`;
-        script.async = true;
-        script.onload = () => {
-          initAutocomplete();
-          autocompleteInitialized.current = true;
-        };
-        document.head.appendChild(script);
-      } else {
+    if (!window.google && !document.getElementById('google-maps-script')) {
+      const script = document.createElement("script");
+      script.id = 'google-maps-script';
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
         initAutocomplete();
-        autocompleteInitialized.current = true;
-      }
+      };
+      document.head.appendChild(script);
+    } else if (window.google && !autocompleteInitialized.current) {
+      initAutocomplete();
     }
 
     return () => {
-      const script = document.getElementById('google-maps-script');
-      if (script) {
-        document.head.removeChild(script);
-      }
+      autocompleteInitialized.current = false;
     };
   }, [navigate, toast]);
 
   const initAutocomplete = () => {
+    if (!window.google) return;
+    
     const input = document.getElementById("location-input") as HTMLInputElement;
-    if (input && window.google) {
+    if (input) {
       const autocomplete = new google.maps.places.Autocomplete(input, {
         types: ['address'],
         fields: ['formatted_address', 'geometry'],
       });
-      
-      const pacContainer = document.querySelector('.pac-container') as HTMLElement;
-      if (pacContainer) {
-        pacContainer.style.zIndex = '9999';
-      }
       
       autocomplete.addListener("place_changed", () => {
         const place = autocomplete.getPlace();
@@ -114,6 +104,8 @@ export default function CreateEvent() {
           }));
         }
       });
+      
+      autocompleteInitialized.current = true;
     }
   };
 
@@ -262,11 +254,11 @@ export default function CreateEvent() {
                 />
               </div>
               <div>
-                <label>Ticket Price ($)</label>
+                <label>Ticket Price (₹)</label>
                 <input
                   type="number"
                   min="0"
-                  step="0.01"
+                  step="1"
                   value={formData.price}
                   onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) }))}
                   className="mt-1 w-full rounded-md border border-input px-3 py-2"
@@ -301,7 +293,7 @@ export default function CreateEvent() {
 
       <style>{`
         .pac-container {
-          z-index: 9999;
+          z-index: 9999 !important;
           background-color: white;
           border-radius: 0.5rem;
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
