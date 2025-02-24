@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -136,26 +135,24 @@ export default function CreateEvent() {
 
       const eventDateTime = new Date(`${formData.date}T${formData.time}`);
 
-      const { error } = await supabase.from("events").insert([
-        {
-          title: formData.title,
-          description: formData.description,
-          date: eventDateTime.toISOString(),
-          location: formData.location,
-          price: formData.price,
-          capacity: formData.capacity,
-          image_url: imageUrl || 'https://placehold.co/600x400?text=No+Image',
-          duration: 120,
-          event_type: formData.type,
-          organizer_name: formData.organizerName,
-          organizer_email: formData.organizerEmail,
-          organizer_phone: formData.organizerPhone,
-          organizer_website: formData.instagram ? `https://instagram.com/${formData.instagram}` : "",
-          pet_types: formData.selectedPets,
-          organizer_id: user.id,
-          status: 'pending'
-        },
-      ]);
+      const { error } = await supabase.from("events").insert({
+        title: formData.title,
+        description: formData.description,
+        date: eventDateTime.toISOString(),
+        location: formData.location,
+        price: formData.price,
+        capacity: formData.capacity,
+        image_url: imageUrl || 'https://placehold.co/600x400?text=No+Image',
+        duration: 120,
+        event_type: formData.type,
+        organizer_name: formData.organizerName,
+        organizer_email: formData.organizerEmail,
+        organizer_phone: formData.organizerPhone,
+        organizer_website: formData.instagram ? `https://instagram.com/${formData.instagram}` : "",
+        pet_types: formData.selectedPets.join(","),
+        organizer_id: user.id,
+        status: 'pending'
+      });
 
       if (error) throw error;
 
