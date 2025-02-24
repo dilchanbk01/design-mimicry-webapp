@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card } from "@/components/Card";
 import { Button } from "@/components/ui/button";
@@ -38,7 +37,7 @@ const Index = () => {
   };
 
   const handleGroomerPartnerClick = () => {
-    navigate("/groomer-onboarding");
+    navigate("/groomer-auth");
   };
 
   const handleNotifySubmit = (e: React.FormEvent) => {

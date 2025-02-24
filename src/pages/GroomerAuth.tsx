@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,27 @@ export default function GroomerAuth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  useEffect(() => {
+    checkExistingSession();
+  }, []);
+
+  const checkExistingSession = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from("groomer_profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (profile) {
+        navigate("/");
+      } else {
+        navigate("/groomer-onboarding");
+      }
+    }
+  };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +77,23 @@ export default function GroomerAuth() {
           password,
         });
         if (error) throw error;
-        navigate("/groomer-onboarding");
+        
+        // After successful sign in, check if they have a profile
+        const { data: profile } = await supabase
+          .from("groomer_profiles")
+          .select("*")
+          .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
+          .single();
+
+        if (profile) {
+          navigate("/");
+          toast({
+            title: "Welcome back!",
+            description: "You have already submitted an application.",
+          });
+        } else {
+          navigate("/groomer-onboarding");
+        }
       }
     } catch (error) {
       console.error("Auth error:", error);
