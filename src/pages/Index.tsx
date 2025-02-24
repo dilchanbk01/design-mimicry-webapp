@@ -1,16 +1,38 @@
 
+import { useState } from "react";
 import { Card } from "@/components/Card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { User } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const Index = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [isNotifyDialogOpen, setIsNotifyDialogOpen] = useState(false);
+  const [email, setEmail] = useState("");
 
   const handleVetPartnerClick = () => {
     navigate("/vet-onboarding");
+  };
+
+  const handleNotifySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast({
+      title: "Notification Registered",
+      description: "We'll notify you when Pet Essentials launches!",
+    });
+    setEmail("");
+    setIsNotifyDialogOpen(false);
   };
 
   return (
@@ -45,13 +67,13 @@ const Index = () => {
           <div className="grid grid-cols-2 gap-4">
             <Card
               title="Events"
-              icon="/lovable-uploads/01f1af17-4a11-4809-9674-01e898a01385.png"
+              icon="/lovable-uploads/3ff4430d-913b-49ff-9efc-06a1dda0fa4c.png"
               onClick={() => navigate("/events")}
               className="aspect-square bg-white hover:scale-[1.02]"
             />
             <Card
               title="Find Vets"
-              icon="/lovable-uploads/01f1af17-4a11-4809-9674-01e898a01385.png"
+              icon="/lovable-uploads/0de28ab3-c7d0-4f1a-93ac-e975813200de.png"
               onClick={() => navigate("/find-vets")}
               className="aspect-square bg-white hover:scale-[1.02]"
             />
@@ -60,8 +82,8 @@ const Index = () => {
           {/* Pet Essentials Card */}
           <Card
             title="Pet Essentials"
-            icon="/lovable-uploads/01f1af17-4a11-4809-9674-01e898a01385.png"
-            onClick={() => toast({ title: "Shop coming soon!" })}
+            icon="/lovable-uploads/2737b2dd-8bd8-496f-8a36-6329dc70fe41.png"
+            onClick={() => setIsNotifyDialogOpen(true)}
             className="bg-white hover:scale-[1.02] aspect-[2/1]"
           />
 
@@ -78,6 +100,34 @@ const Index = () => {
           </div>
         </div>
       </main>
+
+      {/* Notify Me Dialog */}
+      <Dialog open={isNotifyDialogOpen} onOpenChange={setIsNotifyDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Get Notified</DialogTitle>
+            <DialogDescription>
+              Enter your email to be notified when Pet Essentials launches.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleNotifySubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full">
+              Notify Me
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
