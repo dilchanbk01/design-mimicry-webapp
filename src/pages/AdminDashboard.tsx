@@ -28,10 +28,20 @@ interface EventAnalytics {
   status: string;
 }
 
+interface HeroBanner {
+  id: string;
+  title: string;
+  description: string;
+  image_url: string;
+  active: boolean;
+  page: string;
+}
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<Event[]>([]);
+  const [banners, setBanners] = useState<HeroBanner[]>([]);
   const [analytics, setAnalytics] = useState<Analytics>({
     total_events: 0,
     pending_events: 0,
@@ -77,11 +87,19 @@ export default function AdminDashboard() {
         .order('created_at', { ascending: false });
 
       if (eventsData) {
-        // Add type assertion to ensure events conform to Event interface
         setEvents(eventsData.map(event => ({
           ...event,
           status: event.status as 'pending' | 'approved' | 'rejected'
         })));
+      }
+
+      // Fetch hero banners
+      const { data: bannersData } = await supabase
+        .from('hero_banners')
+        .select('*');
+
+      if (bannersData) {
+        setBanners(bannersData);
       }
 
       // Fetch analytics
@@ -90,12 +108,8 @@ export default function AdminDashboard() {
         .select('*');
 
       if (analyticsData) {
-        setEventAnalytics(analyticsData.map(event => ({
-          ...event,
-          status: event.status as 'pending' | 'approved' | 'rejected'
-        })));
+        setEventAnalytics(analyticsData);
         
-        // Calculate summary statistics
         const summary = {
           total_events: eventsData?.length || 0,
           pending_events: eventsData?.filter(e => e.status === 'pending').length || 0,
@@ -126,7 +140,7 @@ export default function AdminDashboard() {
   };
 
   const handleUpdateBanner = async (bannerId: string) => {
-    // Implement logic to update banner
+    console.log('Update banner:', bannerId);
   };
 
   if (loading) {
@@ -155,8 +169,8 @@ export default function AdminDashboard() {
             <h2 className="text-2xl font-semibold mb-4">Hero Banner Management</h2>
             <div className="bg-gray-50 p-6 rounded-lg">
               <div className="grid grid-cols-1 gap-4">
-                {eventAnalytics.map((banner) => (
-                  <div key={banner.event_id} className="bg-white p-4 rounded-lg shadow">
+                {banners.map((banner) => (
+                  <div key={banner.id} className="bg-white p-4 rounded-lg shadow">
                     <div className="flex items-center gap-4">
                       <img
                         src={banner.image_url}

@@ -41,12 +41,18 @@ export default function Events() {
   const { data: heroBanner } = useQuery({
     queryKey: ['heroBanner', 'events'],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('hero_banners')
         .select('*')
         .eq('active', true)
         .eq('page', 'events')
         .single();
+
+      if (error) {
+        console.error('Error fetching hero banner:', error);
+        return null;
+      }
+
       return data as HeroBanner;
     }
   });
