@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -14,6 +14,7 @@ export default function CreateEvent() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const autocompleteInitialized = useRef(false);
   const [formData, setFormData] = useState({
     title: "",
     type: "meetup",
@@ -49,7 +50,6 @@ export default function CreateEvent() {
   ];
 
   useEffect(() => {
-    // Check authentication
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -63,28 +63,50 @@ export default function CreateEvent() {
     };
     checkAuth();
 
-    // Initialize Google Places Autocomplete
-    const script = document.createElement("script");
-    script.src = "https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_API_KEY&libraries=places";
-    script.async = true;
-    script.onload = initAutocomplete;
-    document.head.appendChild(script);
+    if (!autocompleteInitialized.current) {
+      const existingScript = document.getElementById('google-maps-script');
+      if (!existingScript) {
+        const script = document.createElement("script");
+        script.id = 'google-maps-script';
+        script.src = "https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_API_KEY&libraries=places";
+        script.async = true;
+        script.onload = () => {
+          initAutocomplete();
+          autocompleteInitialized.current = true;
+        };
+        document.head.appendChild(script);
+      } else {
+        initAutocomplete();
+        autocompleteInitialized.current = true;
+      }
+    }
 
     return () => {
-      document.head.removeChild(script);
+      const script = document.getElementById('google-maps-script');
+      if (script) {
+        document.head.removeChild(script);
+      }
     };
   }, [navigate, toast]);
 
   const initAutocomplete = () => {
     const input = document.getElementById("location-input") as HTMLInputElement;
-    const autocomplete = new google.maps.places.Autocomplete(input);
-    autocomplete.addListener("place_changed", () => {
-      const place = autocomplete.getPlace();
-      setFormData(prev => ({
-        ...prev,
-        location: place.formatted_address || "",
-      }));
-    });
+    if (input && window.google) {
+      const autocomplete = new google.maps.places.Autocomplete(input, {
+        types: ['address'],
+        fields: ['formatted_address', 'geometry']
+      });
+      
+      autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
+        if (place.formatted_address) {
+          setFormData(prev => ({
+            ...prev,
+            location: place.formatted_address,
+          }));
+        }
+      });
+    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -187,7 +209,6 @@ export default function CreateEvent() {
         </Button>
 
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          {/* Image Upload Section */}
           <div className="relative h-[200px] bg-gray-100">
             {imagePreview ? (
               <img
@@ -237,7 +258,6 @@ export default function CreateEvent() {
               </select>
             </div>
 
-            {/* Date and Time Section */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Date</Label>
@@ -280,7 +300,6 @@ export default function CreateEvent() {
               rows={4}
             />
 
-            {/* Ticket and Price Section */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Maximum Attendees</Label>
@@ -305,7 +324,6 @@ export default function CreateEvent() {
               </div>
             </div>
 
-            {/* Organizer Section */}
             <div className="space-y-4">
               <Input
                 placeholder="Organizer Name"
@@ -336,7 +354,6 @@ export default function CreateEvent() {
               </div>
             </div>
 
-            {/* Pet Types Section */}
             <div className="space-y-4">
               <Label>Pet Types Welcome</Label>
               <div className="grid grid-cols-2 gap-4">
