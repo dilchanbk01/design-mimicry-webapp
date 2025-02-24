@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar, MapPin, Clock, Plus, Search, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { format, isPast } from "date-fns";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
@@ -104,12 +104,10 @@ export default function Events() {
               .order("date", { ascending: true });
 
             if (!error && updatedEvents) {
-              const currentEvents = updatedEvents
-                .filter(event => !isPast(new Date(event.date)))
-                .map(event => ({
-                  ...event,
-                  status: event.status as 'pending' | 'approved' | 'rejected'
-                }));
+              const currentEvents = updatedEvents.map(event => ({
+                ...event,
+                status: event.status as 'pending' | 'approved' | 'rejected'
+              }));
               setEvents(currentEvents);
             }
           })
@@ -123,12 +121,10 @@ export default function Events() {
 
         if (error) throw error;
 
-        const currentEvents = (data || [])
-          .filter(event => !isPast(new Date(event.date)))
-          .map(event => ({
-            ...event,
-            status: event.status as 'pending' | 'approved' | 'rejected'
-          }));
+        const currentEvents = (data || []).map(event => ({
+          ...event,
+          status: event.status as 'pending' | 'approved' | 'rejected'
+        }));
 
         setEvents(currentEvents);
 
