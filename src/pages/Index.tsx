@@ -41,7 +41,23 @@ const Index = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 pt-24 pb-20">
         <div className="max-w-4xl mx-auto space-y-6">
-          {/* Rectangle Cards */}
+          {/* Square Cards Grid */}
+          <div className="grid grid-cols-2 gap-4">
+            <Card
+              title="Events"
+              icon="/lovable-uploads/01f1af17-4a11-4809-9674-01e898a01385.png"
+              onClick={() => navigate("/events")}
+              className="aspect-square bg-white hover:scale-[1.02]"
+            />
+            <Card
+              title="Find Vets"
+              icon="/lovable-uploads/01f1af17-4a11-4809-9674-01e898a01385.png"
+              onClick={() => navigate("/find-vets")}
+              className="aspect-square bg-white hover:scale-[1.02]"
+            />
+          </div>
+
+          {/* Pet Essentials Rectangle Card */}
           <button
             onClick={() => toast({ title: "Shop coming soon!" })}
             className="w-full bg-white rounded-3xl p-6 shadow-lg transition-all duration-300 ease-out hover:scale-[1.02]"
@@ -56,34 +72,16 @@ const Index = () => {
             </div>
           </button>
 
-          <button
-            onClick={handleVetPartnerClick}
-            className="w-full bg-white rounded-3xl p-6 shadow-lg transition-all duration-300 ease-out hover:scale-[1.02]"
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="text-2xl font-semibold text-accent">Vet Partner</h3>
-              <img 
-                src="/lovable-uploads/01f1af17-4a11-4809-9674-01e898a01385.png" 
-                alt="Vet Partner" 
-                className="w-20 h-20 object-contain"
-              />
-            </div>
-          </button>
-
-          {/* Square Cards Grid */}
-          <div className="grid grid-cols-2 gap-4 mt-6">
-            <Card
-              title="Events"
-              icon="/lovable-uploads/01f1af17-4a11-4809-9674-01e898a01385.png"
-              onClick={() => navigate("/events")}
-              className="aspect-square bg-white hover:scale-[1.02]"
-            />
-            <Card
-              title="Find Vets"
-              icon="/lovable-uploads/01f1af17-4a11-4809-9674-01e898a01385.png"
-              onClick={() => navigate("/find-vets")}
-              className="aspect-square bg-white hover:scale-[1.02]"
-            />
+          {/* Vet Partner Rectangle Card */}
+          <div className="bg-accent rounded-3xl p-8 text-white">
+            <h2 className="text-2xl font-bold mb-2">Are you a veterinarian?</h2>
+            <p className="text-white/90 mb-6">Join our network of professional vets and connect with pet owners.</p>
+            <Button
+              onClick={handleVetPartnerClick}
+              className="bg-white text-accent hover:bg-white/90 font-semibold"
+            >
+              Join as a Vet Partner
+            </Button>
           </div>
         </div>
       </main>
