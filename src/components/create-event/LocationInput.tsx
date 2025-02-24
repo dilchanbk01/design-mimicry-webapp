@@ -19,29 +19,15 @@ export function LocationInput({ location, onLocationChange }: LocationInputProps
     setIsLoadingLocation(true);
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          try {
-            const response = await fetch(
-              `https://maps.googleapis.com/maps/api/geocode/json?latlng=${position.coords.latitude},${position.coords.longitude}&key=${GOOGLE_MAPS_API_KEY}`
-            );
-            const data = await response.json();
-            if (data.results && data.results[0]) {
-              const event = {
-                target: {
-                  value: data.results[0].formatted_address
-                }
-              } as React.ChangeEvent<HTMLInputElement>;
-              onLocationChange(event);
+        (position) => {
+          // Simply use coordinates as a fallback
+          const event = {
+            target: {
+              value: `${position.coords.latitude}, ${position.coords.longitude}`
             }
-          } catch (error) {
-            toast({
-              title: "Error",
-              description: "Could not fetch address from coordinates",
-              variant: "destructive",
-            });
-          } finally {
-            setIsLoadingLocation(false);
-          }
+          } as React.ChangeEvent<HTMLInputElement>;
+          onLocationChange(event);
+          setIsLoadingLocation(false);
         },
         (error) => {
           toast({
