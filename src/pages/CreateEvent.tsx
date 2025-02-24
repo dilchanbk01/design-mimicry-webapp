@@ -1,14 +1,16 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Instagram } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { ArrowLeft } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
+import { ImageUploadSection } from "@/components/create-event/ImageUploadSection";
+import { EventBasicInfo } from "@/components/create-event/EventBasicInfo";
+import { DateTimeSection } from "@/components/create-event/DateTimeSection";
+import { LocationInput } from "@/components/create-event/LocationInput";
+import { OrganizerInfo } from "@/components/create-event/OrganizerInfo";
+import { PetTypeSelection } from "@/components/create-event/PetTypeSelection";
 
 export default function CreateEvent() {
   const navigate = useNavigate();
@@ -216,89 +218,31 @@ export default function CreateEvent() {
         </Button>
 
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="relative h-[200px] bg-gray-100">
-            {imagePreview ? (
-              <img
-                src={imagePreview}
-                alt="Event preview"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <Label
-                  htmlFor="image-upload"
-                  className="cursor-pointer bg-white px-4 py-2 rounded-lg shadow hover:bg-gray-50"
-                >
-                  Upload Image
-                </Label>
-              </div>
-            )}
-            <Input
-              id="image-upload"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImageChange}
-            />
-          </div>
+          <ImageUploadSection
+            imagePreview={imagePreview}
+            onImageChange={handleImageChange}
+          />
 
           <form onSubmit={handleSubmit} className="p-8 space-y-6">
-            <div className="space-y-4">
-              <Input
-                placeholder="Event Title"
-                required
-                value={formData.title}
-                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                className="text-xl font-semibold"
-              />
+            <EventBasicInfo
+              title={formData.title}
+              type={formData.type}
+              onTitleChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+              onTypeChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
+              eventTypes={eventTypes}
+            />
 
-              <select
-                className="w-full rounded-md border border-input bg-background px-3 h-10"
-                value={formData.type}
-                onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
-              >
-                {eventTypes.map((type) => (
-                  <option key={type} value={type.toLowerCase()}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <DateTimeSection
+              date={formData.date}
+              time={formData.time}
+              onDateChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+              onTimeChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))}
+            />
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Date</Label>
-                <Input
-                  type="date"
-                  required
-                  value={formData.date}
-                  onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label>Time</Label>
-                <Input
-                  type="time"
-                  required
-                  value={formData.time}
-                  onChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))}
-                  className="mt-1"
-                />
-              </div>
-            </div>
-
-            <div className="relative">
-              <Label>Location</Label>
-              <Input
-                id="location-input"
-                placeholder="Start typing to search..."
-                required
-                value={formData.location}
-                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                className="mt-1"
-              />
-            </div>
+            <LocationInput
+              location={formData.location}
+              onLocationChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+            />
 
             <Textarea
               placeholder="Event Description"
@@ -309,73 +253,41 @@ export default function CreateEvent() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Maximum Attendees</Label>
-                <Input
+                <label>Maximum Attendees</label>
+                <input
                   type="number"
                   min="1"
                   value={formData.capacity}
                   onChange={(e) => setFormData(prev => ({ ...prev, capacity: parseInt(e.target.value) }))}
-                  className="mt-1"
+                  className="mt-1 w-full rounded-md border border-input px-3 py-2"
                 />
               </div>
               <div>
-                <Label>Ticket Price ($)</Label>
-                <Input
+                <label>Ticket Price ($)</label>
+                <input
                   type="number"
                   min="0"
                   step="0.01"
                   value={formData.price}
                   onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) }))}
-                  className="mt-1"
+                  className="mt-1 w-full rounded-md border border-input px-3 py-2"
                 />
               </div>
             </div>
 
-            <div className="space-y-4">
-              <Input
-                placeholder="Organizer Name"
-                required
-                value={formData.organizerName}
-                onChange={(e) => setFormData(prev => ({ ...prev, organizerName: e.target.value }))}
-              />
-              <Input
-                type="email"
-                placeholder="Organizer Email"
-                required
-                value={formData.organizerEmail}
-                onChange={(e) => setFormData(prev => ({ ...prev, organizerEmail: e.target.value }))}
-              />
-              <Input
-                placeholder="Organizer Phone"
-                value={formData.organizerPhone}
-                onChange={(e) => setFormData(prev => ({ ...prev, organizerPhone: e.target.value }))}
-              />
-              <div className="relative">
-                <Input
-                  placeholder="Instagram Handle (optional)"
-                  value={formData.instagram}
-                  onChange={(e) => setFormData(prev => ({ ...prev, instagram: e.target.value }))}
-                  className="pl-10"
-                />
-                <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-              </div>
-            </div>
+            <OrganizerInfo
+              name={formData.organizerName}
+              email={formData.organizerEmail}
+              phone={formData.organizerPhone}
+              instagram={formData.instagram}
+              onChange={(field, value) => setFormData(prev => ({ ...prev, [field]: value }))}
+            />
 
-            <div className="space-y-4">
-              <Label>Pet Types Welcome</Label>
-              <div className="grid grid-cols-2 gap-4">
-                {petTypes.map((type) => (
-                  <div key={type.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={type.id}
-                      checked={formData.selectedPets.includes(type.id)}
-                      onCheckedChange={() => handlePetTypeChange(type.id)}
-                    />
-                    <Label htmlFor={type.id}>{type.label}</Label>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <PetTypeSelection
+              selectedPets={formData.selectedPets}
+              petTypes={petTypes}
+              onPetTypeChange={handlePetTypeChange}
+            />
 
             <Button
               type="submit"
@@ -388,7 +300,6 @@ export default function CreateEvent() {
         </div>
       </div>
 
-      {/* Global styles for Google Places Autocomplete */}
       <style>{`
         .pac-container {
           z-index: 9999;
