@@ -7,6 +7,7 @@ import { ServicesGrid } from "@/components/home/ServicesGrid";
 import { PartnerCards } from "@/components/home/PartnerCards";
 import { CitySelectionDialog } from "@/components/home/CitySelectionDialog";
 import { NotifyDialog } from "@/components/home/NotifyDialog";
+import { Instagram, Linkedin } from "lucide-react";
 
 const Index = () => {
   const { toast } = useToast();
@@ -52,14 +53,14 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-primary">
+    <div className="min-h-screen w-full bg-primary flex flex-col">
       <Header
         isScrolled={isScrolled}
         selectedCity={selectedCity}
         onCitySelect={() => setIsCityDialogOpen(true)}
       />
 
-      <main className="container mx-auto px-4 pt-24 pb-20">
+      <main className="container mx-auto px-4 pt-24 pb-20 flex-grow">
         <div className="max-w-4xl mx-auto space-y-4">
           <ServicesGrid onEssentialsClick={() => setIsNotifyDialogOpen(true)} />
           <PartnerCards
@@ -68,6 +69,54 @@ const Index = () => {
           />
         </div>
       </main>
+
+      <footer className="py-6">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col items-center justify-center space-y-4">
+            {/* Social Media Icons */}
+            <div className="flex space-x-4">
+              <a 
+                href="https://instagram.com/petsu" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-white hover:text-white/80 transition-colors"
+              >
+                <Instagram size={16} />
+              </a>
+              <a 
+                href="https://linkedin.com/company/petsu" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-white hover:text-white/80 transition-colors"
+              >
+                <Linkedin size={16} />
+              </a>
+            </div>
+
+            {/* Links */}
+            <div className="flex space-x-4 text-xs text-white/90">
+              <button 
+                onClick={() => navigate('/privacy-policy')}
+                className="hover:text-white transition-colors"
+              >
+                Privacy Policy
+              </button>
+              <span className="text-white/50">•</span>
+              <button 
+                onClick={() => navigate('/terms')}
+                className="hover:text-white transition-colors"
+              >
+                Terms & Conditions
+              </button>
+            </div>
+
+            {/* Copyright */}
+            <p className="text-[10px] text-white/70">
+              © {new Date().getFullYear()} Petsu. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
 
       <CitySelectionDialog
         open={isCityDialogOpen}
