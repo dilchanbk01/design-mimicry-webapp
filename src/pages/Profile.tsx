@@ -148,7 +148,7 @@ export default function Profile() {
                 <ChevronLeft className="h-6 w-6" />
               </button>
             ) : (
-              <div className="w-6" /> /* Spacer */
+              <div className="w-6">{/* Spacer */}</div>
             )}
             
             <img 
@@ -175,7 +175,7 @@ export default function Profile() {
             </Avatar>
             <div>
               <h1 className="text-xl font-semibold">
-                Hey{profile?.full_name ? `, ${profile.full_name}` : ''}!
+                Hey{profile?.full_name ? `, ${profile.full_name}` : ""}!
               </h1>
               <button 
                 onClick={() => navigate("/profile/edit")}
