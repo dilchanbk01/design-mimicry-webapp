@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -295,8 +296,7 @@ export default function CreateEvent() {
                 required
                 value={formData.location}
                 onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                className="mt-1 z-50"
-                style={{ position: 'relative' }}
+                className="mt-1"
               />
             </div>
 
@@ -388,6 +388,7 @@ export default function CreateEvent() {
         </div>
       </div>
 
+      {/* Global styles for Google Places Autocomplete */}
       <style>{`
         .pac-container {
           z-index: 9999;
