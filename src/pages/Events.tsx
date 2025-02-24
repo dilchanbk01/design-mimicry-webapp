@@ -25,8 +25,8 @@ interface Event {
 interface HeroBanner {
   id: string;
   image_url: string;
-  title: string;
-  description: string;
+  title: string | null;
+  description: string | null;
 }
 
 export default function Events() {
@@ -41,19 +41,25 @@ export default function Events() {
   const { data: heroBanner } = useQuery({
     queryKey: ['heroBanner', 'events'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('hero_banners')
-        .select('*')
-        .eq('active', true)
-        .eq('page', 'events')
-        .single();
+      try {
+        // We need to cast the type here because the table is not in the generated types yet
+        const { data, error } = await supabase
+          .from('hero_banners')
+          .select('*')
+          .eq('active', true)
+          .eq('page', 'events')
+          .maybeSingle();
 
-      if (error) {
+        if (error) {
+          console.error('Error fetching hero banner:', error);
+          return null;
+        }
+
+        return data as HeroBanner;
+      } catch (error) {
         console.error('Error fetching hero banner:', error);
         return null;
       }
-
-      return data as HeroBanner;
     }
   });
 

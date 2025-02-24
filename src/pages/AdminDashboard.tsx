@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -30,10 +31,10 @@ interface EventAnalytics {
 
 interface HeroBanner {
   id: string;
-  title: string;
-  description: string;
+  title: string | null;
+  description: string | null;
   image_url: string;
-  active: boolean;
+  active: boolean | null;
   page: string;
 }
 
@@ -120,6 +121,8 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -174,7 +177,7 @@ export default function AdminDashboard() {
                     <div className="flex items-center gap-4">
                       <img
                         src={banner.image_url}
-                        alt={banner.title}
+                        alt={banner.title || 'Banner'}
                         className="w-32 h-20 object-cover rounded"
                       />
                       <div className="flex-1">
