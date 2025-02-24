@@ -148,7 +148,7 @@ export default function Profile() {
                 <ChevronLeft className="h-6 w-6" />
               </button>
             ) : (
-              <div className="w-6" /> {/* Spacer */}
+              <div className="w-6" /> /* Spacer */
             )}
             
             <img 
