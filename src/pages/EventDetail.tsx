@@ -1,7 +1,6 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Calendar, MapPin, Clock, Users, Mail, Phone, Globe, PawPrint, Ticket, Minus, Plus } from "lucide-react";
+import { Calendar, MapPin, Clock, Users, Mail, Phone, Globe, PawPrint, Ticket, Minus, Plus, ArrowLeft, Instagram } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -36,6 +35,7 @@ export default function EventDetail() {
   const [remainingTickets, setRemainingTickets] = useState<number | null>(null);
   const [numberOfTickets, setNumberOfTickets] = useState(1);
   const [showTicketAnimation, setShowTicketAnimation] = useState(false);
+  const [isBooked, setIsBooked] = useState(false);
 
   useEffect(() => {
     async function fetchEventAndBookings() {
@@ -59,6 +59,20 @@ export default function EventDetail() {
 
         setEvent(eventData);
         setRemainingTickets(eventData.capacity - (count || 0));
+
+        // Check if the current user has booked this event
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: userBookings } = await supabase
+            .from("bookings")
+            .select("*")
+            .eq("event_id", id)
+            .eq("user_id", user.id)
+            .eq("status", "confirmed")
+            .single();
+
+          setIsBooked(!!userBookings);
+        }
       } catch (error) {
         console.error("Error fetching event:", error);
         toast({
@@ -175,21 +189,22 @@ export default function EventDetail() {
   return (
     <div className="min-h-screen bg-[#00D26A]">
       {/* Fixed Header */}
-      <header className="fixed top-0 left-0 right-0 bg-white shadow-md z-50">
+      <header className="fixed top-0 left-0 right-0 bg-transparent z-50">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <Button
               onClick={() => navigate("/events")}
               variant="ghost"
               size="icon"
-              className="mr-2"
+              className="text-white hover:bg-white/20"
             >
-              <MapPin className="h-5 w-5 rotate-180" />
+              <ArrowLeft className="h-6 w-6" />
             </Button>
             <img 
               src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
               alt="Petsu"
-              className="h-8"
+              className="h-20 cursor-pointer"
+              onClick={() => navigate('/')}
             />
             <div className="w-10" /> {/* Spacer for balance */}
           </div>
@@ -236,7 +251,7 @@ export default function EventDetail() {
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <span className="text-2xl font-bold text-[#00D26A]">
-                        ${event.price}
+                        ₹{event.price}
                       </span>
                       <span className="text-gray-500 ml-2">per ticket</span>
                     </div>
@@ -271,14 +286,18 @@ export default function EventDetail() {
                     </div>
                   </div>
                   <p className="text-sm text-gray-600 mb-4">
-                    Total: ${(event.price * numberOfTickets).toFixed(2)}
+                    Total: ₹{(event.price * numberOfTickets).toFixed(2)}
                   </p>
                   <Button
                     onClick={handleBooking}
-                    disabled={bookingInProgress || remainingTickets === 0}
-                    className="w-full bg-[#00D26A] hover:bg-[#00D26A]/90 text-white"
+                    disabled={bookingInProgress || remainingTickets === 0 || isBooked}
+                    className={`w-full ${
+                      isBooked
+                        ? "bg-green-500 hover:bg-green-600"
+                        : "bg-[#00D26A] hover:bg-[#00D26A]/90"
+                    } text-white`}
                   >
-                    {bookingInProgress ? "Processing..." : remainingTickets === 0 ? "Sold Out" : "Book Now"}
+                    {bookingInProgress ? "Processing..." : isBooked ? "Booked" : remainingTickets === 0 ? "Sold Out" : "Book Now"}
                   </Button>
                 </div>
               </div>
@@ -387,6 +406,26 @@ export default function EventDetail() {
           </div>
         </div>
       )}
+
+      {/* Footer */}
+      <footer className="mt-8 p-6 bg-gray-50 rounded-b-3xl">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="flex items-center gap-2">
+            <a 
+              href="https://instagram.com/petsu" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-gray-600 hover:text-[#00D26A] transition-colors flex items-center gap-2"
+            >
+              <Instagram size={20} />
+              <span>Follow us</span>
+            </a>
+          </div>
+          <p className="text-sm text-gray-500">
+            © {new Date().getFullYear()} Petsu. All rights reserved.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
