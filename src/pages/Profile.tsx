@@ -93,7 +93,7 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-primary/10 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
@@ -130,13 +130,19 @@ export default function Profile() {
                 <ChevronRight className="h-5 w-5 text-gray-400" />
               </button>
             ))}
+            <button
+              onClick={handleSignOut}
+              className="w-full mt-4 text-sm text-gray-600 hover:text-gray-800 bg-white rounded-xl shadow-sm p-4"
+            >
+              Sign out
+            </button>
           </div>
         );
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-primary/10">
       <header className="fixed top-0 left-0 right-0 bg-transparent z-50">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
@@ -157,12 +163,14 @@ export default function Profile() {
               className="h-8"
             />
             
-            <button
-              onClick={handleSignOut}
-              className="text-sm text-gray-600 hover:text-gray-800"
-            >
-              Sign out
-            </button>
+            {activeTab !== "profile" && (
+              <button
+                onClick={handleSignOut}
+                className="text-sm text-gray-600 hover:text-gray-800"
+              >
+                Sign out
+              </button>
+            )}
           </div>
         </div>
       </header>
