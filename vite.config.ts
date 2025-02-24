@@ -34,6 +34,7 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     outDir: "dist",
-    assetsDir: "assets"
+    assetsDir: "assets",
+    target: "esnext" // Changed from bun to esnext
   }
 }));
