@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -93,6 +94,22 @@ export default function CreateEvent() {
       const autocomplete = new google.maps.places.Autocomplete(input, {
         types: ['address'],
         fields: ['formatted_address', 'geometry'],
+      });
+
+      // Add input event listener to control when autocomplete starts
+      input.addEventListener('input', (e) => {
+        const target = e.target as HTMLInputElement;
+        if (target.value.length < 4) {
+          const pacContainer = document.querySelector('.pac-container');
+          if (pacContainer) {
+            (pacContainer as HTMLElement).style.display = 'none';
+          }
+        } else {
+          const pacContainer = document.querySelector('.pac-container');
+          if (pacContainer) {
+            (pacContainer as HTMLElement).style.display = 'block';
+          }
+        }
       });
       
       autocomplete.addListener("place_changed", () => {
@@ -299,6 +316,7 @@ export default function CreateEvent() {
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
           margin-top: 4px;
           font-family: inherit;
+          display: none;
         }
         .pac-item {
           padding: 8px 16px;
