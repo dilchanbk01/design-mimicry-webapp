@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar, MapPin, Clock, Plus, Search, User } from "lucide-react";
@@ -45,7 +44,19 @@ export default function Events() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Fetch hero banners with real-time updates
+  const handleCreateEventClick = () => {
+    navigate('/events/create');
+  };
+
+  const isEventBooked = (eventId: string): boolean => {
+    return userBookings.some(booking => booking.event_id === eventId);
+  };
+
+  const filteredEvents = events.filter(event => 
+    event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    event.location.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const { data: heroBanners = [] } = useQuery({
     queryKey: ['heroBanners'],
     queryFn: async () => {
@@ -69,7 +80,6 @@ export default function Events() {
     }
   });
 
-  // Auto-slide carousel every 4 seconds
   useInterval(() => {
     if (heroBanners.length > 0) {
       setCurrentSlide((prev) => (prev + 1) % heroBanners.length);
@@ -79,7 +89,6 @@ export default function Events() {
   useEffect(() => {
     async function fetchEvents() {
       try {
-        // Subscribe to realtime changes for events
         const eventsSubscription = supabase
           .channel('events_channel')
           .on('postgres_changes', {
@@ -87,7 +96,6 @@ export default function Events() {
             schema: 'public',
             table: 'events',
           }, async () => {
-            // Refetch events when changes occur
             const { data: updatedEvents, error } = await supabase
               .from("events")
               .select("*")
@@ -106,7 +114,6 @@ export default function Events() {
           })
           .subscribe();
 
-        // Initial fetch
         const { data, error } = await supabase
           .from("events")
           .select("*")
@@ -124,7 +131,6 @@ export default function Events() {
 
         setEvents(currentEvents);
 
-        // Fetch user's bookings
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const { data: bookings, error: bookingsError } = await supabase
@@ -156,7 +162,6 @@ export default function Events() {
     fetchEvents();
   }, [toast]);
 
-  // Function to compress image before upload
   const compressImage = async (file: File): Promise<File> => {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -166,8 +171,8 @@ export default function Events() {
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const maxWidth = 1200; // Max width for compressed image
-          const maxHeight = 800; // Max height for compressed image
+          const maxWidth = 1200;
+          const maxHeight = 800;
           let width = img.width;
           let height = img.height;
 
@@ -199,7 +204,7 @@ export default function Events() {
               }
             },
             'image/jpeg',
-            0.7 // compression quality
+            0.7
           );
         };
       };
@@ -209,7 +214,7 @@ export default function Events() {
   return (
     <div className="min-h-screen bg-[#00D26A]">
       {heroBanners.length > 0 && (
-        <div className="relative h-[300px]"> {/* Decreased height from 400px to 300px */}
+        <div className="relative h-[300px]">
           <div className="absolute inset-0 overflow-hidden">
             {heroBanners.map((banner, index) => (
               <div
@@ -222,7 +227,7 @@ export default function Events() {
                   src={banner.image_url}
                   alt={banner.title || 'Event banner'}
                   className="w-full h-full object-cover"
-                  loading="lazy" // Add lazy loading for better performance
+                  loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent">
                   {(banner.title || banner.description) && (
@@ -240,7 +245,6 @@ export default function Events() {
             ))}
           </div>
 
-          {/* Carousel indicators */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
             {heroBanners.map((_, index) => (
               <button
@@ -271,7 +275,7 @@ export default function Events() {
                 <img 
                   src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
                   alt="Petsu"
-                  className="h-16 cursor-pointer" // Increased height from h-12 to h-16
+                  className="h-16 cursor-pointer"
                   onClick={() => navigate('/')}
                 />
 
@@ -307,7 +311,7 @@ export default function Events() {
                     className="text-white hover:bg-white/20"
                     onClick={() => navigate('/profile')}
                   >
-                    <User className="h-6 w-6" /> {/* Increased size from h-5 w-5 to h-6 w-6 */}
+                    <User className="h-6 w-6" />
                   </Button>
                 </div>
               </div>
