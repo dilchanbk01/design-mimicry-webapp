@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -13,14 +12,11 @@ import { LocationInput } from "@/components/create-event/LocationInput";
 import { OrganizerInfo } from "@/components/create-event/OrganizerInfo";
 import { PetTypeSelection } from "@/components/create-event/PetTypeSelection";
 
-const GOOGLE_MAPS_API_KEY = "AIzaSyDMjSsICfQQn0ubanKa1kxr9S9Exo4xRrQ";
-
 export default function CreateEvent() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const autocompleteInitialized = useRef(false);
   const [formData, setFormData] = useState({
     title: "",
     type: "meetup",
@@ -68,66 +64,7 @@ export default function CreateEvent() {
       }
     };
     checkAuth();
-
-    if (!window.google && !document.getElementById('google-maps-script')) {
-      const script = document.createElement("script");
-      script.id = 'google-maps-script';
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
-        initAutocomplete();
-      };
-      document.head.appendChild(script);
-    } else if (window.google && !autocompleteInitialized.current) {
-      initAutocomplete();
-    }
-
-    return () => {
-      autocompleteInitialized.current = false;
-    };
   }, [navigate, toast]);
-
-  const initAutocomplete = () => {
-    if (!window.google) return;
-    
-    const input = document.getElementById("location-input") as HTMLInputElement;
-    if (input) {
-      const autocomplete = new google.maps.places.Autocomplete(input, {
-        types: ['address'],
-        fields: ['formatted_address', 'geometry'],
-        componentRestrictions: { country: 'in' } // Restrict to India
-      });
-
-      // Add input event listener to control when autocomplete starts
-      input.addEventListener('input', (e) => {
-        const target = e.target as HTMLInputElement;
-        if (target.value.length < 4) {
-          const pacContainer = document.querySelector('.pac-container');
-          if (pacContainer) {
-            (pacContainer as HTMLElement).style.display = 'none';
-          }
-        } else {
-          const pacContainer = document.querySelector('.pac-container');
-          if (pacContainer) {
-            (pacContainer as HTMLElement).style.display = 'block';
-          }
-        }
-      });
-      
-      autocomplete.addListener("place_changed", () => {
-        const place = autocomplete.getPlace();
-        if (place.formatted_address) {
-          setFormData(prev => ({
-            ...prev,
-            location: place.formatted_address,
-          }));
-        }
-      });
-      
-      autocompleteInitialized.current = true;
-    }
-  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -310,29 +247,6 @@ export default function CreateEvent() {
           </form>
         </div>
       </div>
-
-      <style>{`
-        .pac-container {
-          z-index: 9999 !important;
-          background-color: white;
-          border-radius: 0.5rem;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-          margin-top: 4px;
-          font-family: inherit;
-          display: none;
-        }
-        .pac-item {
-          padding: 8px 16px;
-          cursor: pointer;
-          font-size: 14px;
-        }
-        .pac-item:hover {
-          background-color: #f3f4f6;
-        }
-        .pac-item-query {
-          font-size: 14px;
-        }
-      `}</style>
     </div>
   );
 }
