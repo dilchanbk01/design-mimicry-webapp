@@ -21,6 +21,7 @@ import ConsultationChat from "./pages/ConsultationChat";
 import GroomerAuth from "./pages/GroomerAuth";
 import GroomerOnboarding from "./pages/GroomerOnboarding";
 import GroomerDashboard from "./pages/GroomerDashboard";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ const App = () => (
           <Route path="/groomer-auth" element={<GroomerAuth />} />
           <Route path="/groomer-onboarding" element={<GroomerOnboarding />} />
           <Route path="/groomer-dashboard" element={<GroomerDashboard />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
