@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,40 @@ export default function GroomerOnboarding() {
     contactNumber: "",
     bio: ""
   });
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        navigate("/groomer-auth");
+        return;
+      }
+
+      // Check if user already has a profile
+      const { data: existingProfile } = await supabase
+        .from("groomer_profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (existingProfile) {
+        toast({
+          title: "Application Already Submitted",
+          description: "You have already submitted an application.",
+        });
+        navigate("/");
+        return;
+      }
+    } catch (error) {
+      console.error("Auth check error:", error);
+      navigate("/groomer-auth");
+    }
+  };
 
   const handleSpecializationToggle = (specialization: string) => {
     setFormData(prev => ({
