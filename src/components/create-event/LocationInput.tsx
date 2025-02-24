@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ interface LocationInputProps {
   onLocationChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export function LocationInput({ location, onLocationChange, onLocationSelect }: LocationInputProps) {
+export function LocationInput({ location, onLocationChange }: LocationInputProps) {
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const { toast } = useToast();
 
