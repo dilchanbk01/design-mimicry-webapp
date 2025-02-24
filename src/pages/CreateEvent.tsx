@@ -94,8 +94,14 @@ export default function CreateEvent() {
     if (input && window.google) {
       const autocomplete = new google.maps.places.Autocomplete(input, {
         types: ['address'],
-        fields: ['formatted_address', 'geometry']
+        fields: ['formatted_address', 'geometry'],
+        componentRestrictions: { country: "us" }
       });
+      
+      const pacContainer = document.querySelector('.pac-container') as HTMLElement;
+      if (pacContainer) {
+        pacContainer.style.zIndex = '9999';
+      }
       
       autocomplete.addListener("place_changed", () => {
         const place = autocomplete.getPlace();
@@ -281,7 +287,7 @@ export default function CreateEvent() {
               </div>
             </div>
 
-            <div>
+            <div className="relative">
               <Label>Location</Label>
               <Input
                 id="location-input"
@@ -289,7 +295,8 @@ export default function CreateEvent() {
                 required
                 value={formData.location}
                 onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                className="mt-1"
+                className="mt-1 z-50"
+                style={{ position: 'relative' }}
               />
             </div>
 
@@ -380,6 +387,28 @@ export default function CreateEvent() {
           </form>
         </div>
       </div>
+
+      <style jsx global>{`
+        .pac-container {
+          z-index: 9999;
+          background-color: white;
+          border-radius: 0.5rem;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          margin-top: 4px;
+          font-family: inherit;
+        }
+        .pac-item {
+          padding: 8px 16px;
+          cursor: pointer;
+          font-size: 14px;
+        }
+        .pac-item:hover {
+          background-color: #f3f4f6;
+        }
+        .pac-item-query {
+          font-size: 14px;
+        }
+      `}</style>
     </div>
   );
 }
