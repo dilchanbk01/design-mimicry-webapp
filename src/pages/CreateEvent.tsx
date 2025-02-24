@@ -388,7 +388,7 @@ export default function CreateEvent() {
         </div>
       </div>
 
-      <style jsx global>{`
+      <style>{`
         .pac-container {
           z-index: 9999;
           background-color: white;
