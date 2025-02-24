@@ -14,18 +14,18 @@ export function Card({ title, icon, className, onClick }: CardProps) {
     <button
       onClick={onClick}
       className={cn(
-        "group relative w-full rounded-3xl p-8 shadow-lg",
+        "group relative w-full rounded-3xl p-4 shadow-lg",
         "transition-all duration-300 ease-out",
         "flex flex-col items-center justify-between",
         className
       )}
     >
-      <div className="absolute top-6 right-6">
-        <ArrowRight className="w-6 h-6 text-accent transition-transform duration-300 group-hover:translate-x-1" />
+      <div className="absolute top-3 right-3">
+        <ArrowRight className="w-4 h-4 text-accent transition-transform duration-300 group-hover:translate-x-1" />
       </div>
-      <h3 className="text-2xl font-semibold text-accent absolute top-8 left-8">{title}</h3>
-      <div className="flex-1 flex items-center justify-center w-full pt-12">
-        <img src={icon} alt={title} className="w-40 h-40 object-contain" />
+      <h3 className="text-lg font-semibold text-accent absolute top-4 left-4">{title}</h3>
+      <div className="flex-1 flex items-center justify-center w-full pt-8">
+        <img src={icon} alt={title} className="w-20 h-20 object-contain" />
       </div>
     </button>
   );
