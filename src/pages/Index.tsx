@@ -57,20 +57,13 @@ const Index = () => {
             />
           </div>
 
-          {/* Pet Essentials Rectangle Card */}
-          <button
+          {/* Pet Essentials Card */}
+          <Card
+            title="Pet Essentials"
+            icon="/lovable-uploads/01f1af17-4a11-4809-9674-01e898a01385.png"
             onClick={() => toast({ title: "Shop coming soon!" })}
-            className="w-full bg-white rounded-3xl p-6 shadow-lg transition-all duration-300 ease-out hover:scale-[1.02]"
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="text-2xl font-semibold text-accent">Pet Essentials</h3>
-              <img 
-                src="/lovable-uploads/01f1af17-4a11-4809-9674-01e898a01385.png" 
-                alt="Pet Essentials" 
-                className="w-20 h-20 object-contain"
-              />
-            </div>
-          </button>
+            className="bg-white hover:scale-[1.02] aspect-[2/1]"
+          />
 
           {/* Vet Partner Rectangle Card */}
           <div className="bg-accent rounded-3xl p-8 text-white">
