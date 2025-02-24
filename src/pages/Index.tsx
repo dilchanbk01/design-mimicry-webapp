@@ -59,7 +59,7 @@ const Index = () => {
         onCitySelect={() => setIsCityDialogOpen(true)}
       />
 
-      <main className="container mx-auto px-4 pt-24 pb-20">
+      <main className="container mx-auto px-4 pt-16 pb-8">
         <div className="max-w-4xl mx-auto space-y-4">
           <ServicesGrid onEssentialsClick={() => setIsNotifyDialogOpen(true)} />
           <PartnerCards
