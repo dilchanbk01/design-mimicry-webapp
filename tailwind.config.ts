@@ -20,7 +20,7 @@ export default {
     },
     extend: {
       colors: {
-        primary: "#00C853",
+        primary: "#00C853",  // Keeping the vibrant green color
         secondary: "#FFD600",
         accent: "#1A237E",
         border: "hsl(var(--border))",
