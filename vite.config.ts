@@ -10,16 +10,27 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  preview: {
+    port: 8080,
+    strictPort: true,
+  },
   server: {
     port: 8080,
-    host: "::",
-    proxy: {
-      // Handle client-side routing by proxying all non-file requests to index.html
-      "^(?!.*\\.).*": {
-        target: "http://localhost:8080",
-        changeOrigin: true,
-        rewrite: () => "/index.html",
-      },
-    },
+    host: true,
+    strictPort: true,
+    // Handle client-side routing
+    middleware: [
+      (req, res, next) => {
+        // Serve index.html for any non-asset requests
+        if (!req.url.includes('.')) {
+          req.url = '/';
+        }
+        next();
+      }
+    ]
   },
+  build: {
+    outDir: "dist",
+    assetsDir: "assets"
+  }
 });
