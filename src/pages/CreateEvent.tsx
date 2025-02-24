@@ -13,6 +13,8 @@ import { LocationInput } from "@/components/create-event/LocationInput";
 import { OrganizerInfo } from "@/components/create-event/OrganizerInfo";
 import { PetTypeSelection } from "@/components/create-event/PetTypeSelection";
 
+const GOOGLE_MAPS_API_KEY = "AIzaSyDMjSsICfQQn0ubanKa1kxr9S9Exo4xRrQ";
+
 export default function CreateEvent() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -70,7 +72,7 @@ export default function CreateEvent() {
     if (!window.google && !document.getElementById('google-maps-script')) {
       const script = document.createElement("script");
       script.id = 'google-maps-script';
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
       script.async = true;
       script.defer = true;
       script.onload = () => {
@@ -94,6 +96,7 @@ export default function CreateEvent() {
       const autocomplete = new google.maps.places.Autocomplete(input, {
         types: ['address'],
         fields: ['formatted_address', 'geometry'],
+        componentRestrictions: { country: 'in' } // Restrict to India
       });
 
       // Add input event listener to control when autocomplete starts
