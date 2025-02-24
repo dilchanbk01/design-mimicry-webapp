@@ -37,6 +37,10 @@ const Index = () => {
     navigate("/vet-onboarding");
   };
 
+  const handleGroomerPartnerClick = () => {
+    navigate("/groomer-onboarding");
+  };
+
   const handleNotifySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     toast({
@@ -133,6 +137,18 @@ const Index = () => {
               className="bg-white text-accent hover:bg-white/90 font-semibold"
             >
               Join as a Vet Partner
+            </Button>
+          </div>
+
+          {/* Pet Groomer Partner Rectangle Card */}
+          <div className="bg-accent rounded-3xl p-8 text-white">
+            <h2 className="text-2xl font-bold mb-2">Are you a pet groomer?</h2>
+            <p className="text-white/90 mb-6">Join our network of professional groomers and grow your business.</p>
+            <Button
+              onClick={handleGroomerPartnerClick}
+              className="bg-white text-accent hover:bg-white/90 font-semibold"
+            >
+              Join as a Grooming Partner
             </Button>
           </div>
         </div>
