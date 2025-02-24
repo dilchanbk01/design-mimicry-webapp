@@ -370,6 +370,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "user"
       groomer_status: "pending" | "approved" | "rejected"
+      page_type: "events" | "home" | "vets" | "groomers"
       vet_application_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {

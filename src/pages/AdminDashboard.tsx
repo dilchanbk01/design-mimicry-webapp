@@ -1,9 +1,10 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import { toast } from "react-toastify";
+import { useToast } from "@/hooks/use-toast";
 
 interface Event {
   id: string;
@@ -47,6 +48,7 @@ interface BannerUploadForm {
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<Event[]>([]);
   const [banners, setBanners] = useState<HeroBanner[]>([]);
@@ -132,6 +134,11 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch dashboard data",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -147,13 +154,19 @@ export default function AdminDashboard() {
       if (error) throw error;
 
       fetchDashboardData();
+      
+      toast({
+        title: "Success",
+        description: `Event ${newStatus} successfully`,
+      });
     } catch (error) {
       console.error('Error updating event status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update event status",
+        variant: "destructive",
+      });
     }
-  };
-
-  const handleUpdateBanner = async (bannerId: string) => {
-    console.log('Update banner:', bannerId);
   };
 
   const handleBannerUpload = async (e: React.FormEvent) => {
@@ -435,37 +448,6 @@ export default function AdminDashboard() {
                 ))}
               </tbody>
             </table>
-          </div>
-
-          {/* Event Analytics */}
-          <div className="mt-8">
-            <h2 className="text-2xl font-semibold mb-4">Event Performance</h2>
-            <div className="grid grid-cols-1 gap-4">
-              {eventAnalytics.map((event) => (
-                <div key={event.event_id} className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-semibold">{event.title}</h3>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      event.status === 'approved' ? 'bg-green-100 text-green-800' :
-                      event.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {event.status}
-                    </span>
-                  </div>
-                  <div className="mt-2 grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-500">Tickets Sold</p>
-                      <p className="text-lg font-semibold">{event.tickets_sold}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Revenue</p>
-                      <p className="text-lg font-semibold">${event.total_amount}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </div>
