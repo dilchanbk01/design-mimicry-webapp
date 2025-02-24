@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar, MapPin, Clock, Plus, Search, User } from "lucide-react";
@@ -7,11 +8,6 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-} from "@/components/ui/carousel";
 import { useInterval } from "@/hooks/use-interval";
 
 interface Event {
@@ -49,7 +45,7 @@ export default function Events() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Fetch hero banners
+  // Fetch hero banners with real-time updates
   const { data: heroBanners = [] } = useQuery({
     queryKey: ['heroBanners'],
     queryFn: async () => {
@@ -141,6 +137,10 @@ export default function Events() {
             setUserBookings(bookings);
           }
         }
+
+        return () => {
+          eventsSubscription.unsubscribe();
+        };
       } catch (error) {
         console.error("Error fetching events:", error);
         toast({
@@ -156,43 +156,60 @@ export default function Events() {
     fetchEvents();
   }, [toast]);
 
-  const handleCreateEventClick = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to create an event.",
-      });
-      navigate("/auth");
-      return;
-    }
-    
-    navigate("/events/create");
+  // Function to compress image before upload
+  const compressImage = async (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const maxWidth = 1200; // Max width for compressed image
+          const maxHeight = 800; // Max height for compressed image
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressedFile = new File([blob], file.name, {
+                  type: 'image/jpeg',
+                  lastModified: Date.now(),
+                });
+                resolve(compressedFile);
+              }
+            },
+            'image/jpeg',
+            0.7 // compression quality
+          );
+        };
+      };
+    });
   };
-
-  const isEventBooked = (eventId: string) => {
-    return userBookings.some(booking => booking.event_id === eventId);
-  };
-
-  const filteredEvents = events.filter((event) =>
-    event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    event.location.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  if (loading) {
-    return (
-      <div className="loading-overlay">
-        <div className="loading-spinner" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#00D26A]">
       {heroBanners.length > 0 && (
-        <div className="relative h-[400px]">
+        <div className="relative h-[300px]"> {/* Decreased height from 400px to 300px */}
           <div className="absolute inset-0 overflow-hidden">
             {heroBanners.map((banner, index) => (
               <div
@@ -205,6 +222,7 @@ export default function Events() {
                   src={banner.image_url}
                   alt={banner.title || 'Event banner'}
                   className="w-full h-full object-cover"
+                  loading="lazy" // Add lazy loading for better performance
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent">
                   {(banner.title || banner.description) && (
@@ -253,7 +271,7 @@ export default function Events() {
                 <img 
                   src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
                   alt="Petsu"
-                  className="h-12 cursor-pointer"
+                  className="h-16 cursor-pointer" // Increased height from h-12 to h-16
                   onClick={() => navigate('/')}
                 />
 
@@ -289,7 +307,7 @@ export default function Events() {
                     className="text-white hover:bg-white/20"
                     onClick={() => navigate('/profile')}
                   >
-                    <User className="h-5 w-5" />
+                    <User className="h-6 w-6" /> {/* Increased size from h-5 w-5 to h-6 w-6 */}
                   </Button>
                 </div>
               </div>
