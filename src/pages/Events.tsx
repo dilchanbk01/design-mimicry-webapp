@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, MapPin, Clock, Plus, Search } from "lucide-react";
+import { Calendar, MapPin, Clock, Plus, Search, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isPast } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -115,21 +115,20 @@ export default function Events() {
               onClick={() => navigate('/')}
             />
 
-            <div className="relative">
+            <div className="flex items-center gap-4">
               {isSearchOpen ? (
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-64">
+                <div className="relative">
                   <Input
                     type="text"
                     placeholder="Search events..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pr-10 rounded-full bg-white shadow-lg"
+                    className="pr-10 rounded-full bg-white shadow-lg w-64"
                     autoFocus
                     onBlur={() => setIsSearchOpen(false)}
                   />
                   <Search 
                     className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"
-                    onClick={() => setIsSearchOpen(true)}
                   />
                 </div>
               ) : (
@@ -142,6 +141,14 @@ export default function Events() {
                   <Search className="h-5 w-5" />
                 </Button>
               )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white hover:bg-white/20"
+                onClick={() => navigate('/profile')}
+              >
+                <User className="h-5 w-5" />
+              </Button>
             </div>
           </div>
         </div>
@@ -149,45 +156,45 @@ export default function Events() {
 
       {/* Main Content */}
       <main className="pt-24 px-4 pb-20">
-        <div className="container mx-auto max-w-lg">
-          {/* Events List */}
-          <div className="mt-6 space-y-4">
+        <div className="container mx-auto">
+          {/* Events Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredEvents.length === 0 ? (
-              <div className="text-center py-8">
+              <div className="text-center py-8 col-span-full">
                 <p className="text-white text-lg">No events found</p>
               </div>
             ) : (
               filteredEvents.map((event) => (
                 <div
                   key={event.id}
-                  className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 cursor-pointer"
+                  className="bg-white rounded-3xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 cursor-pointer transform hover:-translate-y-1"
                   onClick={() => navigate(`/events/${event.id}`)}
                 >
                   <img
                     src={event.image_url}
                     alt={event.title}
-                    className="w-full h-32 object-cover"
+                    className="w-full h-48 object-cover"
                   />
-                  <div className="p-3">
-                    <h3 className="text-base font-semibold text-gray-800 mb-2 line-clamp-1">
+                  <div className="p-6">
+                    <h3 className="text-xl font-semibold text-gray-800 mb-4 line-clamp-1">
                       {event.title}
                     </h3>
-                    <div className="space-y-1 text-xs">
+                    <div className="space-y-2 text-sm">
                       <div className="flex items-center text-gray-600">
-                        <Calendar className="w-3 h-3 mr-1 flex-shrink-0" />
+                        <Calendar className="w-4 h-4 mr-2 flex-shrink-0" />
                         <span>{format(new Date(event.date), "PPP")}</span>
                       </div>
                       <div className="flex items-center text-gray-600">
-                        <Clock className="w-3 h-3 mr-1 flex-shrink-0" />
+                        <Clock className="w-4 h-4 mr-2 flex-shrink-0" />
                         <span>{format(new Date(event.date), "p")}</span>
                       </div>
                       <div className="flex items-center text-gray-600">
-                        <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
+                        <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
                         <span className="line-clamp-1">{event.location}</span>
                       </div>
                     </div>
                     <Button
-                      className="w-full mt-3 bg-blue-900 hover:bg-blue-800 text-white text-sm py-1 h-8"
+                      className="w-full mt-6 bg-blue-900 hover:bg-blue-800 text-white"
                     >
                       Register Now
                     </Button>
