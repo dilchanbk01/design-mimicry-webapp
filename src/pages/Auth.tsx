@@ -70,12 +70,57 @@ export default function Auth() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error("Google auth error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to sign in with Google. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-primary flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
         <h1 className="text-3xl font-bold text-center mb-6">
           {isSignUp ? "Sign Up" : "Sign In"}
         </h1>
+        <Button
+          onClick={handleGoogleSignIn}
+          type="button"
+          variant="outline"
+          className="w-full mb-6"
+        >
+          <img 
+            src="https://www.google.com/favicon.ico" 
+            alt="Google"
+            className="w-4 h-4 mr-2"
+          />
+          Continue with Google
+        </Button>
+        
+        <div className="relative mb-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">
+              Or continue with email
+            </span>
+          </div>
+        </div>
+
         <form onSubmit={handleAuth} className="space-y-4">
           <Input
             type="email"
