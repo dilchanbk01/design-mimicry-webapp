@@ -22,6 +22,8 @@ import GroomerAuth from "./pages/GroomerAuth";
 import GroomerOnboarding from "./pages/GroomerOnboarding";
 import GroomerDashboard from "./pages/GroomerDashboard";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Terms from "./pages/Terms";
+import CancellationPolicy from "./pages/CancellationPolicy";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,6 +58,8 @@ const App = () => (
           <Route path="/groomer-onboarding" element={<GroomerOnboarding />} />
           <Route path="/groomer-dashboard" element={<GroomerDashboard />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/cancellation-policy" element={<CancellationPolicy />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

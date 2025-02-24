@@ -73,7 +73,6 @@ const Index = () => {
       <footer className="py-6">
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-center space-y-4">
-            {/* Social Media Icons */}
             <div className="flex space-x-6">
               <a 
                 href="https://instagram.com/petsu" 
@@ -95,7 +94,6 @@ const Index = () => {
               </a>
             </div>
 
-            {/* Links */}
             <div className="flex space-x-4 text-xs text-white/90">
               <button 
                 onClick={() => navigate('/privacy-policy')}
@@ -110,9 +108,15 @@ const Index = () => {
               >
                 Terms & Conditions
               </button>
+              <span className="text-white/50">•</span>
+              <button 
+                onClick={() => navigate('/cancellation-policy')}
+                className="hover:text-white transition-colors"
+              >
+                Cancellation Policy
+              </button>
             </div>
 
-            {/* Copyright */}
             <p className="text-[10px] text-white/70">
               © {new Date().getFullYear()} Petsu. All rights reserved.
             </p>
