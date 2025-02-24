@@ -25,7 +25,7 @@ export function Card({ title, icon, className, onClick }: CardProps) {
       </div>
       <h3 className="text-lg font-semibold text-accent absolute top-4 left-4">{title}</h3>
       <div className="flex-1 flex items-center justify-center w-full pt-8">
-        <img src={icon} alt={title} className="w-28 h-28 object-contain" />
+        <img src={icon} alt={title} className="w-24 h-24 object-contain" />
       </div>
     </button>
   );

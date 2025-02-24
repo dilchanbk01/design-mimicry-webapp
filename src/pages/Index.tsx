@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/Card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -32,6 +31,17 @@ const Index = () => {
   const [email, setEmail] = useState("");
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [citySearch, setCitySearch] = useState("");
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY;
+      setIsScrolled(scrollPosition > 10);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleVetPartnerClick = () => {
     navigate("/vet-onboarding");
@@ -63,7 +73,9 @@ const Index = () => {
   return (
     <div className="min-h-screen w-full bg-primary">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 bg-transparent z-50">
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled ? '-translate-y-full' : 'translate-y-0'
+      }`}>
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <Button
@@ -95,7 +107,7 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 pt-24 pb-20">
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-3xl mx-auto space-y-4">
           {/* Square Cards Grid */}
           <div className="grid grid-cols-2 gap-4">
             <Card
@@ -125,9 +137,9 @@ const Index = () => {
           </div>
 
           {/* Vet Partner Rectangle Card */}
-          <div className="bg-accent rounded-3xl p-8 text-white">
-            <h2 className="text-2xl font-bold mb-2">Are you a veterinarian?</h2>
-            <p className="text-white/90 mb-6">Join our network of professional vets and connect with pet owners.</p>
+          <div className="bg-accent rounded-3xl p-6 text-white">
+            <h2 className="text-xl font-bold mb-2">Are you a veterinarian?</h2>
+            <p className="text-white/90 mb-4">Join our network of professional vets and connect with pet owners.</p>
             <Button
               onClick={handleVetPartnerClick}
               className="bg-white text-accent hover:bg-white/90 font-semibold"
@@ -137,9 +149,9 @@ const Index = () => {
           </div>
 
           {/* Pet Groomer Partner Rectangle Card */}
-          <div className="bg-accent rounded-3xl p-8 text-white">
-            <h2 className="text-2xl font-bold mb-2">Are you a pet groomer?</h2>
-            <p className="text-white/90 mb-6">Join our network of professional groomers and grow your business.</p>
+          <div className="bg-accent rounded-3xl p-6 text-white">
+            <h2 className="text-xl font-bold mb-2">Are you a pet groomer?</h2>
+            <p className="text-white/90 mb-4">Join our network of professional groomers and grow your business.</p>
             <Button
               onClick={handleGroomerPartnerClick}
               className="bg-white text-accent hover:bg-white/90 font-semibold"
