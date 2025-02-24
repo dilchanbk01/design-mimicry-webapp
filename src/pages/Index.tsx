@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card } from "@/components/Card";
 import { Button } from "@/components/ui/button";
@@ -53,10 +54,6 @@ const Index = () => {
   const handleCitySelect = (cityName: string) => {
     setSelectedCity(cityName);
     setIsCityDialogOpen(false);
-    toast({
-      title: "Location Updated",
-      description: `Your location has been set to ${cityName}`,
-    });
   };
 
   const filteredCities = CITIES.filter(city =>
@@ -114,14 +111,14 @@ const Index = () => {
               className="aspect-square bg-white hover:scale-[1.02]"
             />
             <Card
-              title="Pet Essentials"
+              title="Essentials"
               icon="/lovable-uploads/2737b2dd-8bd8-496f-8a36-6329dc70fe41.png"
               onClick={() => setIsNotifyDialogOpen(true)}
               className="aspect-square bg-white hover:scale-[1.02]"
             />
             <Card
-              title="Pet Grooming"
-              icon="/lovable-uploads/01f1af17-4a11-4809-9674-01e898a01385.png"
+              title="Grooming"
+              icon="/lovable-uploads/8f3aed90-73d6-4c1e-ab8b-639261a42d22.png"
               onClick={() => navigate("/pet-grooming")}
               className="aspect-square bg-white hover:scale-[1.02]"
             />
@@ -195,7 +192,7 @@ const Index = () => {
           <DialogHeader>
             <DialogTitle>Get Notified</DialogTitle>
             <DialogDescription>
-              Enter your email to be notified when Pet Essentials launches.
+              Enter your email to be notified when Essentials launches.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleNotifySubmit} className="space-y-4">
