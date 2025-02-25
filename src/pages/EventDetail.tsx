@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Calendar, MapPin, Clock, Users, Mail, Phone, Globe, PawPrint, Ticket, Minus, Plus, ArrowLeft, Instagram, Share2, LinkIcon } from "lucide-react";
@@ -148,7 +147,6 @@ export default function EventDetail() {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
-      // Store the current location for redirect after login
       localStorage.setItem('redirectAfterAuth', location.pathname);
       toast({
         title: "Authentication Required",
@@ -172,8 +170,7 @@ export default function EventDetail() {
       const bookings = Array(numberOfTickets).fill(null).map(() => ({
         event_id: id,
         user_id: user.id,
-        status: 'confirmed',
-        ticket_id: generateTicketId()
+        status: 'confirmed'
       }));
 
       const { error } = await supabase
@@ -183,7 +180,6 @@ export default function EventDetail() {
       if (error) throw error;
 
       setRemainingTickets(prev => prev !== null ? prev - numberOfTickets : null);
-      
       setShowTicketAnimation(true);
 
       setTimeout(() => {
@@ -268,7 +264,7 @@ export default function EventDetail() {
   return (
     <div className="min-h-screen bg-[#00D26A]">
       <header className="fixed top-0 left-0 right-0 bg-transparent z-50">
-        <div className="container mx-auto px-4 py-3">
+        <div className="container mx-auto px-4 py-2">
           <div className="flex items-center justify-between">
             <Button
               onClick={() => navigate(-1)}
@@ -281,7 +277,7 @@ export default function EventDetail() {
             <img 
               src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
               alt="Petsu"
-              className="h-20 cursor-pointer"
+              className="h-12 cursor-pointer"
               onClick={() => navigate('/')}
             />
             <div className="w-10" />
@@ -289,11 +285,11 @@ export default function EventDetail() {
         </div>
       </header>
 
-      <main className="pt-24">
+      <main className="pt-16">
         <div className="relative w-full h-64">
           <img
-            src={event.image_url}
-            alt={event.title}
+            src={event?.image_url}
+            alt={event?.title}
             className="w-full h-full object-cover"
           />
         </div>
