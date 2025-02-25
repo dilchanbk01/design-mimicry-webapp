@@ -53,6 +53,17 @@ const Terms = () => {
             for details on how we collect and use your information.
           </p>
 
+          <h2 className="text-2xl font-semibold mt-8 mb-4">8. Governing Law</h2>
+          <p>
+            These Terms & Conditions are governed by and construed in accordance with the laws of India, 
+            without regard to its conflict of law principles. Any disputes arising from these terms shall 
+            be resolved in the courts of India.
+          </p>
+
+          <p className="mt-4 text-gray-600">
+            This website is owned by Dilchan Biswakarma
+          </p>
+
           <p className="mt-8">
             By continuing to use Petsu, you agree to these terms. If you have any questions, contact us at{" "}
             <a href="mailto:petsubk@gmail.com" className="text-primary hover:underline">

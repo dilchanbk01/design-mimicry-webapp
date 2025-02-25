@@ -67,11 +67,12 @@ export function HelpSupportSection() {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm p-6">
-        <h3 className="font-medium mb-2">Contact Information</h3>
-        <p className="text-sm text-gray-600">
-          Email: support@petsu.com<br />
-          Hours: Monday - Friday, 9am - 6pm
-        </p>
+        <h3 className="font-medium mb-4">Contact Information</h3>
+        <div className="space-y-2 text-sm text-gray-600">
+          <p>JP nagar 2nd page, bangalore</p>
+          <p>Email: <a href="mailto:petsubk@gmail.com" className="text-primary hover:underline">petsubk@gmail.com</a></p>
+          <p>Phone: <a href="tel:8446791696" className="text-primary hover:underline">8446791696</a></p>
+        </div>
       </div>
     </div>
   );
