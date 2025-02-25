@@ -1,10 +1,17 @@
+
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Calendar, MapPin, Clock, Users, Mail, Phone, Globe, PawPrint, Ticket, Minus, Plus, ArrowLeft, Instagram } from "lucide-react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { Calendar, MapPin, Clock, Users, Mail, Phone, Globe, PawPrint, Ticket, Minus, Plus, ArrowLeft, Instagram, Share2, LinkIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Event {
   id: string;
@@ -28,6 +35,7 @@ interface Event {
 export default function EventDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,6 +44,47 @@ export default function EventDetail() {
   const [numberOfTickets, setNumberOfTickets] = useState(1);
   const [showTicketAnimation, setShowTicketAnimation] = useState(false);
   const [isBooked, setIsBooked] = useState(false);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('bookings-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bookings',
+          filter: `event_id=eq.${id}`,
+        },
+        () => {
+          // Refresh remaining tickets count when bookings change
+          fetchRemainingTickets();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id]);
+
+  const fetchRemainingTickets = async () => {
+    try {
+      const { count, error: bookingsError } = await supabase
+        .from("bookings")
+        .select("*", { count: 'exact' })
+        .eq("event_id", id)
+        .eq("status", "confirmed");
+
+      if (bookingsError) throw bookingsError;
+
+      if (event) {
+        setRemainingTickets(event.capacity - (count || 0));
+      }
+    } catch (error) {
+      console.error("Error fetching remaining tickets:", error);
+    }
+  };
 
   useEffect(() => {
     async function fetchEventAndBookings() {
@@ -48,6 +97,8 @@ export default function EventDetail() {
 
         if (eventError) throw eventError;
 
+        setEvent(eventData);
+        
         const { count, error: bookingsError } = await supabase
           .from("bookings")
           .select("*", { count: 'exact' })
@@ -56,7 +107,6 @@ export default function EventDetail() {
 
         if (bookingsError) throw bookingsError;
 
-        setEvent(eventData);
         setRemainingTickets(eventData.capacity - (count || 0));
 
         const { data: { user } } = await supabase.auth.getUser();
@@ -87,14 +137,22 @@ export default function EventDetail() {
     fetchEventAndBookings();
   }, [id, navigate, toast]);
 
+  const generateTicketId = () => {
+    // Generate a unique ticket ID format: EVT-{eventId}-{timestamp}-{random}
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+    return `EVT-${id?.substring(0, 6)}-${timestamp}-${random}`;
+  };
+
   const handleBooking = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
+      // Store the current location for redirect after login
+      localStorage.setItem('redirectAfterAuth', location.pathname);
       toast({
         title: "Authentication Required",
         description: "Please sign in to book this event.",
-        variant: "destructive",
       });
       navigate("/auth");
       return;
@@ -111,11 +169,12 @@ export default function EventDetail() {
 
     setBookingInProgress(true);
     try {
-      const bookings = Array(numberOfTickets).fill({
+      const bookings = Array(numberOfTickets).fill(null).map(() => ({
         event_id: id,
         user_id: user.id,
-        status: 'confirmed'
-      });
+        status: 'confirmed',
+        ticket_id: generateTicketId()
+      }));
 
       const { error } = await supabase
         .from("bookings")
@@ -153,6 +212,32 @@ export default function EventDetail() {
       setNumberOfTickets(prev => prev + 1);
     } else if (!increment && numberOfTickets > 1) {
       setNumberOfTickets(prev => prev - 1);
+    }
+  };
+
+  const handleShare = async (platform: string) => {
+    const eventUrl = window.location.href;
+    const message = `Check out this event: ${event?.title}`;
+    
+    switch (platform) {
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodeURIComponent(`${message}\n${eventUrl}`)}`, '_blank');
+        break;
+      case 'instagram':
+        // Since Instagram doesn't have a direct share URL, we'll copy the link and show instructions
+        await navigator.clipboard.writeText(eventUrl);
+        toast({
+          title: "Link Copied!",
+          description: "Share this link on Instagram",
+        });
+        break;
+      case 'copy':
+        await navigator.clipboard.writeText(eventUrl);
+        toast({
+          title: "Success",
+          description: "Link copied to clipboard!",
+        });
+        break;
     }
   };
 
@@ -215,9 +300,43 @@ export default function EventDetail() {
 
         <div className="bg-white rounded-t-3xl -mt-6 relative z-10">
           <div className="p-6 border-b">
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">
-              {event.title}
-            </h1>
+            <div className="flex items-start gap-4">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="mt-1"
+                  >
+                    <Share2 className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={() => handleShare('whatsapp')}>
+                    <img 
+                      src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" 
+                      alt="WhatsApp" 
+                      className="w-4 h-4 mr-2"
+                    />
+                    Share on WhatsApp
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleShare('instagram')}>
+                    <Instagram className="h-4 w-4 mr-2" />
+                    Share on Instagram
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleShare('copy')}>
+                    <LinkIcon className="h-4 w-4 mr-2" />
+                    Copy Link
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <div className="flex-1">
+                <h1 className="text-2xl font-bold text-gray-800 mb-2">
+                  {event.title}
+                </h1>
+              </div>
+            </div>
+
             <div className="bg-blue-50 rounded-xl p-4 mt-4">
               <div className="flex justify-between items-start mb-4">
                 <div>
