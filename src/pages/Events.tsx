@@ -318,6 +318,17 @@ export default function Events() {
       )}
 
       <main className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-white">Pet Events</h1>
+          <Button
+            onClick={() => navigate('/events/create')}
+            className="bg-white text-primary hover:bg-white/90"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create Event
+          </Button>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredEvents.length === 0 ? (
             <div className="text-center py-8 col-span-full">

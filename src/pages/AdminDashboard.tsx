@@ -1,10 +1,21 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Edit, Trash2 } from "lucide-react";
 
 interface Event {
   id: string;
@@ -257,6 +268,35 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDelete = async (eventId: string) => {
+    try {
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', eventId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Event deleted successfully",
+      });
+
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete event",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEdit = (eventId: string) => {
+    navigate(`/events/${eventId}/edit`);
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -389,7 +429,7 @@ export default function AdminDashboard() {
 
           {/* Events Table */}
           <div className="overflow-x-auto">
-            <h2 className="text-2xl font-semibold mb-4">Events Requiring Approval</h2>
+            <h2 className="text-2xl font-semibold mb-4">Events Management</h2>
             <table className="min-w-full bg-white">
               <thead>
                 <tr className="bg-gray-50">
@@ -443,6 +483,42 @@ export default function AdminDashboard() {
                           </Button>
                         </>
                       )}
+                      <Button
+                        onClick={() => handleEdit(event.id)}
+                        variant="outline"
+                        size="sm"
+                        className="bg-blue-50 text-blue-700 hover:bg-blue-100"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="bg-red-50 text-red-700 hover:bg-red-100"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Event</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this event? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(event.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </td>
                   </tr>
                 ))}
