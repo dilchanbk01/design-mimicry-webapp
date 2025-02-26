@@ -45,6 +45,8 @@ export default function GroomerDetail() {
 
   if (!groomer) return null;
 
+  const defaultImage = 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?w=800&auto=format&fit=crop&q=60';
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
@@ -60,7 +62,7 @@ export default function GroomerDetail() {
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <div className="h-64 relative">
             <img
-              src={groomer.profile_image_url || 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?w=800&auto=format&fit=crop&q=60'}
+              src={groomer.profile_image_url || defaultImage}
               alt={groomer.salon_name}
               className="w-full h-full object-cover"
             />
@@ -143,7 +145,7 @@ export default function GroomerDetail() {
           location: groomer.address,
           experience: `${groomer.experience_years}+ years experience`,
           price: `Starting from ₹${groomer.price}`,
-          image: groomer.profile_image_url || 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?w=800&auto=format&fit=crop&q=60',
+          image: groomer.profile_image_url || defaultImage,
           providesHomeService: groomer.provides_home_service,
           providesSalonService: groomer.provides_salon_service
         }}

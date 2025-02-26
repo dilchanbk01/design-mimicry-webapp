@@ -106,7 +106,7 @@ export default function PetGrooming() {
               partner={{
                 id: groomer.id,
                 name: groomer.salon_name,
-                rating: 4.5, // You might want to add a rating system later
+                rating: 4.5,
                 location: groomer.address,
                 experience: `${groomer.experience_years}+ years experience`,
                 price: `Starting from ₹${groomer.price}`,
