@@ -1,19 +1,11 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Avatar } from "@/components/ui/avatar";
-import { 
-  Ticket, 
-  Calendar, 
-  User, 
-  HelpCircle, 
-  Info,
-  ChevronRight,
-  ChevronLeft,
-  Scissors
-} from "lucide-react";
+import { ChevronLeft } from "lucide-react";
+import { ProfileHeader } from "@/components/profile/ProfileHeader";
+import { MainMenu } from "@/components/profile/MainMenu";
 import { TicketsSection } from "@/components/profile/TicketsSection";
 import { EventsSection } from "@/components/profile/EventsSection";
 import { HelpSupportSection } from "@/components/profile/HelpSupportSection";
@@ -64,39 +56,6 @@ export default function Profile() {
     }
   };
 
-  const menuItems = [
-    {
-      icon: Ticket,
-      title: "Your Tickets",
-      subtitle: "View your booked events",
-      tab: "tickets",
-    },
-    {
-      icon: Calendar,
-      title: "Your Events",
-      subtitle: "Manage your organized events",
-      tab: "events",
-    },
-    {
-      icon: Scissors,
-      title: "Grooming Bookings",
-      subtitle: "View your pet grooming appointments",
-      tab: "grooming",
-    },
-    {
-      icon: HelpCircle,
-      title: "Help & Support",
-      subtitle: "Get assistance and FAQs",
-      tab: "help",
-    },
-    {
-      icon: Info,
-      title: "About Us",
-      subtitle: "Learn more about Petsu",
-      tab: "about",
-    },
-  ];
-
   if (loading) {
     return (
       <div className="min-h-screen bg-primary/10 flex items-center justify-center">
@@ -118,34 +77,7 @@ export default function Profile() {
       case "about":
         return <AboutSection />;
       default:
-        return (
-          <div className="space-y-2">
-            {menuItems.map((item, index) => (
-              <button
-                key={index}
-                onClick={() => navigate(`/profile?tab=${item.tab}`)}
-                className="w-full bg-white rounded-xl shadow-sm p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="p-2 rounded-full bg-primary/10">
-                    <item.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="text-left">
-                    <div className="font-medium">{item.title}</div>
-                    <div className="text-sm text-gray-600">{item.subtitle}</div>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
-              </button>
-            ))}
-            <button
-              onClick={handleSignOut}
-              className="w-full mt-4 text-sm text-gray-600 hover:text-gray-800 bg-white rounded-xl shadow-sm p-4"
-            >
-              Sign out
-            </button>
-          </div>
-        );
+        return <MainMenu onSignOut={handleSignOut} />;
     }
   };
 
@@ -184,25 +116,9 @@ export default function Profile() {
       </header>
 
       <main className="container mx-auto px-4 pt-16 pb-20 max-w-lg">
-        {activeTab === "profile" && (
-          <div className="bg-white rounded-xl shadow-sm p-4 mb-4 flex items-center gap-4">
-            <Avatar className="h-16 w-16">
-              <User className="h-8 w-8" />
-            </Avatar>
-            <div>
-              <h1 className="text-xl font-semibold">
-                Hey{profile?.full_name ? `, ${profile.full_name}` : ""}!
-              </h1>
-              <button 
-                onClick={() => navigate("/profile/edit")}
-                className="text-sm text-gray-600 hover:text-primary transition-colors"
-              >
-                Edit Profile
-              </button>
-            </div>
-          </div>
+        {activeTab === "profile" && profile && (
+          <ProfileHeader fullName={profile.full_name} />
         )}
-
         {renderContent()}
       </main>
     </div>
