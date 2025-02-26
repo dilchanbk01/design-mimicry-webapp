@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Instagram, Ticket } from "lucide-react";
@@ -95,12 +94,11 @@ export default function EventDetail() {
 
         if (eventError) throw eventError;
         
-        // Transform the image URL to use CDN and ensure all required fields are present
         setEvent({
           ...eventData,
           image_url: getOptimizedImageUrl(eventData.image_url),
-          duration: eventData.duration || 0, // Provide default value if missing
-          event_type: eventData.event_type || '', // Provide default value if missing
+          duration: eventData.duration || 0,
+          event_type: eventData.event_type || '',
         });
         
         const { count, error: bookingsError } = await supabase
@@ -206,26 +204,24 @@ export default function EventDetail() {
       <main className="pt-16">
         <div className="relative w-full h-64">
           <img
-            src={event.image_url}
-            alt={event.title}
+            src={event?.image_url}
+            alt={event?.title}
             className="w-full h-full object-cover"
           />
         </div>
 
         <div className="bg-white rounded-t-3xl -mt-6 relative z-10">
           <div className="p-6 border-b">
-            <div className="flex items-start gap-4">
+            <div className="flex items-start justify-between gap-4">
+              <h1 className="text-2xl font-bold text-gray-800 mb-2 flex-1">
+                {event?.title}
+              </h1>
               <EventShareMenu />
-              <div className="flex-1">
-                <h1 className="text-2xl font-bold text-gray-800 mb-2">
-                  {event.title}
-                </h1>
-              </div>
             </div>
 
             <EventBookingSection
-              eventId={event.id}
-              price={event.price}
+              eventId={event?.id || ''}
+              price={event?.price || 0}
               remainingTickets={remainingTickets}
               isBooked={isBooked}
               onBookingComplete={handleBookingComplete}

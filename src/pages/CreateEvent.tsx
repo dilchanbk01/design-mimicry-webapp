@@ -11,6 +11,7 @@ import { DateTimeSection } from "@/components/create-event/DateTimeSection";
 import { LocationInput } from "@/components/create-event/LocationInput";
 import { OrganizerInfo } from "@/components/create-event/OrganizerInfo";
 import { PetTypeSelection } from "@/components/create-event/PetTypeSelection";
+import { Switch } from "@/components/ui/switch";
 
 export default function CreateEvent() {
   const navigate = useNavigate();
@@ -32,6 +33,7 @@ export default function CreateEvent() {
     instagram: "",
     selectedPets: [] as string[],
     image: null as File | null,
+    isFreeEvent: false,
   });
 
   const eventTypes = [
@@ -211,15 +213,36 @@ export default function CreateEvent() {
                 />
               </div>
               <div>
-                <label>Ticket Price (₹)</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={formData.price}
-                  onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) }))}
-                  className="mt-1 w-full rounded-md border border-input px-3 py-2"
-                />
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">Free Event</label>
+                    <Switch
+                      checked={formData.isFreeEvent}
+                      onCheckedChange={(checked) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          isFreeEvent: checked,
+                          price: checked ? 0 : prev.price
+                        }));
+                      }}
+                    />
+                  </div>
+                  
+                  {!formData.isFreeEvent && (
+                    <div>
+                      <label>Ticket Price (₹)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={formData.price}
+                        onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) }))}
+                        className="mt-1 w-full rounded-md border border-input px-3 py-2"
+                        disabled={formData.isFreeEvent}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

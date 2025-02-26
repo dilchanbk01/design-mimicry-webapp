@@ -301,23 +301,14 @@ export default function Events() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
-          <div className="flex gap-2">
-            <Button
-              variant={showNearbyOnly ? "default" : "outline"}
-              onClick={() => setShowNearbyOnly(true)}
-              className="bg-white text-primary hover:bg-white/90"
-            >
-              <MapPin className="h-4 w-4 mr-2" />
-              Nearby
-            </Button>
-            <Button
-              variant={!showNearbyOnly ? "default" : "outline"}
-              onClick={() => setShowNearbyOnly(false)}
-              className="bg-white text-primary hover:bg-white/90"
-            >
-              All Events
-            </Button>
-          </div>
+          <Button
+            variant={showNearbyOnly ? "outline" : "default"}
+            onClick={() => setShowNearbyOnly(!showNearbyOnly)}
+            className="bg-white text-primary hover:bg-white/90"
+          >
+            <MapPin className="h-4 w-4 mr-2" />
+            {showNearbyOnly ? 'Show All Events' : 'Show Nearby'}
+          </Button>
           <Button
             onClick={handleCreateEventClick}
             className="bg-white text-primary hover:bg-white/90"
