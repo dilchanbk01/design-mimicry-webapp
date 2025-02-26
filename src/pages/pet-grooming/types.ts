@@ -7,4 +7,6 @@ export interface GroomingPartner {
   experience: string;
   price: string;
   image: string;
+  providesHomeService: boolean;
+  providesSalonService: boolean;
 }

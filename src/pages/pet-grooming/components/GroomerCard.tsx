@@ -1,14 +1,15 @@
 
 import { Button } from "@/components/ui/button";
-import { MapPin, Star, Scissors } from "lucide-react";
+import { MapPin, Star, Scissors, Home, Store } from "lucide-react";
 import { GroomingPartner } from "../types";
 
 interface GroomerCardProps {
   partner: GroomingPartner;
   onBooking: (partner: GroomingPartner) => void;
+  onViewDetails: () => void;
 }
 
-export function GroomerCard({ partner, onBooking }: GroomerCardProps) {
+export function GroomerCard({ partner, onBooking, onViewDetails }: GroomerCardProps) {
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
       <div className="md:flex">
@@ -34,22 +35,45 @@ export function GroomerCard({ partner, onBooking }: GroomerCardProps) {
                 <span className="text-sm">{partner.location}</span>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-4">
               <div className="flex items-center text-gray-600">
                 <Scissors className="h-4 w-4 mr-1" />
                 <span className="text-sm">{partner.experience}</span>
+              </div>
+              <div className="flex gap-2">
+                {partner.providesSalonService && (
+                  <div className="flex items-center text-green-600">
+                    <Store className="h-4 w-4 mr-1" />
+                    <span className="text-sm">Salon</span>
+                  </div>
+                )}
+                {partner.providesHomeService && (
+                  <div className="flex items-center text-blue-600">
+                    <Home className="h-4 w-4 mr-1" />
+                    <span className="text-sm">Home</span>
+                  </div>
+                )}
               </div>
               <div className="text-sm font-medium text-primary">
                 {partner.price}
               </div>
             </div>
           </div>
-          <Button 
-            className="mt-4 w-full md:w-auto"
-            onClick={() => onBooking(partner)}
-          >
-            Book Appointment
-          </Button>
+          <div className="flex gap-4 mt-4">
+            <Button 
+              className="flex-1"
+              onClick={() => onBooking(partner)}
+            >
+              Book Appointment
+            </Button>
+            <Button 
+              variant="outline"
+              className="flex-1"
+              onClick={onViewDetails}
+            >
+              View Details
+            </Button>
+          </div>
         </div>
       </div>
     </div>

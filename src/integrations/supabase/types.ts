@@ -196,6 +196,9 @@ export type Database = {
           created_at: string | null
           experience_years: number
           id: string
+          price: number | null
+          provides_home_service: boolean | null
+          provides_salon_service: boolean | null
           salon_name: string
           specializations: string[]
           updated_at: string | null
@@ -211,6 +214,9 @@ export type Database = {
           created_at?: string | null
           experience_years: number
           id?: string
+          price?: number | null
+          provides_home_service?: boolean | null
+          provides_salon_service?: boolean | null
           salon_name: string
           specializations: string[]
           updated_at?: string | null
@@ -226,6 +232,9 @@ export type Database = {
           created_at?: string | null
           experience_years?: number
           id?: string
+          price?: number | null
+          provides_home_service?: boolean | null
+          provides_salon_service?: boolean | null
           salon_name?: string
           specializations?: string[]
           updated_at?: string | null

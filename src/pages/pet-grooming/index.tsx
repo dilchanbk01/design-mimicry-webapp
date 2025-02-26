@@ -1,15 +1,18 @@
 
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 import { GroomingHeader } from "./components/GroomingHeader";
 import { GroomerCard } from "./components/GroomerCard";
 import { BookingDialog } from "./components/BookingDialog";
 import { GroomingHeroBanner } from "./components/GroomingHeroBanner";
-import { GROOMING_PARTNERS } from "./data/partners";
+import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import type { GroomingPartner } from "./types";
-import { useInterval } from "@/hooks/use-interval";
 
 export default function PetGrooming() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [selectedPartner, setSelectedPartner] = useState<GroomingPartner | null>(null);
@@ -17,13 +20,27 @@ export default function PetGrooming() {
   const [bookingTime, setBookingTime] = useState("");
   const [petDetails, setPetDetails] = useState("");
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [serviceType, setServiceType] = useState<'all' | 'salon' | 'home'>('all');
 
-  useInterval(() => {
-    const heroBanners = document.querySelectorAll('[data-hero-banner]');
-    if (heroBanners.length > 0) {
-      setCurrentSlide((prev) => (prev + 1) % heroBanners.length);
+  const { data: groomers = [] } = useQuery({
+    queryKey: ['groomers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('groomer_profiles')
+        .select('*')
+        .eq('application_status', 'approved');
+
+      if (error) throw error;
+      return data;
     }
-  }, 3000); // Auto-slide every 3 seconds
+  });
+
+  const filteredGroomers = groomers.filter(groomer => {
+    if (serviceType === 'all') return true;
+    if (serviceType === 'salon') return groomer.provides_salon_service;
+    if (serviceType === 'home') return groomer.provides_home_service;
+    return true;
+  });
 
   const handleBooking = (partner: GroomingPartner) => {
     setSelectedPartner(partner);
@@ -44,23 +61,65 @@ export default function PetGrooming() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <GroomingHeader />
+      
       <GroomingHeroBanner 
         currentSlide={currentSlide} 
         setCurrentSlide={setCurrentSlide} 
       />
-      <GroomingHeader />
-      
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid gap-6">
-          {GROOMING_PARTNERS.map((partner) => (
+
+      <div className="container mx-auto px-4 py-8">
+        {/* Navigation Bar */}
+        <nav className="flex items-center justify-between mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(-1)}
+          >
+            Back
+          </Button>
+          <div className="flex gap-4">
+            <Button
+              variant={serviceType === 'all' ? 'default' : 'outline'}
+              onClick={() => setServiceType('all')}
+            >
+              All Services
+            </Button>
+            <Button
+              variant={serviceType === 'salon' ? 'default' : 'outline'}
+              onClick={() => setServiceType('salon')}
+            >
+              Salon Service
+            </Button>
+            <Button
+              variant={serviceType === 'home' ? 'default' : 'outline'}
+              onClick={() => setServiceType('home')}
+            >
+              Home Service
+            </Button>
+          </div>
+        </nav>
+
+        <main className="grid gap-6">
+          {filteredGroomers.map((groomer) => (
             <GroomerCard
-              key={partner.id}
-              partner={partner}
+              key={groomer.id}
+              partner={{
+                id: groomer.id,
+                name: groomer.salon_name,
+                rating: 4.5, // You might want to add a rating system later
+                location: groomer.address,
+                experience: `${groomer.experience_years}+ years experience`,
+                price: `Starting from ₹${groomer.price}`,
+                image: groomer.profile_image_url || 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?w=800&auto=format&fit=crop&q=60',
+                providesHomeService: groomer.provides_home_service,
+                providesSalonService: groomer.provides_salon_service
+              }}
               onBooking={handleBooking}
+              onViewDetails={() => navigate(`/groomer/${groomer.id}`)}
             />
           ))}
-        </div>
-      </main>
+        </main>
+      </div>
 
       <BookingDialog
         open={isBookingOpen}

@@ -26,6 +26,7 @@ import Terms from "./pages/Terms";
 import CancellationPolicy from "./pages/CancellationPolicy";
 import EditEvent from "./pages/EditEvent";
 import PetGrooming from "./pages/pet-grooming";
+import GroomerDetail from "./pages/pet-grooming/GroomerDetail";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -64,6 +65,7 @@ const App = () => (
           <Route path="/terms" element={<Terms />} />
           <Route path="/cancellation-policy" element={<CancellationPolicy />} />
           <Route path="/pet-grooming" element={<PetGrooming />} />
+          <Route path="/groomer/:id" element={<GroomerDetail />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
