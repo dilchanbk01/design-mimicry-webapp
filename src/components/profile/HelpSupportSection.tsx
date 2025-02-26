@@ -69,7 +69,7 @@ export function HelpSupportSection() {
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h3 className="font-medium mb-4">Contact Information</h3>
         <div className="space-y-2 text-sm text-gray-600">
-          <p>JP nagar 2nd page, bangalore</p>
+          <p>690E JP nagar 2nd phase, 560078, Bangalore</p>
           <p>Email: <a href="mailto:petsubk@gmail.com" className="text-primary hover:underline">petsubk@gmail.com</a></p>
           <p>Phone: <a href="tel:8446791696" className="text-primary hover:underline">8446791696</a></p>
         </div>
