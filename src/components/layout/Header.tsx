@@ -26,9 +26,9 @@ export function Header({ isScrolled, selectedCity, onCitySelect }: HeaderProps) 
           <img 
             src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
             alt="Petsu Logo" 
-            className="h-12 mt-4"
+            className="h-12"
           />
-          <h2 className="mt-2 text-xl font-playfair text-accent">Making Pet Care Effortless</h2>
+          <h2 className="text-xl text-accent">Making Pet Care Effortless</h2>
         </div>
         {onCitySelect && (
           <div className="flex justify-center mt-4">
