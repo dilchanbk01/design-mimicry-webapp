@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -9,7 +8,6 @@ import { CitySelectionDialog } from "@/components/home/CitySelectionDialog";
 import { NotifyDialog } from "@/components/home/NotifyDialog";
 import { Instagram, Linkedin } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const { toast } = useToast();
