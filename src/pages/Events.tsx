@@ -56,9 +56,17 @@ export default function Events() {
           description,
           image_url,
           date,
+          duration,
           location,
           price,
-          capacity
+          capacity,
+          event_type,
+          organizer_name,
+          organizer_email,
+          organizer_phone,
+          organizer_website,
+          pet_types,
+          pet_requirements
         `)
         .eq('status', 'approved')
         .order("date", { ascending: true });
