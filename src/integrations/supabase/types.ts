@@ -14,6 +14,7 @@ export type Database = {
           created_at: string | null
           event_id: string | null
           id: string
+          payment_id: string | null
           status: string
           user_id: string | null
         }
@@ -21,6 +22,7 @@ export type Database = {
           created_at?: string | null
           event_id?: string | null
           id?: string
+          payment_id?: string | null
           status?: string
           user_id?: string | null
         }
@@ -28,6 +30,7 @@ export type Database = {
           created_at?: string | null
           event_id?: string | null
           id?: string
+          payment_id?: string | null
           status?: string
           user_id?: string | null
         }
