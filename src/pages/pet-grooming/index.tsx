@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -8,6 +9,7 @@ import { GroomingHeroBanner } from "./components/GroomingHeroBanner";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { MapPin, Plus } from "lucide-react";
 import type { GroomingPartner, GroomerProfile } from "./types";
 
 export default function PetGrooming() {
@@ -58,7 +60,7 @@ export default function PetGrooming() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#00D26A]">
       <GroomingHeader />
       
       <GroomingHeroBanner 
@@ -66,25 +68,26 @@ export default function PetGrooming() {
         setCurrentSlide={setCurrentSlide} 
       />
 
-      <div className="container mx-auto px-4 py-8">
-        <nav className="flex justify-center mb-8">
-          <div className="flex gap-4">
-            <Button
-              variant={serviceType === 'salon' ? 'default' : 'outline'}
-              onClick={() => setServiceType('salon')}
-            >
-              Salon Service
-            </Button>
-            <Button
-              variant={serviceType === 'home' ? 'default' : 'outline'}
-              onClick={() => setServiceType('home')}
-            >
-              Home Service
-            </Button>
-          </div>
-        </nav>
+      <main className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-6">
+          <Button
+            variant={serviceType === 'salon' ? "default" : "outline"}
+            onClick={() => setServiceType('salon')}
+            className="bg-white text-primary hover:bg-white/90"
+          >
+            <MapPin className="h-4 w-4 mr-2" />
+            Near me
+          </Button>
+          <Button
+            onClick={() => navigate('/groomer/onboard')}
+            className="bg-white text-primary hover:bg-white/90"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Register as Groomer
+          </Button>
+        </div>
 
-        <main className="grid gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredGroomers.map((groomer) => (
             <GroomerCard
               key={groomer.id}
@@ -99,12 +102,25 @@ export default function PetGrooming() {
                 providesHomeService: groomer.provides_home_service,
                 providesSalonService: groomer.provides_salon_service
               }}
-              onBooking={handleBooking}
+              onBooking={() => {
+                setSelectedPartner({
+                  id: groomer.id,
+                  name: groomer.salon_name,
+                  rating: 4.5,
+                  location: groomer.address,
+                  experience: `${groomer.experience_years}+ years experience`,
+                  price: `Starting from ₹${groomer.price}`,
+                  image: groomer.profile_image_url || 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?w=800&auto=format&fit=crop&q=60',
+                  providesHomeService: groomer.provides_home_service,
+                  providesSalonService: groomer.provides_salon_service
+                });
+                setIsBookingOpen(true);
+              }}
               onViewDetails={() => navigate(`/groomer/${groomer.id}`)}
             />
           ))}
-        </main>
-      </div>
+        </div>
+      </main>
 
       <BookingDialog
         open={isBookingOpen}
@@ -116,7 +132,17 @@ export default function PetGrooming() {
         onDateChange={setBookingDate}
         onTimeChange={setBookingTime}
         onPetDetailsChange={setPetDetails}
-        onSubmit={handleBookingSubmit}
+        onSubmit={(e) => {
+          e.preventDefault();
+          toast({
+            title: "Booking Confirmed!",
+            description: `Your grooming appointment has been booked with ${selectedPartner?.name}`,
+          });
+          setIsBookingOpen(false);
+          setBookingDate("");
+          setBookingTime("");
+          setPetDetails("");
+        }}
       />
     </div>
   );
