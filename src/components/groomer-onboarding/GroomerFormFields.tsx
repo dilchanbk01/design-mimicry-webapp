@@ -33,7 +33,7 @@ export function GroomerFormFields({
               onImageChange(file);
             }
           }}
-          required
+          className="cursor-pointer"
         />
       </div>
 
