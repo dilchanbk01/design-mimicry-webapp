@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,8 @@ import {
   HelpCircle, 
   Info,
   ChevronRight,
-  ChevronLeft 
+  ChevronLeft,
+  Scissors
 } from "lucide-react";
 import { TicketsSection } from "@/components/profile/TicketsSection";
 import { EventsSection } from "@/components/profile/EventsSection";
@@ -78,6 +78,12 @@ export default function Profile() {
       tab: "events",
     },
     {
+      icon: Scissors,
+      title: "Grooming Bookings",
+      subtitle: "View your pet grooming appointments",
+      tab: "grooming",
+    },
+    {
       icon: HelpCircle,
       title: "Help & Support",
       subtitle: "Get assistance and FAQs",
@@ -105,6 +111,8 @@ export default function Profile() {
         return <TicketsSection />;
       case "events":
         return <EventsSection />;
+      case "grooming":
+        return <div>Placeholder for Grooming Bookings</div>;
       case "help":
         return <HelpSupportSection />;
       case "about":

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -20,7 +19,7 @@ export default function PetGrooming() {
   const [bookingTime, setBookingTime] = useState("");
   const [petDetails, setPetDetails] = useState("");
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [serviceType, setServiceType] = useState<'all' | 'salon' | 'home'>('all');
+  const [serviceType, setServiceType] = useState<'salon' | 'home'>('salon');
 
   const { data: groomers = [] } = useQuery<GroomerProfile[]>({
     queryKey: ['groomers'],
@@ -36,7 +35,6 @@ export default function PetGrooming() {
   });
 
   const filteredGroomers = groomers.filter(groomer => {
-    if (serviceType === 'all') return true;
     if (serviceType === 'salon') return groomer.provides_salon_service;
     if (serviceType === 'home') return groomer.provides_home_service;
     return true;
@@ -69,21 +67,8 @@ export default function PetGrooming() {
       />
 
       <div className="container mx-auto px-4 py-8">
-        {/* Navigation Bar */}
-        <nav className="flex items-center justify-between mb-8">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(-1)}
-          >
-            Back
-          </Button>
+        <nav className="flex justify-center mb-8">
           <div className="flex gap-4">
-            <Button
-              variant={serviceType === 'all' ? 'default' : 'outline'}
-              onClick={() => setServiceType('all')}
-            >
-              All Services
-            </Button>
             <Button
               variant={serviceType === 'salon' ? 'default' : 'outline'}
               onClick={() => setServiceType('salon')}
