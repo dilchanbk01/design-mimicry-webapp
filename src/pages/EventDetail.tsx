@@ -51,7 +51,6 @@ export default function EventDetail() {
 
   const fetchRemainingTickets = async () => {
     try {
-      // Use select count(*) instead of fetching all fields
       const { count, error: bookingsError } = await supabase
         .from("bookings")
         .select("*", { count: 'exact', head: true })
@@ -71,7 +70,6 @@ export default function EventDetail() {
   useEffect(() => {
     async function fetchEventAndBookings() {
       try {
-        // Only select needed fields
         const { data: eventData, error: eventError } = await supabase
           .from("events")
           .select(`
@@ -80,9 +78,11 @@ export default function EventDetail() {
             description,
             image_url,
             date,
+            duration,
             location,
             price,
             capacity,
+            event_type,
             organizer_name,
             organizer_email,
             organizer_phone,
@@ -95,10 +95,12 @@ export default function EventDetail() {
 
         if (eventError) throw eventError;
         
-        // Transform the image URL to use CDN
+        // Transform the image URL to use CDN and ensure all required fields are present
         setEvent({
           ...eventData,
-          image_url: getOptimizedImageUrl(eventData.image_url)
+          image_url: getOptimizedImageUrl(eventData.image_url),
+          duration: eventData.duration || 0, // Provide default value if missing
+          event_type: eventData.event_type || '', // Provide default value if missing
         });
         
         const { count, error: bookingsError } = await supabase
