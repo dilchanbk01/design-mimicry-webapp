@@ -170,27 +170,22 @@ export function EventBookingSection({
             {price === 0 ? (
               <span className="text-2xl font-bold text-[#00D26A]">FREE</span>
             ) : (
-              <>
-                <div className="flex flex-col">
-                  <span className="text-sm text-gray-500">Base Price</span>
-                  <span className="text-2xl font-bold text-[#00D26A]">₹{price}</span>
-                  <span className="text-sm text-gray-500">per ticket</span>
+              <div className="flex flex-col">
+                <span className="text-2xl font-bold text-[#00D26A]">₹{price}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">
+                    Total: ₹{totalAmount}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowPriceBreakdown(true)}
+                    className="p-0 h-auto hover:bg-transparent"
+                  >
+                    <Info className="h-4 w-4 text-gray-400" />
+                  </Button>
                 </div>
-                {numberOfTickets > 1 && (
-                  <div className="flex flex-col ml-4">
-                    <span className="text-sm text-gray-500">Total ({numberOfTickets} tickets)</span>
-                    <span className="text-2xl font-bold text-[#00D26A]">₹{totalAmount}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs text-gray-500 p-0 h-auto hover:text-gray-700"
-                      onClick={() => setShowPriceBreakdown(true)}
-                    >
-                      View breakdown
-                    </Button>
-                  </div>
-                )}
-              </>
+              </div>
             )}
           </div>
         </div>

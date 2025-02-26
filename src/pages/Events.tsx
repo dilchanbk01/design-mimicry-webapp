@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapPin, Plus } from "lucide-react";
@@ -81,10 +80,27 @@ export default function Events() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const getDistance = (eventLocation: string) => {
+    if (!userLocation) return Infinity;
+    
+    const pincodeMatch = eventLocation.match(/\b\d{6}\b/);
+    if (!pincodeMatch) return Infinity;
+    
+    const pincode = pincodeMatch[0];
+    return Math.abs(parseInt(pincode) - parseInt(localStorage.getItem('userPincode') || '0'));
+  };
+
   const filteredEvents = queryEvents.filter(event => 
     event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     event.location.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const sortedEvents = [...filteredEvents].sort((a, b) => {
+    if (showNearbyOnly) {
+      return getDistance(a.location) - getDistance(b.location);
+    }
+    return 0;
+  });
 
   useInterval(() => {
     const heroBanners = document.querySelectorAll('[data-hero-banner]');
@@ -135,7 +151,7 @@ export default function Events() {
             className="bg-white text-primary hover:bg-white/90"
           >
             <MapPin className="h-4 w-4 mr-2" />
-            {showNearbyOnly ? 'Show All Events' : 'Show Nearby'}
+            {showNearbyOnly ? 'All Events' : 'Near me'}
           </Button>
           <Button
             onClick={() => navigate('/events/create')}
@@ -147,12 +163,12 @@ export default function Events() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredEvents.length === 0 ? (
+          {sortedEvents.length === 0 ? (
             <div className="text-center py-8 col-span-full">
               <p className="text-white text-lg">No events found</p>
             </div>
           ) : (
-            filteredEvents.map((event) => (
+            sortedEvents.map((event) => (
               <EventCard
                 key={event.id}
                 event={event}
