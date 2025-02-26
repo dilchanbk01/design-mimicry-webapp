@@ -60,6 +60,13 @@ export default function GroomerOnboarding() {
     }));
   };
 
+  const handleImageChange = (file: File) => {
+    setFormData(prev => ({
+      ...prev,
+      profileImage: file
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -72,6 +79,25 @@ export default function GroomerOnboarding() {
         return;
       }
 
+      let profileImageUrl = null;
+
+      if (formData.profileImage) {
+        const fileExt = formData.profileImage.name.split('.').pop();
+        const filePath = `${user.id}-${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('groomer-profiles')
+          .upload(filePath, formData.profileImage);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('groomer-profiles')
+          .getPublicUrl(filePath);
+
+        profileImageUrl = publicUrl;
+      }
+
       const { error } = await supabase.from("groomer_profiles").insert({
         user_id: user.id,
         salon_name: formData.salonName,
@@ -79,7 +105,10 @@ export default function GroomerOnboarding() {
         specializations: formData.specializations,
         address: formData.address,
         contact_number: formData.contactNumber,
-        bio: formData.bio
+        bio: formData.bio,
+        profile_image_url: profileImageUrl,
+        provides_home_service: formData.providesHomeService,
+        provides_salon_service: formData.providesSalonService
       });
 
       if (error) throw error;
@@ -114,6 +143,7 @@ export default function GroomerOnboarding() {
               formData={formData}
               onFormDataChange={handleFormDataChange}
               onSpecializationToggle={handleSpecializationToggle}
+              onImageChange={handleImageChange}
             />
             <Button
               type="submit"
