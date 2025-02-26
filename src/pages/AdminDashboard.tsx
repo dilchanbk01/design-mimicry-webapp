@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,15 @@ interface Event {
   status: 'pending' | 'approved' | 'rejected';
   location: string;
   organizer_name: string;
+  capacity: number;
+  created_at: string;
+  description: string;
+  duration: number;
+  event_type: string;
+  image_url: string;
+  organizer_email: string;
+  organizer_id: string;
+  price: number;
 }
 
 interface Analytics {
@@ -73,7 +81,11 @@ export default function AdminDashboard() {
       if (eventsError) throw eventsError;
 
       if (eventsData) {
-        setEvents(eventsData);
+        const typedEvents = eventsData.map(event => ({
+          ...event,
+          status: event.status as 'pending' | 'approved' | 'rejected'
+        }));
+        setEvents(typedEvents);
         setAnalytics(prev => ({
           ...prev,
           total_events: eventsData.length,
