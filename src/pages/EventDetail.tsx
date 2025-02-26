@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { EventBookingSection } from "@/components/events/EventBookingSection";
 import { EventInformation } from "@/components/events/EventInformation";
 import { EventShareMenu } from "@/components/events/EventShareMenu";
+import { compressImage, getOptimizedImageUrl } from "@/utils/imageCompression";
 import type { Event } from "@/types/events";
 
 declare global {
@@ -50,9 +51,10 @@ export default function EventDetail() {
 
   const fetchRemainingTickets = async () => {
     try {
+      // Use select count(*) instead of fetching all fields
       const { count, error: bookingsError } = await supabase
         .from("bookings")
-        .select("*", { count: 'exact' })
+        .select("*", { count: 'exact', head: true })
         .eq("event_id", id)
         .eq("status", "confirmed");
 
@@ -69,14 +71,35 @@ export default function EventDetail() {
   useEffect(() => {
     async function fetchEventAndBookings() {
       try {
+        // Only select needed fields
         const { data: eventData, error: eventError } = await supabase
           .from("events")
-          .select("*")
+          .select(`
+            id,
+            title,
+            description,
+            image_url,
+            date,
+            location,
+            price,
+            capacity,
+            organizer_name,
+            organizer_email,
+            organizer_phone,
+            organizer_website,
+            pet_types,
+            pet_requirements
+          `)
           .eq("id", id)
           .single();
 
         if (eventError) throw eventError;
-        setEvent(eventData);
+        
+        // Transform the image URL to use CDN
+        setEvent({
+          ...eventData,
+          image_url: getOptimizedImageUrl(eventData.image_url)
+        });
         
         const { count, error: bookingsError } = await supabase
           .from("bookings")

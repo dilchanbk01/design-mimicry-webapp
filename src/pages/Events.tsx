@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
 import { useInterval } from "@/hooks/use-interval";
 import type { Event } from "@/types/events";
+import { getOptimizedImageUrl } from "@/utils/imageCompression";
 
 interface HeroBanner {
   id: string;
@@ -40,7 +41,6 @@ export default function Events() {
     return userBookings.some(booking => booking.event_id === eventId);
   };
 
-  // Optimized query to fetch only needed fields
   const { data: queryEvents = [] } = useQuery({
     queryKey: ['events', 'approved'],
     queryFn: async () => {
@@ -60,7 +60,11 @@ export default function Events() {
         .order("date", { ascending: true });
 
       if (error) throw error;
-      return data;
+      
+      return data.map(event => ({
+        ...event,
+        image_url: getOptimizedImageUrl(event.image_url)
+      }));
     },
     staleTime: 5 * 60 * 1000, // Cache data for 5 minutes
   });
@@ -70,7 +74,6 @@ export default function Events() {
     event.location.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Optimized query to fetch only needed hero banner fields
   const { data: heroBanners = [] } = useQuery({
     queryKey: ['heroBanners'],
     queryFn: async () => {
