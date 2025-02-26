@@ -9,7 +9,7 @@ import { GroomingHeroBanner } from "./components/GroomingHeroBanner";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { GroomingPartner } from "./types";
+import type { GroomingPartner, GroomerProfile } from "./types";
 
 export default function PetGrooming() {
   const navigate = useNavigate();
@@ -22,7 +22,7 @@ export default function PetGrooming() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [serviceType, setServiceType] = useState<'all' | 'salon' | 'home'>('all');
 
-  const { data: groomers = [] } = useQuery({
+  const { data: groomers = [] } = useQuery<GroomerProfile[]>({
     queryKey: ['groomers'],
     queryFn: async () => {
       const { data, error } = await supabase

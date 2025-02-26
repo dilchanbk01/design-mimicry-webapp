@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +6,7 @@ import { MapPin, Star, Scissors, Home, Store, ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { BookingDialog } from "./components/BookingDialog";
 import { useToast } from "@/components/ui/use-toast";
+import type { GroomerProfile } from "./types";
 
 export default function GroomerDetail() {
   const { id } = useParams();
@@ -17,7 +17,7 @@ export default function GroomerDetail() {
   const [bookingTime, setBookingTime] = useState("");
   const [petDetails, setPetDetails] = useState("");
 
-  const { data: groomer } = useQuery({
+  const { data: groomer } = useQuery<GroomerProfile>({
     queryKey: ['groomer', id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -133,30 +133,30 @@ export default function GroomerDetail() {
             </div>
           </div>
         </div>
-      </div>
 
-      <BookingDialog
-        open={isBookingOpen}
-        onOpenChange={setIsBookingOpen}
-        selectedPartner={{
-          id: groomer.id,
-          name: groomer.salon_name,
-          rating: 4.5,
-          location: groomer.address,
-          experience: `${groomer.experience_years}+ years experience`,
-          price: `Starting from ₹${groomer.price}`,
-          image: groomer.profile_image_url || defaultImage,
-          providesHomeService: groomer.provides_home_service,
-          providesSalonService: groomer.provides_salon_service
-        }}
-        bookingDate={bookingDate}
-        bookingTime={bookingTime}
-        petDetails={petDetails}
-        onDateChange={setBookingDate}
-        onTimeChange={setBookingTime}
-        onPetDetailsChange={setPetDetails}
-        onSubmit={handleBookingSubmit}
-      />
+        <BookingDialog
+          open={isBookingOpen}
+          onOpenChange={setIsBookingOpen}
+          selectedPartner={{
+            id: groomer.id,
+            name: groomer.salon_name,
+            rating: 4.5,
+            location: groomer.address,
+            experience: `${groomer.experience_years}+ years experience`,
+            price: `Starting from ₹${groomer.price}`,
+            image: groomer.profile_image_url || defaultImage,
+            providesHomeService: groomer.provides_home_service,
+            providesSalonService: groomer.provides_salon_service
+          }}
+          bookingDate={bookingDate}
+          bookingTime={bookingTime}
+          petDetails={petDetails}
+          onDateChange={setBookingDate}
+          onTimeChange={setBookingTime}
+          onPetDetailsChange={setPetDetails}
+          onSubmit={handleBookingSubmit}
+        />
+      </div>
     </div>
   );
 }
