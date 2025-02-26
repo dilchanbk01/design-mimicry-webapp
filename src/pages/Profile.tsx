@@ -85,28 +85,27 @@ export default function Profile() {
     <div className="min-h-screen bg-primary/10">
       <header className="fixed top-0 left-0 right-0 bg-transparent z-50">
         <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            {activeTab !== "profile" ? (
+          <div className="flex items-center justify-center">
+            {activeTab !== "profile" && (
               <button
                 onClick={() => navigate("/profile")}
-                className="text-gray-600 hover:text-gray-800"
+                className="absolute left-4 text-gray-600 hover:text-gray-800"
               >
                 <ChevronLeft className="h-6 w-6" />
               </button>
-            ) : (
-              <div className="w-6">{/* Spacer */}</div>
             )}
             
             <img 
               src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
               alt="Petsu"
-              className="h-8"
+              className="h-8 cursor-pointer"
+              onClick={() => navigate('/')}
             />
             
             {activeTab !== "profile" && (
               <button
                 onClick={handleSignOut}
-                className="text-sm text-gray-600 hover:text-gray-800"
+                className="absolute right-4 text-sm text-gray-600 hover:text-gray-800"
               >
                 Sign out
               </button>
