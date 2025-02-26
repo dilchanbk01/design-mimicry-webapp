@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -24,6 +25,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
 import CancellationPolicy from "./pages/CancellationPolicy";
 import EditEvent from "./pages/EditEvent";
+import PetGrooming from "./pages/pet-grooming";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,6 +63,7 @@ const App = () => (
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/cancellation-policy" element={<CancellationPolicy />} />
+          <Route path="/pet-grooming" element={<PetGrooming />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
