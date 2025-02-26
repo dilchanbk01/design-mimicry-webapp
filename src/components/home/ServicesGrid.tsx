@@ -4,9 +4,10 @@ import { useNavigate } from "react-router-dom";
 
 interface ServicesGridProps {
   onEssentialsClick: () => void;
+  onFindVetsClick: () => void;
 }
 
-export function ServicesGrid({ onEssentialsClick }: ServicesGridProps) {
+export function ServicesGrid({ onEssentialsClick, onFindVetsClick }: ServicesGridProps) {
   const navigate = useNavigate();
 
   return (
@@ -28,16 +29,16 @@ export function ServicesGrid({ onEssentialsClick }: ServicesGridProps) {
       <Card
         title="Find Vets"
         icon="/lovable-uploads/0de28ab3-c7d0-4f1a-93ac-e975813200de.png"
-        onClick={() => navigate("/find-vets")}
+        onClick={onFindVetsClick}
         titleClassName="text-base md:text-xl"
-        className="aspect-square bg-white hover:scale-[1.02]"
+        className="aspect-square bg-white hover:scale-[1.02] h-[320px]"
       />
       <Card
         title="Pet Essentials"
         icon="/lovable-uploads/01f1af17-4a11-4809-9674-01e898a01385.png"
         onClick={onEssentialsClick}
         titleClassName="text-base md:text-xl"
-        className="aspect-square bg-white hover:scale-[1.02]"
+        className="aspect-square bg-white hover:scale-[1.02] h-[320px]"
       />
     </div>
   );
