@@ -1,49 +1,65 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ChevronDown } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { MapPin, User } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
 
 interface HeaderProps {
-  isScrolled?: boolean;
-  selectedCity?: string | null;
-  onCitySelect?: () => void;
+  isScrolled: boolean;
+  selectedCity: string | null;
+  onCitySelect: () => void;
 }
 
 export function Header({ isScrolled, selectedCity, onCitySelect }: HeaderProps) {
-  const [notifyOpen, setNotifyOpen] = useState(false);
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
-    <header 
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? "bg-white shadow-sm py-2" : "bg-transparent py-4"
-      }`}
-    >
-      <div className="container mx-auto px-4">
-        <div className="flex flex-col items-center">
+    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      isScrolled ? '-translate-y-full' : 'translate-y-0'
+    }`}>
+      <div className="container mx-auto px-4 py-3">
+        <div className="flex items-center justify-between">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-white hover:bg-white/20 gap-2"
+            onClick={onCitySelect}
+          >
+            <MapPin className="h-5 w-5" />
+            {selectedCity || "Select City"}
+          </Button>
           <img 
             src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
-            alt="Petsu Logo" 
-            className="h-12 mt-4"
+            alt="Petsu"
+            className="h-16 cursor-pointer"
+            onClick={() => navigate('/')}
           />
-          <h2 className="mt-2 text-xl font-playfair text-accent">Making Pet Care Effortless</h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-white hover:bg-white/20 gap-2"
+            onClick={() => navigate(user ? '/profile' : '/auth')}
+          >
+            <User className="h-5 w-5" />
+            {!user && "Sign In"}
+          </Button>
         </div>
-        {onCitySelect && (
-          <div className="flex justify-center mt-4">
-            <Button
-              variant="ghost"
-              onClick={onCitySelect}
-              className={`flex items-center gap-2 text-sm ${
-                isScrolled ? "text-accent" : "text-white"
-              }`}
-            >
-              {selectedCity || "Select your city"}
-              <ChevronDown className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
       </div>
     </header>
   );

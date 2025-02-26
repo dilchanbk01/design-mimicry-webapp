@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -7,14 +8,12 @@ import { PartnerCards } from "@/components/home/PartnerCards";
 import { CitySelectionDialog } from "@/components/home/CitySelectionDialog";
 import { NotifyDialog } from "@/components/home/NotifyDialog";
 import { Instagram, Linkedin } from "lucide-react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 const Index = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isNotifyDialogOpen, setIsNotifyDialogOpen] = useState(false);
   const [isCityDialogOpen, setIsCityDialogOpen] = useState(false);
-  const [isVetNotifyDialogOpen, setIsVetNotifyDialogOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [citySearch, setCitySearch] = useState("");
@@ -53,14 +52,6 @@ const Index = () => {
     setIsCityDialogOpen(false);
   };
 
-  const handleFindVetsClick = () => {
-    setIsVetNotifyDialogOpen(true);
-  };
-
-  const handleEssentialsClick = () => {
-    window.location.href = "https://supertails.com/";
-  };
-
   return (
     <div className="min-h-screen w-full bg-primary flex flex-col">
       <Header
@@ -69,12 +60,9 @@ const Index = () => {
         onCitySelect={() => setIsCityDialogOpen(true)}
       />
 
-      <main className="container mx-auto px-4 pt-32 pb-20 flex-grow">
+      <main className="container mx-auto px-4 pt-24 pb-20 flex-grow">
         <div className="max-w-4xl mx-auto space-y-4">
-          <ServicesGrid 
-            onEssentialsClick={handleEssentialsClick} 
-            onFindVetsClick={handleFindVetsClick}
-          />
+          <ServicesGrid onEssentialsClick={() => setIsNotifyDialogOpen(true)} />
           <PartnerCards
             onVetPartnerClick={handleVetPartnerClick}
             onGroomerPartnerClick={handleGroomerPartnerClick}
@@ -151,14 +139,6 @@ const Index = () => {
         onEmailChange={setEmail}
         onSubmit={handleNotifySubmit}
       />
-
-      <Dialog open={isVetNotifyDialogOpen} onOpenChange={setIsVetNotifyDialogOpen}>
-        <DialogContent>
-          <DialogTitle>Coming Soon!</DialogTitle>
-          <p className="py-4">Our veterinary services are coming soon. We'll notify you when they're available!</p>
-          <Button onClick={() => setIsVetNotifyDialogOpen(false)}>Close</Button>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
