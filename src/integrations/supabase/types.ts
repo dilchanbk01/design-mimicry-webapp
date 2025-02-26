@@ -245,6 +245,53 @@ export type Database = {
         }
         Relationships: []
       }
+      grooming_bookings: {
+        Row: {
+          created_at: string | null
+          date: string
+          groomer_id: string | null
+          id: string
+          payment_id: string | null
+          pet_details: string | null
+          service_type: string
+          status: string | null
+          time: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          groomer_id?: string | null
+          id?: string
+          payment_id?: string | null
+          pet_details?: string | null
+          service_type: string
+          status?: string | null
+          time: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          groomer_id?: string | null
+          id?: string
+          payment_id?: string | null
+          pet_details?: string | null
+          service_type?: string
+          status?: string | null
+          time?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grooming_bookings_groomer_id_fkey"
+            columns: ["groomer_id"]
+            isOneToOne: false
+            referencedRelation: "groomer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       help_requests: {
         Row: {
           created_at: string | null

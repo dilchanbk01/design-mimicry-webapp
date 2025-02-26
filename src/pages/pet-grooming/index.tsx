@@ -94,11 +94,8 @@ export default function PetGrooming() {
         };
 
         const { error } = await supabase
-          .from("bookings") // Using the existing bookings table
-          .insert({
-            ...booking,
-            event_id: null // Set to null since this isn't an event booking
-          });
+          .from("grooming_bookings")
+          .insert(booking);
 
         if (error) {
           toast({
