@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus, Ticket, Info } from "lucide-react";
@@ -59,7 +58,6 @@ export function EventBookingSection({
       return;
     }
 
-    // Skip payment for free events
     if (price === 0) {
       try {
         setBookingInProgress(true);
@@ -92,7 +90,6 @@ export function EventBookingSection({
       return;
     }
 
-    // Paid event flow
     const res = await loadRazorpayScript();
     if (!res) {
       toast({
@@ -170,21 +167,32 @@ export function EventBookingSection({
       <div className="flex justify-between items-start mb-4">
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
-            <span className="text-2xl font-bold text-[#00D26A]">
-              {price === 0 ? 'FREE' : `₹${price}`}
-            </span>
-            {price > 0 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 rounded-full"
-                onClick={() => setShowPriceBreakdown(true)}
-              >
-                <Info className="h-4 w-4" />
-              </Button>
+            {price === 0 ? (
+              <span className="text-2xl font-bold text-[#00D26A]">FREE</span>
+            ) : (
+              <>
+                <div className="flex flex-col">
+                  <span className="text-sm text-gray-500">Base Price</span>
+                  <span className="text-2xl font-bold text-[#00D26A]">₹{price}</span>
+                  <span className="text-sm text-gray-500">per ticket</span>
+                </div>
+                {numberOfTickets > 1 && (
+                  <div className="flex flex-col ml-4">
+                    <span className="text-sm text-gray-500">Total ({numberOfTickets} tickets)</span>
+                    <span className="text-2xl font-bold text-[#00D26A]">₹{totalAmount}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-gray-500 p-0 h-auto hover:text-gray-700"
+                      onClick={() => setShowPriceBreakdown(true)}
+                    >
+                      View breakdown
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
-          <span className="text-sm text-gray-500">per ticket</span>
         </div>
         <div className="flex flex-col items-end">
           <div className="flex items-center text-sm mb-2">

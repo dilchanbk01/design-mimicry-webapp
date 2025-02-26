@@ -2,9 +2,6 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { MapPin } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
 
 interface LocationInputProps {
   location: string;
@@ -12,40 +9,20 @@ interface LocationInputProps {
 }
 
 export function LocationInput({ location, onLocationChange }: LocationInputProps) {
-  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-  const { toast } = useToast();
+  const [streetAddress, setStreetAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [pincode, setPincode] = useState("");
 
-  const handleGetCurrentLocation = () => {
-    setIsLoadingLocation(true);
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          // Simply use coordinates as a fallback
-          const event = {
-            target: {
-              value: `${position.coords.latitude}, ${position.coords.longitude}`
-            }
-          } as React.ChangeEvent<HTMLInputElement>;
-          onLocationChange(event);
-          setIsLoadingLocation(false);
-        },
-        (error) => {
-          toast({
-            title: "Location Error",
-            description: "Please enable location access in your browser settings",
-            variant: "destructive",
-          });
-          setIsLoadingLocation(false);
-        }
-      );
-    } else {
-      toast({
-        title: "Not Supported",
-        description: "Geolocation is not supported by your browser",
-        variant: "destructive",
-      });
-      setIsLoadingLocation(false);
-    }
+  const updateLocation = (street: string, city: string, pincode: string) => {
+    const fullAddress = [
+      street,
+      city,
+      pincode ? pincode : ""
+    ].filter(Boolean).join(", ");
+    
+    onLocationChange({ 
+      target: { value: fullAddress } 
+    } as React.ChangeEvent<HTMLInputElement>);
   };
 
   return (
@@ -54,17 +31,21 @@ export function LocationInput({ location, onLocationChange }: LocationInputProps
       <div className="grid gap-4">
         <Input
           placeholder="Street Address (e.g., 123 Main Street, Apartment 4B)"
-          value={location}
-          onChange={onLocationChange}
+          value={streetAddress}
+          onChange={(e) => {
+            setStreetAddress(e.target.value);
+            updateLocation(e.target.value, city, pincode);
+          }}
           className="w-full"
           required
         />
         <div className="grid grid-cols-2 gap-4">
           <Input
             placeholder="City"
+            value={city}
             onChange={(e) => {
-              const updatedLocation = `${location}, ${e.target.value}`;
-              onLocationChange({ target: { value: updatedLocation } } as React.ChangeEvent<HTMLInputElement>);
+              setCity(e.target.value);
+              updateLocation(streetAddress, e.target.value, pincode);
             }}
             className="w-full"
             required
@@ -74,26 +55,15 @@ export function LocationInput({ location, onLocationChange }: LocationInputProps
             type="text"
             pattern="[0-9]*"
             maxLength={6}
+            value={pincode}
             onChange={(e) => {
-              const pincode = e.target.value.replace(/\D/g, '').slice(0, 6);
-              const updatedLocation = `${location} - ${pincode}`;
-              onLocationChange({ target: { value: updatedLocation } } as React.ChangeEvent<HTMLInputElement>);
+              const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+              setPincode(value);
+              updateLocation(streetAddress, city, value);
             }}
             className="w-full"
             required
           />
-        </div>
-        <div className="flex justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleGetCurrentLocation}
-            disabled={isLoadingLocation}
-          >
-            <MapPin className="h-4 w-4 mr-1" />
-            {isLoadingLocation ? "Loading..." : "Use Current Location"}
-          </Button>
         </div>
       </div>
     </div>
