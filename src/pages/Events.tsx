@@ -30,8 +30,26 @@ export default function Events() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [userBookings, setUserBookings] = useState<Booking[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [showNearbyOnly, setShowNearbyOnly] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+        }
+      );
+    }
+  }, []);
 
   const handleCreateEventClick = () => {
     navigate('/events/create');
@@ -236,7 +254,7 @@ export default function Events() {
                 <img 
                   src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
                   alt="Petsu"
-                  className="h-20 cursor-pointer"
+                  className="h-12 cursor-pointer"
                   onClick={() => navigate('/')}
                 />
 
@@ -283,7 +301,23 @@ export default function Events() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-white">Pet Events</h1>
+          <div className="flex gap-2">
+            <Button
+              variant={showNearbyOnly ? "default" : "outline"}
+              onClick={() => setShowNearbyOnly(true)}
+              className="bg-white text-primary hover:bg-white/90"
+            >
+              <MapPin className="h-4 w-4 mr-2" />
+              Nearby
+            </Button>
+            <Button
+              variant={!showNearbyOnly ? "default" : "outline"}
+              onClick={() => setShowNearbyOnly(false)}
+              className="bg-white text-primary hover:bg-white/90"
+            >
+              All Events
+            </Button>
+          </div>
           <Button
             onClick={handleCreateEventClick}
             className="bg-white text-primary hover:bg-white/90"
