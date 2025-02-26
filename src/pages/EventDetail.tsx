@@ -12,6 +12,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
 interface Event {
   id: string;
   title: string;
@@ -143,7 +149,21 @@ export default function EventDetail() {
     return `EVT-${id?.substring(0, 6)}-${timestamp}-${random}`;
   };
 
-  const handleBooking = async () => {
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => {
+        resolve(true);
+      };
+      script.onerror = () => {
+        resolve(false);
+      };
+      document.body.appendChild(script);
+    });
+  };
+
+  const handlePayment = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -165,43 +185,79 @@ export default function EventDetail() {
       return;
     }
 
-    setBookingInProgress(true);
-    try {
-      const bookings = Array(numberOfTickets).fill(null).map(() => ({
-        event_id: id,
-        user_id: user.id,
-        status: 'confirmed'
-      }));
+    const res = await loadRazorpayScript();
 
-      const { error } = await supabase
-        .from("bookings")
-        .insert(bookings);
-
-      if (error) throw error;
-
-      setRemainingTickets(prev => prev !== null ? prev - numberOfTickets : null);
-      setShowTicketAnimation(true);
-
-      setTimeout(() => {
-        setShowTicketAnimation(false);
-        navigate("/profile");
-      }, 3000);
-
+    if (!res) {
       toast({
-        title: "Success!",
-        description: `${numberOfTickets} ticket${numberOfTickets > 1 ? 's' : ''} booked successfully!`,
-      });
-    } catch (error) {
-      console.error("Error booking event:", error);
-      toast({
-        title: "Booking Failed",
-        description: "Unable to complete your booking. Please try again later.",
+        title: "Error",
+        description: "Razorpay SDK failed to load",
         variant: "destructive",
       });
-    } finally {
-      setBookingInProgress(false);
+      return;
     }
+
+    const totalAmount = event.price * numberOfTickets;
+
+    const options = {
+      key: "rzp_test_5wYJG4Y7jeVhsz",
+      amount: totalAmount * 100, // Amount in smallest currency unit (paise)
+      currency: "INR",
+      name: "Petsu",
+      description: `Booking for ${event.title}`,
+      image: "/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png",
+      handler: async function (response: any) {
+        try {
+          setBookingInProgress(true);
+          const bookings = Array(numberOfTickets).fill(null).map(() => ({
+            event_id: id,
+            user_id: user.id,
+            status: 'confirmed',
+            payment_id: response.razorpay_payment_id
+          }));
+
+          const { error } = await supabase
+            .from("bookings")
+            .insert(bookings);
+
+          if (error) throw error;
+
+          setRemainingTickets(prev => prev !== null ? prev - numberOfTickets : null);
+          setShowTicketAnimation(true);
+
+          setTimeout(() => {
+            setShowTicketAnimation(false);
+            navigate("/profile");
+          }, 3000);
+
+          toast({
+            title: "Success!",
+            description: `${numberOfTickets} ticket${numberOfTickets > 1 ? 's' : ''} booked successfully!`,
+          });
+        } catch (error) {
+          console.error("Error booking event:", error);
+          toast({
+            title: "Booking Failed",
+            description: "Unable to complete your booking. Please try again later.",
+            variant: "destructive",
+          });
+        } finally {
+          setBookingInProgress(false);
+        }
+      },
+      prefill: {
+        email: user.email,
+        contact: "",
+      },
+      theme: {
+        color: "#00D26A",
+      },
+    };
+
+    const paymentObject = new window.Razorpay(options);
+    paymentObject.open();
   };
+
+  const handleBooking = handlePayment;
 
   const adjustTickets = (increment: boolean) => {
     if (increment && remainingTickets && numberOfTickets < remainingTickets) {
