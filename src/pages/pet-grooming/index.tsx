@@ -4,8 +4,10 @@ import { useToast } from "@/components/ui/use-toast";
 import { GroomingHeader } from "./components/GroomingHeader";
 import { GroomerCard } from "./components/GroomerCard";
 import { BookingDialog } from "./components/BookingDialog";
+import { GroomingHeroBanner } from "./components/GroomingHeroBanner";
 import { GROOMING_PARTNERS } from "./data/partners";
 import type { GroomingPartner } from "./types";
+import { useInterval } from "@/hooks/use-interval";
 
 export default function PetGrooming() {
   const { toast } = useToast();
@@ -14,6 +16,14 @@ export default function PetGrooming() {
   const [bookingDate, setBookingDate] = useState("");
   const [bookingTime, setBookingTime] = useState("");
   const [petDetails, setPetDetails] = useState("");
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  useInterval(() => {
+    const heroBanners = document.querySelectorAll('[data-hero-banner]');
+    if (heroBanners.length > 0) {
+      setCurrentSlide((prev) => (prev + 1) % heroBanners.length);
+    }
+  }, 3000); // Auto-slide every 3 seconds
 
   const handleBooking = (partner: GroomingPartner) => {
     setSelectedPartner(partner);
@@ -34,6 +44,10 @@ export default function PetGrooming() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <GroomingHeroBanner 
+        currentSlide={currentSlide} 
+        setCurrentSlide={setCurrentSlide} 
+      />
       <GroomingHeader />
       
       <main className="container mx-auto px-4 py-8">
