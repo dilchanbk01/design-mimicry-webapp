@@ -6,10 +6,11 @@ interface CardProps {
   title: string;
   icon: string;
   className?: string;
+  titleClassName?: string;
   onClick?: () => void;
 }
 
-export function Card({ title, icon, className, onClick }: CardProps) {
+export function Card({ title, icon, className, titleClassName, onClick }: CardProps) {
   return (
     <button
       onClick={onClick}
@@ -23,7 +24,9 @@ export function Card({ title, icon, className, onClick }: CardProps) {
       <div className="absolute top-2 right-2">
         <ArrowRight className="w-3 h-3 text-accent transition-transform duration-300 group-hover:translate-x-1" />
       </div>
-      <h3 className="text-sm font-semibold text-accent absolute top-3 left-3">{title}</h3>
+      <h3 className={cn("text-sm font-semibold text-accent absolute top-3 left-3", titleClassName)}>
+        {title}
+      </h3>
       <div className="flex-1 flex items-center justify-center w-full pt-6">
         <img src={icon} alt={title} className="w-32 h-32 object-contain" />
       </div>

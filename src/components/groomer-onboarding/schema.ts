@@ -6,6 +6,9 @@ export interface GroomerFormData {
   address: string;
   contactNumber: string;
   bio: string;
+  providesHomeService: boolean;
+  providesSalonService: boolean;
+  profileImage?: File;
 }
 
 export const initialFormData: GroomerFormData = {
@@ -14,5 +17,7 @@ export const initialFormData: GroomerFormData = {
   specializations: [],
   address: "",
   contactNumber: "",
-  bio: ""
+  bio: "",
+  providesHomeService: false,
+  providesSalonService: true,
 };
