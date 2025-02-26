@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, MapPin, Clock, Plus, Search, User, ArrowLeft, Instagram } from "lucide-react";
+import { Calendar, MapPin, Clock, Plus, Search, User, ArrowLeft, Instagram, Linkedin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -8,20 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
 import { useInterval } from "@/hooks/use-interval";
-import { Linkedin } from "lucide-react";
-
-interface Event {
-  id: string;
-  title: string;
-  description: string;
-  image_url: string;
-  date: string;
-  duration: number;
-  location: string;
-  price: number;
-  capacity: number;
-  status: 'pending' | 'approved' | 'rejected';
-}
+import type { Event } from "@/types/events";
 
 interface HeroBanner {
   id: string;
@@ -36,7 +23,7 @@ interface Booking {
 }
 
 export default function Events() {
-  const [events, setEvents] = useState<Event[]>([]);
+  const [localEvents, setLocalEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -53,13 +40,8 @@ export default function Events() {
     return userBookings.some(booking => booking.event_id === eventId);
   };
 
-  const filteredEvents = events.filter(event => 
-    event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    event.location.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   // Optimized query to fetch only needed fields
-  const { data: events = [] } = useQuery({
+  const { data: queryEvents = [] } = useQuery({
     queryKey: ['events', 'approved'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -67,6 +49,7 @@ export default function Events() {
         .select(`
           id,
           title,
+          description,
           image_url,
           date,
           location,
@@ -82,6 +65,11 @@ export default function Events() {
     staleTime: 5 * 60 * 1000, // Cache data for 5 minutes
   });
 
+  const filteredEvents = queryEvents.filter(event => 
+    event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    event.location.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   // Optimized query to fetch only needed hero banner fields
   const { data: heroBanners = [] } = useQuery({
     queryKey: ['heroBanners'],
@@ -89,7 +77,7 @@ export default function Events() {
       try {
         const { data, error } = await supabase
           .from('hero_banners')
-          .select('id, image_url')
+          .select('id, image_url, title, description')
           .eq('active', true)
           .eq('page', 'events');
 
@@ -130,7 +118,7 @@ export default function Events() {
                 ...event,
                 status: event.status as 'pending' | 'approved' | 'rejected'
               }));
-              setEvents(currentEvents);
+              setLocalEvents(currentEvents);
             }
           })
           .subscribe();
@@ -148,7 +136,7 @@ export default function Events() {
           status: event.status as 'pending' | 'approved' | 'rejected'
         }));
 
-        setEvents(currentEvents);
+        setLocalEvents(currentEvents);
 
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
@@ -180,55 +168,6 @@ export default function Events() {
 
     fetchEvents();
   }, [toast]);
-
-  const compressImage = async (file: File): Promise<File> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = (event) => {
-        const img = new Image();
-        img.src = event.target?.result as string;
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const maxWidth = 1200;
-          const maxHeight = 800;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > height) {
-            if (width > maxWidth) {
-              height = Math.round((height * maxWidth) / width);
-              width = maxWidth;
-            }
-          } else {
-            if (height > maxHeight) {
-              width = Math.round((width * maxHeight) / height);
-              height = maxHeight;
-            }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx?.drawImage(img, 0, 0, width, height);
-
-          canvas.toBlob(
-            (blob) => {
-              if (blob) {
-                const compressedFile = new File([blob], file.name, {
-                  type: 'image/jpeg',
-                  lastModified: Date.now(),
-                });
-                resolve(compressedFile);
-              }
-            },
-            'image/jpeg',
-            0.7
-          );
-        };
-      };
-    });
-  };
 
   return (
     <div className="min-h-screen bg-[#00D26A]">
@@ -343,7 +282,7 @@ export default function Events() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-white">Pet Events</h1>
           <Button
-            onClick={() => navigate('/events/create')}
+            onClick={handleCreateEventClick}
             className="bg-white text-primary hover:bg-white/90"
           >
             <Plus className="h-4 w-4 mr-2" />
