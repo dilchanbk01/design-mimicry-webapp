@@ -9,7 +9,7 @@ import { GroomingHeroBanner } from "./components/GroomingHeroBanner";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin, Plus } from "lucide-react";
+import { MapPin, Home, Store } from "lucide-react";
 import type { GroomingPartner, GroomerProfile } from "./types";
 
 export default function PetGrooming() {
@@ -22,6 +22,7 @@ export default function PetGrooming() {
   const [petDetails, setPetDetails] = useState("");
   const [currentSlide, setCurrentSlide] = useState(0);
   const [serviceType, setServiceType] = useState<'salon' | 'home'>('salon');
+  const [showNearby, setShowNearby] = useState(false);
 
   const { data: groomers = [] } = useQuery<GroomerProfile[]>({
     queryKey: ['groomers'],
@@ -37,15 +38,23 @@ export default function PetGrooming() {
   });
 
   const filteredGroomers = groomers.filter(groomer => {
-    if (serviceType === 'salon') return groomer.provides_salon_service;
-    if (serviceType === 'home') return groomer.provides_home_service;
-    return true;
-  });
+    let matches = true;
+    
+    // Filter by service type
+    if (serviceType === 'salon') {
+      matches = matches && groomer.provides_salon_service;
+    } else if (serviceType === 'home') {
+      matches = matches && groomer.provides_home_service;
+    }
 
-  const handleBooking = (partner: GroomingPartner) => {
-    setSelectedPartner(partner);
-    setIsBookingOpen(true);
-  };
+    // Filter by nearby (placeholder - would need actual geo implementation)
+    if (showNearby) {
+      // In a real implementation, this would filter based on user's location
+      matches = matches && true;
+    }
+
+    return matches;
+  });
 
   const handleBookingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,21 +78,32 @@ export default function PetGrooming() {
       />
 
       <main className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col gap-4 mb-8">
+          <div className="flex gap-4 items-center">
+            <Button
+              variant={serviceType === 'salon' ? "default" : "outline"}
+              onClick={() => setServiceType('salon')}
+              className="flex-1 bg-white text-primary hover:bg-white/90"
+            >
+              <Store className="h-4 w-4 mr-2" />
+              At Salon
+            </Button>
+            <Button
+              variant={serviceType === 'home' ? "default" : "outline"}
+              onClick={() => setServiceType('home')}
+              className="flex-1 bg-white text-primary hover:bg-white/90"
+            >
+              <Home className="h-4 w-4 mr-2" />
+              On Demand
+            </Button>
+          </div>
           <Button
-            variant={serviceType === 'salon' ? "default" : "outline"}
-            onClick={() => setServiceType('salon')}
+            variant={showNearby ? "default" : "outline"}
+            onClick={() => setShowNearby(!showNearby)}
             className="bg-white text-primary hover:bg-white/90"
           >
             <MapPin className="h-4 w-4 mr-2" />
             Near me
-          </Button>
-          <Button
-            onClick={() => navigate('/groomer/onboard')}
-            className="bg-white text-primary hover:bg-white/90"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Register as Groomer
           </Button>
         </div>
 
@@ -132,17 +152,7 @@ export default function PetGrooming() {
         onDateChange={setBookingDate}
         onTimeChange={setBookingTime}
         onPetDetailsChange={setPetDetails}
-        onSubmit={(e) => {
-          e.preventDefault();
-          toast({
-            title: "Booking Confirmed!",
-            description: `Your grooming appointment has been booked with ${selectedPartner?.name}`,
-          });
-          setIsBookingOpen(false);
-          setBookingDate("");
-          setBookingTime("");
-          setPetDetails("");
-        }}
+        onSubmit={handleBookingSubmit}
       />
     </div>
   );
