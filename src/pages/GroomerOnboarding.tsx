@@ -98,12 +98,19 @@ export default function GroomerOnboarding() {
         profileImageUrl = publicUrl;
       }
 
+      // Construct full address from components
+      const fullAddress = [
+        formData.streetAddress,
+        formData.city,
+        formData.pincode
+      ].filter(Boolean).join(", ");
+
       const { error } = await supabase.from("groomer_profiles").insert({
         user_id: user.id,
         salon_name: formData.salonName,
         experience_years: parseInt(formData.experienceYears),
         specializations: formData.specializations,
-        address: formData.address,
+        address: fullAddress,
         contact_number: formData.contactNumber,
         bio: formData.bio,
         profile_image_url: profileImageUrl,

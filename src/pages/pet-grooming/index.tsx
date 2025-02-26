@@ -70,9 +70,13 @@ export default function PetGrooming() {
 
     if (!selectedPartner) return;
 
+    // Extract numeric price value and convert to paise
+    const priceMatch = selectedPartner.price.match(/\d+/);
+    const priceInPaise = priceMatch ? parseInt(priceMatch[0]) * 100 : 0;
+
     const options = {
       key: "rzp_test_5wYJG4Y7jeVhsz",
-      amount: selectedPartner.price.replace(/[^\d]/g, '') * 100, // Convert price string to number
+      amount: priceInPaise,
       currency: "INR",
       name: "Petsu",
       description: `Grooming appointment with ${selectedPartner.name}`,
@@ -85,12 +89,16 @@ export default function PetGrooming() {
           time: bookingTime,
           pet_details: petDetails,
           payment_id: response.razorpay_payment_id,
-          status: 'confirmed'
+          status: 'confirmed',
+          service_type: serviceType
         };
 
         const { error } = await supabase
-          .from('grooming_bookings')
-          .insert(booking);
+          .from("bookings") // Using the existing bookings table
+          .insert({
+            ...booking,
+            event_id: null // Set to null since this isn't an event booking
+          });
 
         if (error) {
           toast({
@@ -119,7 +127,7 @@ export default function PetGrooming() {
       },
     };
 
-    const rzp = new window.Razorpay(options);
+    const rzp = new (window as any).Razorpay(options);
     rzp.open();
   };
 
