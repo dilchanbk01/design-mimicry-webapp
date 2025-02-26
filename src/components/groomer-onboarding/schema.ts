@@ -3,7 +3,9 @@ export interface GroomerFormData {
   salonName: string;
   experienceYears: string;
   specializations: string[];
-  address: string;
+  streetAddress: string;
+  city: string;
+  pincode: string;
   contactNumber: string;
   bio: string;
   providesHomeService: boolean;
@@ -15,7 +17,9 @@ export const initialFormData: GroomerFormData = {
   salonName: "",
   experienceYears: "",
   specializations: [],
-  address: "",
+  streetAddress: "",
+  city: "",
+  pincode: "",
   contactNumber: "",
   bio: "",
   providesHomeService: false,

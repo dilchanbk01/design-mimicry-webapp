@@ -94,14 +94,42 @@ export function GroomerFormFields({
         onToggleSpecialization={onSpecializationToggle}
       />
 
-      <div className="space-y-2">
-        <Label htmlFor="address">Address</Label>
-        <Textarea
-          id="address"
-          value={formData.address}
-          onChange={(e) => onFormDataChange({ address: e.target.value })}
-          required
-        />
+      <div className="grid gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="streetAddress">Street Address</Label>
+          <Input
+            id="streetAddress"
+            value={formData.streetAddress}
+            onChange={(e) => onFormDataChange({ streetAddress: e.target.value })}
+            placeholder="Building name, Street name"
+            required
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="city">City</Label>
+            <Input
+              id="city"
+              value={formData.city}
+              onChange={(e) => onFormDataChange({ city: e.target.value })}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pincode">Pincode</Label>
+            <Input
+              id="pincode"
+              value={formData.pincode}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                onFormDataChange({ pincode: value })
+              }}
+              maxLength={6}
+              required
+            />
+          </div>
+        </div>
       </div>
 
       <div className="space-y-2">

@@ -9,7 +9,7 @@ import { GroomingHeroBanner } from "./components/GroomingHeroBanner";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin, Home, Store } from "lucide-react";
+import { MapPin } from "lucide-react";
 import type { GroomingPartner, GroomerProfile } from "./types";
 
 export default function PetGrooming() {
@@ -40,32 +40,87 @@ export default function PetGrooming() {
   const filteredGroomers = groomers.filter(groomer => {
     let matches = true;
     
-    // Filter by service type
     if (serviceType === 'salon') {
       matches = matches && groomer.provides_salon_service;
     } else if (serviceType === 'home') {
       matches = matches && groomer.provides_home_service;
     }
 
-    // Filter by nearby (placeholder - would need actual geo implementation)
     if (showNearby) {
-      // In a real implementation, this would filter based on user's location
       matches = matches && true;
     }
 
     return matches;
   });
 
-  const handleBookingSubmit = (e: React.FormEvent) => {
+  const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Booking Confirmed!",
-      description: `Your grooming appointment has been booked with ${selectedPartner?.name}`,
-    });
-    setIsBookingOpen(false);
-    setBookingDate("");
-    setBookingTime("");
-    setPetDetails("");
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      localStorage.setItem('redirectAfterAuth', location.pathname);
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to book this appointment.",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    if (!selectedPartner) return;
+
+    const options = {
+      key: "rzp_test_5wYJG4Y7jeVhsz",
+      amount: selectedPartner.price.replace(/[^\d]/g, '') * 100, // Convert price string to number
+      currency: "INR",
+      name: "Petsu",
+      description: `Grooming appointment with ${selectedPartner.name}`,
+      image: "/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png",
+      handler: async function (response: any) {
+        const booking = {
+          groomer_id: selectedPartner.id,
+          user_id: user.id,
+          date: bookingDate,
+          time: bookingTime,
+          pet_details: petDetails,
+          payment_id: response.razorpay_payment_id,
+          status: 'confirmed'
+        };
+
+        const { error } = await supabase
+          .from('grooming_bookings')
+          .insert(booking);
+
+        if (error) {
+          toast({
+            title: "Booking Failed",
+            description: "Unable to complete your booking. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        toast({
+          title: "Booking Confirmed!",
+          description: `Your grooming appointment has been booked with ${selectedPartner.name}`,
+        });
+        
+        setIsBookingOpen(false);
+        setBookingDate("");
+        setBookingTime("");
+        setPetDetails("");
+      },
+      prefill: {
+        email: user.email,
+      },
+      theme: {
+        color: "#00D26A",
+      },
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.open();
   };
 
   return (
@@ -79,35 +134,35 @@ export default function PetGrooming() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="flex flex-col gap-4 mb-8">
-          <div className="flex gap-4 items-center">
+          <div className="grid grid-cols-2 gap-4 items-center">
             <Button
               variant={serviceType === 'salon' ? "default" : "outline"}
               onClick={() => setServiceType('salon')}
-              className="flex-1 bg-white text-primary hover:bg-white/90"
+              className="bg-white text-primary hover:bg-white/90 w-full"
             >
-              <Store className="h-4 w-4 mr-2" />
               At Salon
             </Button>
             <Button
               variant={serviceType === 'home' ? "default" : "outline"}
               onClick={() => setServiceType('home')}
-              className="flex-1 bg-white text-primary hover:bg-white/90"
+              className="bg-white text-primary hover:bg-white/90 w-full"
             >
-              <Home className="h-4 w-4 mr-2" />
               On Demand
             </Button>
           </div>
-          <Button
-            variant={showNearby ? "default" : "outline"}
-            onClick={() => setShowNearby(!showNearby)}
-            className="bg-white text-primary hover:bg-white/90"
-          >
-            <MapPin className="h-4 w-4 mr-2" />
-            Near me
-          </Button>
+          <div className="flex justify-end">
+            <Button
+              variant={showNearby ? "default" : "outline"}
+              onClick={() => setShowNearby(!showNearby)}
+              className="bg-white text-primary hover:bg-white/90 px-3 py-1 h-8 text-sm"
+            >
+              <MapPin className="h-3 w-3 mr-1" />
+              Near me
+            </Button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-4">
           {filteredGroomers.map((groomer) => (
             <GroomerCard
               key={groomer.id}
