@@ -96,29 +96,43 @@ export default function EventDetail() {
       try {
         const { data: eventData, error: eventError } = await supabase
           .from("events")
-          .select("*")
+          .select(`
+            id,
+            title,
+            description,
+            image_url,
+            date,
+            duration,
+            location,
+            price,
+            capacity,
+            organizer_name,
+            organizer_email,
+            organizer_phone,
+            organizer_website,
+            pet_types,
+            pet_requirements
+          `)
           .eq("id", id)
           .single();
 
         if (eventError) throw eventError;
-
         setEvent(eventData);
         
         const { count, error: bookingsError } = await supabase
           .from("bookings")
-          .select("*", { count: 'exact' })
+          .select("*", { count: 'exact', head: true })
           .eq("event_id", id)
           .eq("status", "confirmed");
 
         if (bookingsError) throw bookingsError;
-
         setRemainingTickets(eventData.capacity - (count || 0));
 
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const { data: userBookings } = await supabase
             .from("bookings")
-            .select("*")
+            .select("id")
             .eq("event_id", id)
             .eq("user_id", user.id)
             .eq("status", "confirmed")

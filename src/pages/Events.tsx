@@ -58,27 +58,49 @@ export default function Events() {
     event.location.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Optimized query to fetch only needed fields
+  const { data: events = [] } = useQuery({
+    queryKey: ['events', 'approved'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("events")
+        .select(`
+          id,
+          title,
+          image_url,
+          date,
+          location,
+          price,
+          capacity
+        `)
+        .eq('status', 'approved')
+        .order("date", { ascending: true });
+
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 5 * 60 * 1000, // Cache data for 5 minutes
+  });
+
+  // Optimized query to fetch only needed hero banner fields
   const { data: heroBanners = [] } = useQuery({
     queryKey: ['heroBanners'],
     queryFn: async () => {
       try {
         const { data, error } = await supabase
           .from('hero_banners')
-          .select('*')
+          .select('id, image_url')
           .eq('active', true)
           .eq('page', 'events');
 
-        if (error) {
-          console.error('Error fetching hero banners:', error);
-          return [];
-        }
-
-        return data as HeroBanner[];
+        if (error) throw error;
+        return data;
       } catch (error) {
         console.error('Error fetching hero banners:', error);
         return [];
       }
-    }
+    },
+    staleTime: 5 * 60 * 1000, // Cache data for 5 minutes
   });
 
   useInterval(() => {
