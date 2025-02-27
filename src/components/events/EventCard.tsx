@@ -94,16 +94,29 @@ export function EventCard({ event, isBooked, isOrganizer, analytics }: EventCard
           </div>
         )}
 
-        <Button
-          className={`w-full mt-6 ${
-            isBooked
-              ? "bg-green-500 hover:bg-green-600"
-              : "bg-blue-900 hover:bg-blue-800"
-          } text-white`}
-          disabled={isBooked}
-        >
-          {isBooked ? "Booked" : "Book Now"}
-        </Button>
+        {isOrganizer ? (
+          <Button
+            className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white"
+            onClick={(e) => {
+              e.stopPropagation();
+              // Handle payout request logic here
+              alert("Payout request sent. We'll process it within 7 business days.");
+            }}
+          >
+            Send Payout Request
+          </Button>
+        ) : (
+          <Button
+            className={`w-full mt-6 ${
+              isBooked
+                ? "bg-green-500 hover:bg-green-600"
+                : "bg-blue-900 hover:bg-blue-800"
+            } text-white`}
+            disabled={isBooked}
+          >
+            {isBooked ? "Booked" : "Book Now"}
+          </Button>
+        )}
       </div>
     </div>
   );

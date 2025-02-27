@@ -1,16 +1,18 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ChevronLeft } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 interface Profile {
   full_name: string;
   phone_number: string;
+  email: string;
 }
 
 export default function EditProfile() {
@@ -19,8 +21,12 @@ export default function EditProfile() {
   const [profile, setProfile] = useState<Profile>({
     full_name: "",
     phone_number: "",
+    email: "",
   });
   const [loading, setLoading] = useState(true);
+  const [newPassword, setNewPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -45,6 +51,7 @@ export default function EditProfile() {
         setProfile({
           full_name: data.full_name || "",
           phone_number: data.phone_number || "",
+          email: user.email || "",
         });
       }
     } catch (error) {
@@ -98,14 +105,55 @@ export default function EditProfile() {
     }
   };
 
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordLoading(true);
+    
+    try {
+      // First, verify the current password by signing in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: profile.email,
+        password: currentPassword,
+      });
+      
+      if (signInError) {
+        throw new Error("Current password is incorrect");
+      }
+      
+      // Then change the password
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Password updated successfully",
+      });
+      
+      setCurrentPassword("");
+      setNewPassword("");
+    } catch (error: any) {
+      console.error('Error updating password:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update password",
+        variant: "destructive",
+      });
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-primary/10 pt-20">
+    <div className="min-h-screen bg-[#0dcf6a] pt-20">
       <header className="fixed top-0 left-0 right-0 bg-transparent z-50">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-center">
             <button
               onClick={() => navigate("/profile")}
-              className="absolute left-4 text-gray-600 hover:text-gray-800"
+              className="absolute left-4 text-white hover:text-white/80"
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
@@ -123,41 +171,88 @@ export default function EditProfile() {
       <div className="container mx-auto px-4 max-w-lg">
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-6 space-y-6">
-            <h1 className="text-2xl font-semibold mb-6">Edit Profile</h1>
-            
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input
-                id="fullName"
-                value={profile.full_name}
-                onChange={(e) => setProfile(prev => ({ ...prev, full_name: e.target.value }))}
-                required
-              />
-            </div>
+          <div className="space-y-6">
+            <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-6 space-y-6">
+              <h1 className="text-2xl font-semibold mb-6">Edit Profile</h1>
+              
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={profile.email}
+                  readOnly
+                  className="bg-gray-100"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  value={profile.full_name}
+                  onChange={(e) => setProfile(prev => ({ ...prev, full_name: e.target.value }))}
+                  required
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                value={profile.phone_number}
-                onChange={(e) => setProfile(prev => ({ ...prev, phone_number: e.target.value }))}
-                required
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  value={profile.phone_number}
+                  onChange={(e) => setProfile(prev => ({ ...prev, phone_number: e.target.value }))}
+                  required
+                />
+              </div>
 
-            <div className="flex gap-4">
-              <Button type="button" variant="outline" onClick={() => navigate("/profile")}>
-                Cancel
+              <div className="flex gap-4">
+                <Button type="button" variant="outline" onClick={() => navigate("/profile")}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </form>
+
+            <form onSubmit={handlePasswordChange} className="bg-white rounded-xl shadow-sm p-6 space-y-6">
+              <h1 className="text-2xl font-semibold mb-2">Change Password</h1>
+              <Separator className="mb-4" />
+              
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">Current Password</Label>
+                <Input
+                  id="currentPassword"
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required
+                  placeholder="Enter your current password"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New Password</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  placeholder="Enter new password"
+                  minLength={6}
+                />
+              </div>
+
+              <Button type="submit" disabled={passwordLoading} className="w-full">
+                {passwordLoading ? "Updating..." : "Update Password"}
               </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? "Saving..." : "Save Changes"}
-              </Button>
-            </div>
-          </form>
+            </form>
+          </div>
         )}
       </div>
     </div>
