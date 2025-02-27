@@ -167,7 +167,7 @@ export default function PetGrooming() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredGroomers.map((groomer) => (
             <GroomerCard
               key={groomer.id}
