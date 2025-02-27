@@ -26,42 +26,16 @@ export function useBooking(groomer: GroomerProfile | null) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isBookingConfirmed, setIsBookingConfirmed] = useState(false);
 
-  const initializePayment = async (amount: number, orderData: any) => {
-    // Load Razorpay script
-    return new Promise<RazorpayResponse>((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.async = true;
+  // Load Razorpay script function similar to what's working in EventBookingSection
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.onload = () => {
-        const options = {
-          key: 'rzp_test_dxbW3VfBytQz5L', // Replace with your Razorpay key
-          amount: amount * 100, // Razorpay expects amount in paise
-          currency: 'INR',
-          name: 'Petsu Grooming',
-          description: 'Grooming Service Payment',
-          image: "/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png",
-          handler: function (response: RazorpayResponse) {
-            resolve(response);
-          },
-          prefill: {
-            name: 'Customer',
-            email: orderData.email
-          },
-          theme: {
-            color: '#4CAF50'
-          },
-          modal: {
-            ondismiss: function() {
-              reject(new Error("Payment cancelled by user"));
-            }
-          }
-        };
-
-        const paymentObject = new window.Razorpay(options);
-        paymentObject.open();
+        resolve(true);
       };
       script.onerror = () => {
-        reject(new Error("Failed to load Razorpay SDK"));
+        resolve(false);
       };
       document.body.appendChild(script);
     });
@@ -119,72 +93,116 @@ export function useBooking(groomer: GroomerProfile | null) {
       }
 
       // Calculate total amount
-      const totalPrice = calculateTotalPrice(
-        selectedPackage ? selectedPackage.price : groomer.price, 
-        selectedServiceType, 
-        groomer.home_service_cost
-      );
+      const basePrice = selectedPackage ? selectedPackage.price : groomer.price;
+      const additionalCost = selectedServiceType === 'home' ? groomer.home_service_cost : 0;
+      const subtotal = basePrice + additionalCost;
+      const gstAmount = subtotal * 0.18; // 18% GST
+      const totalAmount = subtotal + gstAmount;
 
-      // For free/testing purposes, skip payment and directly create booking
-      try {
-        // Create a dummy payment ID for testing purposes
-        const paymentId = `pay_test_${Date.now()}`;
-
-        // Create booking with the dummy payment information
-        await createBooking({
-          groomerId: groomer.id,
-          userId: user.id,
-          selectedDate,
-          selectedTime,
-          selectedPackage,
-          petDetails,
-          serviceType: selectedServiceType,
-          homeAddress,
-          additionalCost: selectedServiceType === 'home' ? groomer.home_service_cost : 0,
-          payment_id: paymentId
+      // Load the Razorpay script
+      const res = await loadRazorpayScript();
+      if (!res) {
+        toast({
+          title: "Error",
+          description: "Payment system failed to load",
+          variant: "destructive",
         });
+        setIsProcessing(false);
+        return;
+      }
 
-        // Send confirmation email if user has an email
-        if (user.email) {
+      // Configure Razorpay options
+      const options = {
+        key: "rzp_test_5wYJG4Y7jeVhsz", // Using the same key that works in EventBookingSection
+        amount: totalAmount * 100, // Amount in paise
+        currency: "INR",
+        name: "Petsu",
+        description: `Grooming Service with ${groomer.salon_name}`,
+        image: "/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png",
+        handler: async function (response: any) {
           try {
-            await sendConfirmationEmail(
-              user.email,
-              groomer.id,
-              groomer.salon_name,
-              groomer.address,
+            // Create booking with payment information
+            await createBooking({
+              groomerId: groomer.id,
+              userId: user.id,
               selectedDate,
               selectedTime,
-              selectedPackage ? selectedPackage.name : 'Standard Grooming',
-              selectedServiceType,
+              selectedPackage,
+              petDetails,
+              serviceType: selectedServiceType,
               homeAddress,
-              totalPrice
-            );
-          } catch (emailError) {
-            console.error("Email error:", emailError);
+              additionalCost,
+              payment_id: response.razorpay_payment_id
+            });
+
+            // Send confirmation email if user has an email
+            if (user.email) {
+              try {
+                await sendConfirmationEmail(
+                  user.email,
+                  groomer.id,
+                  groomer.salon_name,
+                  groomer.address,
+                  selectedDate,
+                  selectedTime,
+                  selectedPackage ? selectedPackage.name : 'Standard Grooming',
+                  selectedServiceType,
+                  homeAddress,
+                  totalAmount
+                );
+              } catch (emailError) {
+                console.error("Email error:", emailError);
+                toast({
+                  title: "Email Notification",
+                  description: "We couldn't send you a confirmation email, but your booking is confirmed.",
+                  variant: "default",
+                });
+              }
+            }
+
+            setIsBookingConfirmed(true);
             toast({
-              title: "Email Notification",
-              description: "We couldn't send you a confirmation email, but your booking is confirmed.",
+              title: "Booking Confirmed!",
+              description: `Your grooming appointment with ${groomer.salon_name} has been booked.`,
+            });
+            
+            // Redirect to profile page after successful booking
+            navigate("/profile");
+          } catch (error) {
+            console.error("Error creating booking:", error);
+            toast({
+              title: "Booking Failed",
+              description: "Unable to complete your booking. Please try again later.",
+              variant: "destructive",
+            });
+          } finally {
+            setIsProcessing(false);
+          }
+        },
+        prefill: {
+          email: user.email,
+          contact: "",
+        },
+        theme: {
+          color: "#00D26A",
+        },
+        modal: {
+          ondismiss: function() {
+            console.log("Payment dismissed");
+            setIsProcessing(false);
+            toast({
+              title: "Payment Cancelled",
+              description: "You have cancelled the payment process.",
               variant: "default",
             });
           }
         }
+      };
 
-        setIsBookingConfirmed(true);
-        toast({
-          title: "Booking Confirmed!",
-          description: `Your grooming appointment with ${groomer.salon_name} has been booked.`,
-        });
-        
-        // Redirect to profile page after successful booking
-        navigate("/profile");
-      } catch (bookingError: any) {
-        console.error("Booking error:", bookingError);
-        toast({
-          title: "Booking Failed",
-          description: bookingError.message || "There was an error processing your booking. Please try again.",
-          variant: "destructive",
-        });
-      }
+      // Initialize Razorpay payment
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+      
     } catch (error) {
       console.error("Booking error:", error);
       toast({
@@ -192,7 +210,6 @@ export function useBooking(groomer: GroomerProfile | null) {
         description: "There was an error processing your booking. Please try again.",
         variant: "destructive",
       });
-    } finally {
       setIsProcessing(false);
     }
     
