@@ -20,19 +20,35 @@ export default function GroomerAuth() {
   }, []);
 
   const checkExistingSession = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: profile } = await supabase
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return; // No user session exists, stay on auth page
+
+      // User is authenticated, check if they have a groomer profile
+      const { data: profile, error } = await supabase
         .from("groomer_profiles")
         .select("*")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error("Error checking groomer profile:", error);
+        return;
+      }
 
       if (profile) {
+        // Profile exists, check status and redirect accordingly
         handleProfileStatus(profile.application_status);
       } else {
-        navigate("/groomer-onboarding");
+        // If no profile exists and they're specifically trying to access auth or dashboard,
+        // then redirect to onboarding
+        const path = window.location.pathname;
+        if (path === '/groomer-auth' || path === '/groomer-dashboard') {
+          navigate("/groomer-onboarding");
+        }
       }
+    } catch (error) {
+      console.error("Error checking session:", error);
     }
   };
 
@@ -89,11 +105,16 @@ export default function GroomerAuth() {
         if (error) throw error;
 
         // After successful login, check profile status
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from("groomer_profiles")
           .select("*")
           .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
-          .single();
+          .maybeSingle();
+
+        if (profileError && profileError.code !== 'PGRST116') {
+          console.error("Error checking groomer profile:", profileError);
+          throw profileError;
+        }
 
         if (profile) {
           handleProfileStatus(profile.application_status);
