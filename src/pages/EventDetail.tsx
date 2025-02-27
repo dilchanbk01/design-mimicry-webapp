@@ -195,6 +195,7 @@ export default function EventDetail() {
               alt="Petsu"
               className="h-12 cursor-pointer"
               onClick={() => navigate('/')}
+              loading="eager"
             />
             <div className="w-10" />
           </div>
@@ -204,9 +205,14 @@ export default function EventDetail() {
       <main className="pt-16">
         <div className="relative w-full h-64">
           <img
-            src={event?.image_url}
+            src={event?.image_url ? getOptimizedImageUrl(event.image_url, 1200) : '/placeholder.svg'}
             alt={event?.title}
             className="w-full h-full object-cover"
+            loading="eager"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = '/placeholder.svg';
+            }}
           />
         </div>
 

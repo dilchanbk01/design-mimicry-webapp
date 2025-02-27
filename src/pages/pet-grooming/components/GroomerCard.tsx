@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { MapPin, Star, Scissors, Home, Store } from "lucide-react";
 import { GroomingPartner } from "../types";
+import { getOptimizedImageUrl } from "@/utils/imageCompression";
 
 interface GroomerCardProps {
   partner: GroomingPartner;
@@ -15,9 +16,14 @@ export function GroomerCard({ partner, onBooking, onViewDetails }: GroomerCardPr
       <div className="md:flex">
         <div className="md:w-1/3 h-48 md:h-auto">
           <img
-            src={partner.image}
+            src={getOptimizedImageUrl(partner.image, 600)}
             alt={partner.name}
             className="w-full h-full object-cover"
+            loading="lazy"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = '/placeholder.svg';
+            }}
           />
         </div>
         <div className="p-6 md:w-2/3 flex flex-col justify-between">
