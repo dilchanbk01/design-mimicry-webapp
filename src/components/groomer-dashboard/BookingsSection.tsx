@@ -13,7 +13,8 @@ import {
   Phone, 
   Mail, 
   Search,
-  Filter
+  Filter,
+  AlertTriangle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, isToday, isTomorrow, formatDistanceToNow } from "date-fns";
@@ -26,6 +27,16 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Booking {
   id: string;
@@ -54,6 +65,8 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterServiceType, setFilterServiceType] = useState<string>("all");
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -91,75 +104,21 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
       
       const { data, error } = await supabase
         .from("grooming_bookings")
-        .select("*")
+        .select("*, profiles(full_name, phone_number)")
         .eq("groomer_id", groomerId)
-        .order("date", { ascending: true });
+        .order("date", { ascending: true })
+        .order("time", { ascending: true });
 
       if (error) throw error;
 
-      // Get user details for each booking
-      const bookingsWithUserDetails = await Promise.all(
-        (data || []).map(async (booking) => {
-          try {
-            // Get profile data
-            const { data: userData } = await supabase
-              .from("profiles")
-              .select("full_name, phone_number")
-              .eq("id", booking.user_id)
-              .single();
-
-            // Get user auth data
-            const { data: authData } = await supabase.auth.admin.getUserById(booking.user_id);
-
-            // Get package details if available
-            let packageName = "Standard Grooming";
-            
-            if (booking.package_id) {
-              const { data: packageData } = await supabase
-                .from("grooming_packages")
-                .select("name")
-                .eq("id", booking.package_id)
-                .single();
-              
-              if (packageData) {
-                packageName = packageData.name;
-              }
-            }
-            
-            return {
-              ...booking,
-              user_name: userData?.full_name || "Unknown",
-              user_email: authData?.user?.email || "Unknown",
-              user_phone: userData?.phone_number || "Not provided",
-              package_name: packageName,
-            } as Booking;
-          } catch (err) {
-            console.error("Error processing booking:", booking.id, err);
-            return {
-              ...booking,
-              user_name: "Unknown",
-              user_email: "Unknown",
-              user_phone: "Not provided",
-              package_name: "Standard Grooming",
-            } as Booking;
-          }
-        })
-      );
-
-      // Sort by date and time
-      const sortedBookings = bookingsWithUserDetails.sort((a, b) => {
-        const dateA = new Date(a.date);
-        const dateB = new Date(b.date);
-        
-        if (dateA.getTime() !== dateB.getTime()) {
-          return dateA.getTime() - dateB.getTime();
-        }
-        
-        return a.time.localeCompare(b.time);
-      });
+      const formattedBookings: Booking[] = data.map(booking => ({
+        ...booking,
+        user_name: booking.profiles?.full_name || "Unknown",
+        user_phone: booking.profiles?.phone_number || "Not provided",
+      }));
       
-      setBookings(sortedBookings);
-      setFilteredBookings(sortedBookings);
+      setBookings(formattedBookings);
+      setFilteredBookings(formattedBookings);
     } catch (error) {
       console.error("Error fetching bookings:", error);
       toast({
@@ -172,6 +131,36 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
     }
   };
 
+  const handleCancelBooking = async (booking: Booking) => {
+    try {
+      const { error } = await supabase
+        .from('grooming_bookings')
+        .update({ status: 'cancelled' })
+        .eq('id', booking.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Booking Cancelled",
+        description: "The appointment has been cancelled successfully.",
+      });
+
+      // Close the dialog
+      setShowCancelDialog(false);
+      setSelectedBooking(null);
+
+      // Refresh bookings
+      fetchBookings();
+    } catch (error) {
+      console.error("Error cancelling booking:", error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel the booking. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const filterBookings = () => {
     let filtered = [...bookings];
 
@@ -180,7 +169,7 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(booking => 
         (booking.user_name?.toLowerCase().includes(term)) || 
-        (booking.user_email?.toLowerCase().includes(term)) || 
+        (booking.user_phone?.toLowerCase().includes(term)) || 
         (booking.pet_details?.toLowerCase().includes(term)) ||
         (booking.time?.includes(term))
       );
@@ -195,6 +184,12 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
     if (filterServiceType !== "all") {
       filtered = filtered.filter(booking => booking.service_type === filterServiceType);
     }
+
+    // Show only today's bookings
+    filtered = filtered.filter(booking => {
+      const bookingDate = new Date(booking.date);
+      return isToday(bookingDate);
+    });
 
     setFilteredBookings(filtered);
   };
@@ -235,8 +230,8 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
         <CardHeader className="pb-2">
           <CardTitle className="text-xl flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-[#4CAF50]" />
-              <span>Appointments</span>
+              <Calendar className="h-5 w-5 text-[#0dcf6a]" />
+              <span>Today's Appointments</span>
             </div>
             <div className="text-sm font-normal text-gray-500">
               {filteredBookings.length} {filteredBookings.length === 1 ? 'booking' : 'bookings'} found
@@ -249,7 +244,7 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
               <div className="relative flex-grow">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                 <Input
-                  placeholder="Search by name, email, or pet details"
+                  placeholder="Search by name, phone, or pet details"
                   className="pl-9"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -305,7 +300,7 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
           ) : filteredBookings.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Calendar className="h-10 w-10 mx-auto mb-2 text-gray-400" />
-              <p>No bookings found</p>
+              <p>No bookings found for today</p>
               {(searchTerm || filterStatus !== "all" || filterServiceType !== "all") && (
                 <Button 
                   variant="link" 
@@ -326,13 +321,11 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2">
                     <div className="flex items-start gap-2">
                       <div className="bg-[#E5DEFF] text-[#7E69AB] p-2 rounded-lg">
-                        <Calendar className="h-5 w-5" />
+                        <Clock className="h-5 w-5" />
                       </div>
                       <div>
                         <div className="flex items-center flex-wrap gap-2">
-                          <h3 className="font-medium">
-                            {formatBookingDate(booking.date)}
-                          </h3>
+                          <span className="text-lg font-medium">{booking.time}</span>
                           <Badge variant="outline" className={getStatusColor(booking.status)}>
                             {booking.status}
                           </Badge>
@@ -345,40 +338,37 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
                               {booking.service_type === 'home' ? 'Home Visit' : 'At Salon'}
                             </span>
                           </Badge>
-                          <span className="text-sm text-gray-500 font-medium flex items-center gap-1">
-                            <Clock className="h-3.5 w-3.5" />
-                            {booking.time}
-                          </span>
+                        </div>
+                        <div className="mt-2 flex items-center gap-4">
+                          <div className="flex items-center gap-1">
+                            <User className="h-4 w-4 text-gray-500" />
+                            <span className="font-medium">{booking.user_name}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Phone className="h-4 w-4 text-gray-500" />
+                            <span>{booking.user_phone}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="flex items-center gap-1 text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                            <User className="h-3 w-3" />
-                            <span className="truncate max-w-[120px]">{booking.user_name}</span>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="flex items-center gap-1 mb-1">
-                            <Mail className="h-3 w-3" />
-                            {booking.user_email}
-                          </p>
-                          <p className="flex items-center gap-1">
-                            <Phone className="h-3 w-3" />
-                            {booking.user_phone}
-                          </p>
-                          <p className="text-xs mt-1">Service: {booking.package_name}</p>
-                          {booking.additional_cost > 0 && (
-                            <p className="text-xs">Additional cost: ₹{booking.additional_cost}</p>
-                          )}
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
+                    {booking.status === 'confirmed' && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => {
+                          setSelectedBooking(booking);
+                          setShowCancelDialog(true);
+                        }}
+                      >
+                        <AlertTriangle className="h-4 w-4 mr-1" />
+                        Cancel
+                      </Button>
+                    )}
                   </div>
-                  <div className="text-sm text-gray-600 mt-2 line-clamp-2">
+                  
+                  <div className="text-sm text-gray-600 mt-2">
                     <span className="font-medium">Pet details:</span> {booking.pet_details}
                   </div>
                   
@@ -400,6 +390,26 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Appointment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel this appointment? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, keep appointment</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => selectedBooking && handleCancelBooking(selectedBooking)}
+            >
+              Yes, cancel appointment
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </TooltipProvider>
   );
 }
