@@ -250,14 +250,25 @@ export default function GroomerDetail() {
                 providesHomeService={groomer.provides_home_service} 
               />
             </div>
+
+            {/* Packages moved above booking section */}
+            <div className="mt-8">
+              <GroomerPackages 
+                packages={packages} 
+                selectedPackage={selectedPackage}
+                onSelectPackage={handlePackageSelect}
+                groomerPrice={groomer.price}
+                isProcessing={isProcessing}
+              />
+            </div>
             
             {(groomer.provides_salon_service || groomer.provides_home_service) && (
               <div className="mt-8 bg-gray-50 p-6 rounded-lg">
                 <h2 className="text-lg font-semibold mb-4 text-green-800">Book an Appointment</h2>
                 
-                {/* Service Type Selection */}
+                {/* Service Type Selection with reduced size */}
                 {groomer.provides_salon_service && groomer.provides_home_service && (
-                  <div className="mb-6">
+                  <div className="mb-4">
                     <ServiceTypeSelection
                       selectedType={selectedServiceType}
                       onChange={handleServiceTypeChange}
@@ -290,17 +301,6 @@ export default function GroomerDetail() {
                 </Button>
               </div>
             )}
-            
-            {/* Reordered: Packages now comes before About section */}
-            <div className="mt-8">
-              <GroomerPackages 
-                packages={packages} 
-                selectedPackage={selectedPackage}
-                onSelectPackage={handlePackageSelect}
-                groomerPrice={groomer.price}
-                isProcessing={isProcessing}
-              />
-            </div>
             
             <div className="mt-8">
               <GroomerBio bio={groomer.bio} />

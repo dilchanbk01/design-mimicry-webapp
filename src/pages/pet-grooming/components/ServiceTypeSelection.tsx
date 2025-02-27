@@ -38,104 +38,43 @@ export function ServiceTypeSelection({
 
   return (
     <div>
-      <h2 className="text-lg font-semibold mb-3 text-green-800">Service Type</h2>
-      <div className="space-y-3">
+      <h2 className="text-sm font-semibold mb-2 text-green-800">Service Type</h2>
+      <div className="flex gap-2">
         {groomerProvidesSalon && (
           <Card 
-            className={`border rounded-xl cursor-pointer ${options.salon.selected ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}
+            className={`border rounded-lg cursor-pointer flex-1 ${options.salon.selected ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}
             onClick={() => !isProcessing && onChange('salon')}
           >
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <Store className="h-4 w-4 text-green-600" />
-                    <h3 className="text-md font-medium">At Salon</h3>
-                    <Popover>
-                      <PopoverTrigger>
-                        <Info className="h-4 w-4 text-gray-400 cursor-pointer" />
-                      </PopoverTrigger>
-                      <PopoverContent side="top" align="start" className="w-[280px] bg-white z-50">
-                        <div className="space-y-2">
-                          <h4 className="font-medium">Salon Service</h4>
-                          <p className="text-sm text-gray-600">
-                            Visit the groomer's salon for the grooming service.
-                          </p>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <p className="text-green-600 font-semibold mt-1">Standard Price</p>
-                </div>
-                <Button 
-                  variant={options.salon.selected ? "default" : "outline"} 
-                  size="sm"
-                  className={options.salon.selected ? "bg-green-600 hover:bg-green-700" : "border-green-500 text-green-600 hover:bg-green-50"}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!isProcessing) onChange('salon');
-                  }}
-                  disabled={isProcessing}
-                >
-                  {options.salon.selected ? "Selected" : "Select"}
-                </Button>
+            <CardContent className="p-2 flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                <Store className="h-3 w-3 text-green-600" />
+                <span className="text-sm font-medium">Salon</span>
               </div>
+              {options.salon.selected && (
+                <div className="w-2 h-2 rounded-full bg-green-600"></div>
+              )}
             </CardContent>
           </Card>
         )}
 
         {groomerProvidesHome && (
           <Card 
-            className={`border rounded-xl cursor-pointer ${options.home.selected ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}
+            className={`border rounded-lg cursor-pointer flex-1 ${options.home.selected ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}
             onClick={() => !isProcessing && onChange('home')}
           >
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <Home className="h-4 w-4 text-green-600" />
-                    <h3 className="text-md font-medium">Home Visit</h3>
-                    <Popover>
-                      <PopoverTrigger>
-                        <Info className="h-4 w-4 text-gray-400 cursor-pointer" />
-                      </PopoverTrigger>
-                      <PopoverContent side="top" align="start" className="w-[280px] bg-white z-50">
-                        <div className="space-y-2">
-                          <h4 className="font-medium">Home Service</h4>
-                          <p className="text-sm text-gray-600">
-                            The groomer will visit your home to provide the grooming service.
-                          </p>
-                          {options.home.additionalCost > 0 && (
-                            <p className="text-sm text-orange-600 font-medium">
-                              Additional charge: ₹{options.home.additionalCost}
-                            </p>
-                          )}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div className="flex items-center mt-1">
-                    <p className="text-green-600 font-semibold">
-                      {options.home.additionalCost > 0 ? `+₹${options.home.additionalCost}` : 'No additional cost'}
-                    </p>
-                    {options.home.additionalCost > 0 && (
-                      <span className="text-xs text-gray-500 ml-2">for travel expenses</span>
-                    )}
-                  </div>
-                </div>
-                <Button 
-                  variant={options.home.selected ? "default" : "outline"} 
-                  size="sm"
-                  className={options.home.selected ? "bg-green-600 hover:bg-green-700" : "border-green-500 text-green-600 hover:bg-green-50"}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!isProcessing) onChange('home');
-                  }}
-                  disabled={isProcessing}
-                >
-                  {options.home.selected ? "Selected" : "Select"}
-                </Button>
+            <CardContent className="p-2 flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                <Home className="h-3 w-3 text-green-600" />
+                <span className="text-sm font-medium">Home Visit</span>
+                {options.home.additionalCost > 0 && (
+                  <span className="text-xs text-green-600 font-medium ml-1">
+                    +₹{options.home.additionalCost}
+                  </span>
+                )}
               </div>
+              {options.home.selected && (
+                <div className="w-2 h-2 rounded-full bg-green-600"></div>
+              )}
             </CardContent>
           </Card>
         )}

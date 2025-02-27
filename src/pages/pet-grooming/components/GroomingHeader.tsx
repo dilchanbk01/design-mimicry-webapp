@@ -1,90 +1,39 @@
 
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { UserCircle2, Menu } from "lucide-react";
-import { AuthButton } from "@/components/AuthButton";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { ArrowLeft, UserCircle2 } from "lucide-react";
 
 export function GroomingHeader() {
+  const navigate = useNavigate();
+  
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-10">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-center sm:justify-between">
-        {/* Mobile Menu */}
-        <div className="sm:hidden absolute left-4">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-6 w-6" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left">
-              <SheetHeader>
-                <SheetTitle>Petsu</SheetTitle>
-                <SheetDescription>
-                  Your pet grooming companion
-                </SheetDescription>
-              </SheetHeader>
-              <div className="py-4 flex flex-col gap-3">
-                <Button asChild variant="ghost" className="justify-start">
-                  <Link to="/">Home</Link>
-                </Button>
-                <Button asChild variant="ghost" className="justify-start">
-                  <Link to="/pet-grooming">Grooming</Link>
-                </Button>
-                <Button asChild variant="ghost" className="justify-start">
-                  <Link to="/find-vets">Find Vets</Link>
-                </Button>
-                <Button asChild variant="ghost" className="justify-start">
-                  <Link to="/events">Events</Link>
-                </Button>
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-
-        {/* Logo - Larger and centered */}
-        <Link 
-          to="/" 
-          className="flex items-center justify-center"
+    <header className="bg-transparent absolute top-0 left-0 right-0 z-10">
+      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+        {/* Back Button */}
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="text-white hover:bg-white/20"
+          onClick={() => navigate("/pet-grooming")}
         >
-          <div className="flex items-center justify-center">
-            <img 
-              src="/lovable-uploads/8f3aed90-73d6-4c1e-ab8b-639261a42d22.png" 
-              alt="Petsu Logo" 
-              className="h-14 w-auto"
-            />
-            <span className="ml-2 text-2xl font-bold text-green-600 hidden sm:inline-block">Petsu</span>
-          </div>
+          <ArrowLeft className="h-6 w-6" />
+        </Button>
+
+        {/* Logo - Centered */}
+        <Link to="/" className="absolute left-1/2 transform -translate-x-1/2 flex items-center justify-center">
+          <img 
+            src="/lovable-uploads/8f3aed90-73d6-4c1e-ab8b-639261a42d22.png" 
+            alt="Petsu Logo" 
+            className="h-14 w-auto"
+          />
         </Link>
 
-        {/* Desktop Navigation - Hidden on mobile */}
-        <nav className="hidden sm:flex items-center space-x-1">
-          <Button asChild variant="ghost">
-            <Link to="/">Home</Link>
-          </Button>
-          <Button asChild variant="ghost" className="bg-green-50 text-green-700">
-            <Link to="/pet-grooming">Grooming</Link>
-          </Button>
-          <Button asChild variant="ghost">
-            <Link to="/find-vets">Find Vets</Link>
-          </Button>
-          <Button asChild variant="ghost">
-            <Link to="/events">Events</Link>
-          </Button>
-          <AuthButton provider="google" />
-        </nav>
-
-        {/* Auth Button Only (Mobile) */}
-        <div className="sm:hidden absolute right-4">
-          <AuthButton provider="google" />
-        </div>
+        {/* Profile Icon */}
+        <Button variant="ghost" size="icon" className="text-white hover:bg-white/20">
+          <Link to="/profile">
+            <UserCircle2 className="h-6 w-6" />
+          </Link>
+        </Button>
       </div>
     </header>
   );
