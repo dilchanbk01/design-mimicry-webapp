@@ -92,6 +92,12 @@ const Index = () => {
                 <Linkedin size={16} />
                 <span>Follow on LinkedIn</span>
               </a>
+              <a 
+                href="/blog" 
+                className="flex items-center gap-2 text-white hover:text-white/80 transition-colors text-xs"
+              >
+                <span>Blog</span>
+              </a>
             </div>
 
             <div className="flex space-x-4 text-xs text-white/90">

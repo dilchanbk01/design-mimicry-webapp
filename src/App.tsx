@@ -30,6 +30,11 @@ import GroomerDetail from "./pages/pet-grooming/GroomerDetail";
 import GroomerBooking from "./pages/pet-grooming/GroomerBooking";
 import GroomerPending from "./pages/GroomerPending";
 
+// Blog imports
+import Blog from "./pages/blog";
+import BlogPost from "./pages/blog/BlogPost";
+import CategoryPage from "./pages/blog/CategoryPage";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -74,6 +79,11 @@ function App() {
             
             {/* Add the alternative route to handle /groomer/:id URLs */}
             <Route path="/groomer/:id" element={<GroomerDetail />} />
+            
+            {/* Blog routes */}
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
+            <Route path="/blog/category/:category" element={<CategoryPage />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>
