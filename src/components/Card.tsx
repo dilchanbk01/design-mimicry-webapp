@@ -22,7 +22,7 @@ export function Card({ title, icon, className, titleClassName, onClick }: CardPr
       )}
     >
       <div className="absolute top-2 right-2">
-        <ArrowRight className="w-3 h-3 text-accent transition-transform duration-300 group-hover:translate-x-1" />
+        <ArrowRight className="w-5 h-5 text-accent transition-transform duration-300 group-hover:translate-x-1" />
       </div>
       <h3 className={cn("text-sm font-semibold text-accent absolute top-3 left-3", titleClassName)}>
         {title}

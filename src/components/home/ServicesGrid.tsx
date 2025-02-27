@@ -43,7 +43,7 @@ export function ServicesGrid({ onEssentialsClick }: ServicesGridProps) {
         />
         <Card
           title="Pet Essentials"
-          icon="/lovable-uploads/01f1af17-4a11-4809-9674-01e898a01385.png"
+          icon="/lovable-uploads/ee55e238-c45c-408f-bf6d-5cdc12db6a44.png"
           onClick={handleEssentialsClick}
           titleClassName="text-base md:text-xl"
           className="aspect-square bg-white hover:scale-[1.02]"

@@ -215,7 +215,7 @@ export default function GroomerDetail() {
           profileImageUrl: groomer.profile_image_url,
           providesHomeService: groomer.provides_home_service,
           providesSalonService: groomer.provides_salon_service,
-          homeServiceCost: groomer.home_service_cost
+          homeServiceCost: groomer.home_service_cost || 0
         }}
         packages={packages}
         selectedDate={selectedDate}
@@ -228,7 +228,7 @@ export default function GroomerDetail() {
         totalPrice={calculateTotalPrice(
           selectedPackage ? selectedPackage.price : groomer.price,
           selectedServiceType, 
-          groomer.home_service_cost
+          groomer.home_service_cost || 0
         )}
         isProcessing={isProcessing}
         
