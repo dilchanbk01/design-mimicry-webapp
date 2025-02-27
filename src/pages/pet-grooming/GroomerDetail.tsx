@@ -120,7 +120,11 @@ export default function GroomerDetail() {
   // Function to send confirmation email
   const sendConfirmationEmail = async (userEmail: string, bookingDetails: any) => {
     try {
-      const { error } = await supabase.functions.invoke('send-confirmation-email', {
+      // Call the send_booking_confirmation function which is available in the database
+      const { data, error } = await supabase.rpc('send_booking_confirmation');
+
+      // We still use our Edge Function for the actual email sending
+      await supabase.functions.invoke('send-confirmation-email', {
         body: {
           to: userEmail,
           subject: "Your Grooming Appointment is Confirmed!",
@@ -137,9 +141,9 @@ export default function GroomerDetail() {
       });
 
       if (error) {
-        console.error("Error sending confirmation email:", error);
+        console.error("Error in booking confirmation process:", error);
       } else {
-        console.log("Confirmation email sent successfully");
+        console.log("Confirmation email process initiated successfully");
       }
     } catch (err) {
       console.error("Exception when sending confirmation email:", err);

@@ -72,7 +72,11 @@ export default function EventDetail() {
     if (!event) return;
     
     try {
-      const { error } = await supabase.functions.invoke('send-confirmation-email', {
+      // Call the send_booking_confirmation function which is available in the database
+      const { data, error } = await supabase.rpc('send_booking_confirmation');
+
+      // We still use our Edge Function for the actual email sending
+      await supabase.functions.invoke('send-confirmation-email', {
         body: {
           to: userEmail,
           subject: `Your Booking Confirmation for ${event.title}`,
@@ -89,9 +93,9 @@ export default function EventDetail() {
       });
 
       if (error) {
-        console.error("Error sending confirmation email:", error);
+        console.error("Error in booking confirmation process:", error);
       } else {
-        console.log("Event confirmation email sent successfully");
+        console.log("Event confirmation email process initiated successfully");
       }
     } catch (err) {
       console.error("Exception when sending event confirmation email:", err);
