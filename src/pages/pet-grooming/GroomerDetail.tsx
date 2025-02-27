@@ -214,7 +214,8 @@ export default function GroomerDetail() {
           price: groomer.price,
           profileImageUrl: groomer.profile_image_url,
           providesHomeService: groomer.provides_home_service,
-          providesSalonService: groomer.provides_salon_service
+          providesSalonService: groomer.provides_salon_service,
+          homeServiceCost: groomer.home_service_cost
         }}
         packages={packages}
         selectedDate={selectedDate}
