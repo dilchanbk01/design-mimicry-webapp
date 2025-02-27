@@ -30,7 +30,7 @@ export function Header({ isScrolled, selectedCity, onCitySelect }: HeaderProps) 
   }, []);
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-transparent ${
       isScrolled ? '-translate-y-full' : 'translate-y-0'
     }`}>
       <div className="container mx-auto px-4 py-3">
@@ -47,7 +47,7 @@ export function Header({ isScrolled, selectedCity, onCitySelect }: HeaderProps) 
           <img 
             src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
             alt="Petsu"
-            className="h-16 cursor-pointer"
+            className="h-12 cursor-pointer"
             onClick={() => navigate('/')}
           />
           <Button
