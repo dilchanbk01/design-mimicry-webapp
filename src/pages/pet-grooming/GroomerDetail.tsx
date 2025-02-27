@@ -305,7 +305,38 @@ export default function GroomerDetail() {
             </div>
 
             <div className="space-y-6">
-              {/* Grooming Packages Section */}
+              {/* Specializations Section - Now placed before packages */}
+              <div>
+                <h2 className="text-lg font-semibold mb-3">Specializations</h2>
+                <div className="flex flex-wrap gap-2">
+                  {groomer.specializations.map((specialization: string) => (
+                    <span
+                      key={specialization}
+                      className="px-3 py-1 bg-[#E5DEFF] text-[#7E69AB] rounded-full text-sm"
+                    >
+                      {specialization}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Services Available - Now placed right after specializations */}
+              <div className="flex flex-wrap gap-3">
+                {groomer.provides_salon_service && (
+                  <div className="flex items-center text-[#7E69AB] bg-[#E5DEFF] px-3 py-1 rounded-full">
+                    <Store className="h-4 w-4 mr-2 flex-shrink-0" />
+                    <span className="text-sm">Salon Service Available</span>
+                  </div>
+                )}
+                {groomer.provides_home_service && (
+                  <div className="flex items-center text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                    <Home className="h-4 w-4 mr-2 flex-shrink-0" />
+                    <span className="text-sm">Home Service Available</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Grooming Packages Section - Now placed after specializations and services */}
               <div>
                 <h2 className="text-lg font-semibold mb-3">Grooming Packages</h2>
                 {packages.length === 0 ? (
@@ -388,20 +419,6 @@ export default function GroomerDetail() {
                 </Card>
               </div>
 
-              <div>
-                <h2 className="text-lg font-semibold mb-3">Specializations</h2>
-                <div className="flex flex-wrap gap-2">
-                  {groomer.specializations.map((specialization: string) => (
-                    <span
-                      key={specialization}
-                      className="px-3 py-1 bg-[#E5DEFF] text-[#7E69AB] rounded-full text-sm"
-                    >
-                      {specialization}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
               {groomer.bio && (
                 <div>
                   <h2 className="text-lg font-semibold mb-3">About</h2>
@@ -419,21 +436,6 @@ export default function GroomerDetail() {
                     <Scissors className="h-5 w-5 mr-2 flex-shrink-0" />
                     <span className="text-sm">{groomer.experience_years}+ years experience</span>
                   </div>
-                </div>
-
-                <div className="flex flex-wrap gap-3 mt-4">
-                  {groomer.provides_salon_service && (
-                    <div className="flex items-center text-[#7E69AB] bg-[#E5DEFF] px-3 py-1 rounded-full">
-                      <Store className="h-4 w-4 mr-2 flex-shrink-0" />
-                      <span className="text-sm">Salon Service Available</span>
-                    </div>
-                  )}
-                  {groomer.provides_home_service && (
-                    <div className="flex items-center text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-                      <Home className="h-4 w-4 mr-2 flex-shrink-0" />
-                      <span className="text-sm">Home Service Available</span>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
