@@ -14,44 +14,54 @@ export function DashboardStats() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data } = await supabase.auth.getUser();
+        const user = data.user;
         if (!user) return;
 
         const today = new Date();
         const formattedToday = today.toISOString().split('T')[0];
 
         // Get today's appointments count
-        const { data: todayAppts, error: appointmentsError } = await supabase
+        let todayCount = 0;
+        const appointmentsResult = await supabase
           .from('consultations')
-          .select('id')
+          .select('id', { count: 'exact' })
           .eq('vet_id', user.id)
           .eq('date', formattedToday)
           .neq('status', 'cancelled');
 
-        if (appointmentsError) throw appointmentsError;
-        setTodayAppointments(todayAppts?.length || 0);
+        if (appointmentsResult.count !== null) {
+          todayCount = appointmentsResult.count;
+        } else if (appointmentsResult.data) {
+          todayCount = appointmentsResult.data.length;
+        }
+        setTodayAppointments(todayCount);
 
         // Get active chats count
-        const { data: activeConsultations, error: chatsError } = await supabase
+        let chatsCount = 0;
+        const chatsResult = await supabase
           .from('consultations')
-          .select('id')
+          .select('id', { count: 'exact' })
           .eq('vet_id', user.id)
           .eq('status', 'active');
 
-        if (chatsError) throw chatsError;
-        setActiveChats(activeConsultations?.length || 0);
+        if (chatsResult.count !== null) {
+          chatsCount = chatsResult.count;
+        } else if (chatsResult.data) {
+          chatsCount = chatsResult.data.length;
+        }
+        setActiveChats(chatsCount);
 
         // Get total patients
-        const { data: patientData, error: patientsError } = await supabase
+        const patientsResult = await supabase
           .from('consultations')
           .select('user_id')
           .eq('vet_id', user.id)
           .neq('status', 'cancelled');
 
-        if (patientsError) throw patientsError;
-        if (patientData) {
+        if (patientsResult.data) {
           // Count unique patient IDs
-          const uniquePatients = new Set(patientData.map(p => p.user_id));
+          const uniquePatients = new Set(patientsResult.data.map(p => p.user_id));
           setTotalPatients(uniquePatients.size);
         }
 
