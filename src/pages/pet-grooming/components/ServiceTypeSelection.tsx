@@ -13,6 +13,7 @@ interface ServiceTypeSelectionProps {
     salon: ServiceOption;
     home: ServiceOption;
   };
+  homeServiceCost?: number;
 }
 
 export function ServiceTypeSelection({
@@ -21,12 +22,13 @@ export function ServiceTypeSelection({
   isProcessing = false,
   groomerProvidesSalon = true,
   groomerProvidesHome = true,
-  serviceOptions
+  serviceOptions,
+  homeServiceCost = 0
 }: ServiceTypeSelectionProps) {
   // Create default service options if not provided
   const options = serviceOptions || {
     salon: { type: 'salon', additionalCost: 0, selected: selectedType === 'salon' },
-    home: { type: 'home', additionalCost: 100, selected: selectedType === 'home' }
+    home: { type: 'home', additionalCost: homeServiceCost, selected: selectedType === 'home' }
   };
 
   if (!groomerProvidesSalon && !groomerProvidesHome) {
@@ -61,9 +63,9 @@ export function ServiceTypeSelection({
             <CardContent className="p-2 flex items-center justify-between">
               <div className="flex items-center gap-1">
                 <span className="text-sm font-medium">Home Visit</span>
-                {options.home.additionalCost > 0 && (
+                {homeServiceCost > 0 && (
                   <span className="text-xs text-green-600 font-medium ml-1">
-                    +₹{options.home.additionalCost}
+                    +₹{homeServiceCost}
                   </span>
                 )}
               </div>

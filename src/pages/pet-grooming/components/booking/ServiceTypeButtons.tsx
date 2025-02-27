@@ -40,7 +40,7 @@ export function ServiceTypeButtons({
           >
             <h4 className="font-medium">Home Visit</h4>
             <p className="text-sm text-gray-500">Groomer visits your location</p>
-            <p className="text-sm text-green-600 mt-1">+₹{groomer.home_service_cost}</p>
+            <p className="text-sm text-green-600 mt-1">+₹{groomer.home_service_cost || 0}</p>
           </button>
         )}
       </div>

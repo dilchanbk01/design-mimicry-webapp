@@ -45,6 +45,7 @@ export function BookingSection({
         groomerProvidesSalon={groomer.provides_salon_service}
         groomerProvidesHome={groomer.provides_home_service}
         isProcessing={isProcessing}
+        homeServiceCost={groomer.home_service_cost}
       />
       
       <div className="mt-6 border-t border-gray-100 pt-5">

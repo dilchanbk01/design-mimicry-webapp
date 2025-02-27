@@ -28,6 +28,7 @@ interface DialogGroomer {
   profileImageUrl: string | null;
   providesHomeService: boolean;
   providesSalonService: boolean;
+  homeServiceCost: number;
 }
 
 interface BookingDialogProps {
@@ -80,7 +81,7 @@ export function BookingDialog({
   const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
   const [streetAddress, setStreetAddress] = useState('');
   const [city, setCity] = useState('');
-  const [pincode, setPincode] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   
   // Handle date input change and convert string to Date
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,13 +93,13 @@ export function BookingDialog({
   // Handle address fields changes
   useEffect(() => {
     updateAddress();
-  }, [streetAddress, city, pincode]);
+  }, [streetAddress, city, phoneNumber]);
 
   const updateAddress = () => {
     const fullAddress = [
       streetAddress,
       city,
-      pincode ? pincode : ""
+      phoneNumber
     ].filter(Boolean).join(", ");
     
     onHomeAddressChange(fullAddress);
@@ -109,15 +110,19 @@ export function BookingDialog({
     if (!isOpen) {
       setStreetAddress('');
       setCity('');
-      setPincode('');
+      setPhoneNumber('');
     }
   }, [isOpen]);
 
-  // When selectedPackage changes, update the totalPrice
+  // Parse existing address when opening dialog
   useEffect(() => {
-    // This is just for debugging - the actual price calculation happens in the parent component
-    console.log("Selected package changed:", selectedPackage?.name, "Price:", selectedPackage?.price);
-  }, [selectedPackage]);
+    if (isOpen && homeAddress) {
+      const parts = homeAddress.split(', ');
+      if (parts.length >= 1) setStreetAddress(parts[0]);
+      if (parts.length >= 2) setCity(parts[1]);
+      if (parts.length >= 3) setPhoneNumber(parts[2]);
+    }
+  }, [isOpen, homeAddress]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -182,7 +187,12 @@ export function BookingDialog({
                 {groomer.providesHomeService && (
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="home" id="home" disabled={isProcessing} />
-                    <Label htmlFor="home" className="cursor-pointer">Home Visit</Label>
+                    <Label htmlFor="home" className="cursor-pointer">
+                      Home Visit
+                      {groomer.homeServiceCost > 0 && (
+                        <span className="text-xs text-green-600 ml-2">(+₹{groomer.homeServiceCost})</span>
+                      )}
+                    </Label>
                   </div>
                 )}
               </RadioGroup>
@@ -203,30 +213,27 @@ export function BookingDialog({
                       required
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label htmlFor="city" className="text-xs text-gray-500">City</Label>
-                      <Input
-                        id="city"
-                        placeholder="City"
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        disabled={isProcessing}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="pincode" className="text-xs text-gray-500">Pincode</Label>
-                      <Input
-                        id="pincode"
-                        placeholder="Pincode"
-                        value={pincode}
-                        onChange={(e) => setPincode(e.target.value)}
-                        maxLength={6}
-                        disabled={isProcessing}
-                        required
-                      />
-                    </div>
+                  <div>
+                    <Label htmlFor="city" className="text-xs text-gray-500">City</Label>
+                    <Input
+                      id="city"
+                      placeholder="City"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      disabled={isProcessing}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="phoneNumber" className="text-xs text-gray-500">Phone Number</Label>
+                    <Input
+                      id="phoneNumber"
+                      placeholder="Phone Number for contact"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      disabled={isProcessing}
+                      required
+                    />
                   </div>
                 </div>
               </div>
