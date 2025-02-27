@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -161,12 +162,18 @@ export default function AdminDashboard() {
 
   const fetchGroomers = async () => {
     try {
+      console.log("Fetching groomer applications...");
       const { data, error } = await supabase
         .from("groomer_profiles")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching groomers:", error);
+        throw error;
+      }
+      
+      console.log("Groomer data:", data);
       setGroomers(data);
     } catch (error) {
       console.error("Error fetching groomers:", error);
@@ -241,45 +248,51 @@ export default function AdminDashboard() {
 
             <TabsContent value="groomers">
               <div className="space-y-4">
-                {groomers.map((groomer) => (
-                  <Card key={groomer.id} className="p-4">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="font-semibold">{groomer.salon_name}</h3>
-                        <p className="text-sm text-gray-500">
-                          Experience: {groomer.experience_years} years
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Status: <span className={`font-medium ${
-                            groomer.application_status === 'approved' ? 'text-green-600' :
-                            groomer.application_status === 'rejected' ? 'text-red-600' :
-                            'text-yellow-600'
-                          }`}>
-                            {groomer.application_status}
-                          </span>
-                        </p>
-                      </div>
-                      {groomer.application_status === 'pending' && (
-                        <div className="flex gap-2">
-                          <Button
-                            onClick={() => handleGroomerStatus(groomer.id, 'approved')}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            <Check className="h-4 w-4 mr-1" />
-                            Approve
-                          </Button>
-                          <Button
-                            onClick={() => handleGroomerStatus(groomer.id, 'rejected')}
-                            variant="destructive"
-                          >
-                            <X className="h-4 w-4 mr-1" />
-                            Reject
-                          </Button>
+                {groomers.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    No groomer applications found
+                  </div>
+                ) : (
+                  groomers.map((groomer) => (
+                    <Card key={groomer.id} className="p-4">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="font-semibold">{groomer.salon_name}</h3>
+                          <p className="text-sm text-gray-500">
+                            Experience: {groomer.experience_years} years
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Status: <span className={`font-medium ${
+                              groomer.application_status === 'approved' ? 'text-green-600' :
+                              groomer.application_status === 'rejected' ? 'text-red-600' :
+                              'text-yellow-600'
+                            }`}>
+                              {groomer.application_status}
+                            </span>
+                          </p>
                         </div>
-                      )}
-                    </div>
-                  </Card>
-                ))}
+                        {groomer.application_status === 'pending' && (
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => handleGroomerStatus(groomer.id, 'approved')}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <Check className="h-4 w-4 mr-1" />
+                              Approve
+                            </Button>
+                            <Button
+                              onClick={() => handleGroomerStatus(groomer.id, 'rejected')}
+                              variant="destructive"
+                            >
+                              <X className="h-4 w-4 mr-1" />
+                              Reject
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  ))
+                )}
               </div>
             </TabsContent>
           </Tabs>
