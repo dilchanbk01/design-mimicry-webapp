@@ -140,7 +140,7 @@ export function GroomingBookingsSection() {
   return (
     <div className="space-y-4">
       {bookings.map((booking) => (
-        <Card key={booking.id} className="overflow-hidden">
+        <Card key={booking.id} className="overflow-hidden bg-white">
           <div className={`h-1 ${isUpcoming(booking.date) ? 'bg-[#9b87f5]' : 'bg-gray-300'}`}></div>
           <CardContent className="p-4">
             <div className="flex justify-between items-start mb-3">
