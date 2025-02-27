@@ -1,9 +1,8 @@
 
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { format, addDays } from "date-fns";
+import { addDays } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
-import { Button } from "@/components/ui/button";
 import { GroomingHeader } from "./components/GroomingHeader";
 import { BookingDialog } from "./components/BookingDialog";
 import { GroomerTitle } from "./components/GroomerTitle";
@@ -13,44 +12,12 @@ import { GroomerInfo } from "./components/GroomerInfo";
 import { GroomerPackages } from "./components/GroomerPackages";
 import { GroomerSpecializations } from "./components/GroomerSpecializations";
 import { GroomerImageBanner } from "./components/GroomerImageBanner";
-import { ServiceTypeSelection } from "./components/ServiceTypeSelection";
-import { PriceDisplay } from "./components/PriceDisplay";
-import { supabase } from "@/integrations/supabase/client";
+import { BookingSection } from "./components/BookingSection";
+import { calculateTotalPrice } from "./utils/booking";
 import { useGroomer } from "./hooks/useGroomer";
-import { Instagram, Linkedin } from "lucide-react";
+import { useBooking } from "./hooks/useBooking";
+import { Instagram } from "lucide-react";
 import type { GroomingPackage } from "./types/packages";
-import type { GroomerProfile } from "./types";
-
-// Define the Razorpay interface
-interface RazorpayOptions {
-  key: string;
-  amount: number;
-  currency: string;
-  name: string;
-  description: string;
-  image?: string;
-  handler: (response: any) => void;
-  prefill?: {
-    name?: string;
-    email?: string;
-    contact?: string;
-  };
-  theme?: {
-    color: string;
-  };
-  modal?: {
-    ondismiss: () => void;
-    escape: boolean;
-    animation: boolean;
-  };
-}
-
-// Declare Razorpay for TypeScript
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
-}
 
 export default function GroomerDetail() {
   const { id } = useParams<{ id: string }>();
@@ -58,6 +25,7 @@ export default function GroomerDetail() {
   const { toast } = useToast();
   
   const { groomer, packages, isLoading } = useGroomer(id);
+  const { handleBookingConfirm, isProcessing, isBookingConfirmed, setIsBookingConfirmed } = useBooking(groomer);
   
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(addDays(new Date(), 1));
@@ -66,8 +34,6 @@ export default function GroomerDetail() {
   const [selectedPackage, setSelectedPackage] = useState<GroomingPackage | null>(null);
   const [petDetails, setPetDetails] = useState<string>("");
   const [homeAddress, setHomeAddress] = useState<string>("");
-  const [isBookingConfirmed, setIsBookingConfirmed] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   
   // Handle loading state
   if (isLoading) {
@@ -93,9 +59,12 @@ export default function GroomerDetail() {
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">Groomer Not Found</h2>
             <p className="text-gray-600 mb-6">The groomer you're looking for doesn't exist or is no longer available.</p>
-            <Button onClick={() => navigate("/pet-grooming")}>
+            <button 
+              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+              onClick={() => navigate("/pet-grooming")}
+            >
               Back to Pet Grooming
-            </Button>
+            </button>
           </div>
         </div>
       </div>
@@ -120,240 +89,15 @@ export default function GroomerDetail() {
     setIsBookingOpen(true);
   };
 
-  const calculateTotalPrice = () => {
-    const basePrice = selectedPackage ? selectedPackage.price : groomer.price;
-    
-    // Add home service cost if home service is selected
-    let totalPrice = basePrice;
-    if (selectedServiceType === 'home' && groomer.home_service_cost) {
-      totalPrice += groomer.home_service_cost;
-    }
-    
-    return totalPrice;
-  };
-
-  // Function to send confirmation email
-  const sendConfirmationEmail = async (userEmail: string) => {
-    if (!groomer) return;
-    
-    try {
-      const totalPrice = calculateTotalPrice();
-      const serviceName = selectedPackage ? selectedPackage.name : 'Standard Grooming';
-      
-      const response = await supabase.functions.invoke('send-confirmation-email', {
-        body: {
-          to: userEmail,
-          subject: `Your Grooming Appointment with ${groomer.salon_name} is Confirmed`,
-          bookingType: "grooming",
-          bookingDetails: {
-            groomerName: groomer.salon_name,
-            date: format(selectedDate, 'yyyy-MM-dd'),
-            time: selectedTime,
-            serviceName: serviceName,
-            serviceType: selectedServiceType,
-            address: selectedServiceType === 'home' ? homeAddress : groomer.address,
-            price: totalPrice
-          }
-        }
-      });
-
-      console.log("Email confirmation response:", response);
-    } catch (err) {
-      console.error("Error sending confirmation email:", err);
-      // We don't want to interrupt the booking flow if email fails
-      toast({
-        title: "Email Notification",
-        description: "We couldn't send you a confirmation email, but your booking is confirmed.",
-        variant: "default",
-      });
-    }
-  };
-
-  // Load Razorpay script
-  const loadRazorpayScript = () => {
-    return new Promise<boolean>((resolve) => {
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.async = true;
-      
-      script.onload = () => {
-        resolve(true);
-      };
-      
-      script.onerror = () => {
-        console.error("Failed to load Razorpay script");
-        resolve(false);
-      };
-      
-      document.body.appendChild(script);
+  const onConfirmBooking = async () => {
+    await handleBookingConfirm({
+      selectedDate,
+      selectedTime,
+      selectedServiceType,
+      selectedPackage,
+      petDetails,
+      homeAddress
     });
-  };
-
-  const handleBookingConfirm = async () => {
-    if (!selectedDate || !selectedTime) {
-      toast({
-        title: "Incomplete information",
-        description: "Please select a date and time.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (selectedServiceType === 'home' && !homeAddress) {
-      toast({
-        title: "Address Required",
-        description: "Please provide your home address for home service.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsProcessing(true);
-
-      // Check if user is logged in
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to book a grooming appointment.",
-          variant: "destructive",
-        });
-        navigate("/auth");
-        return;
-      }
-
-      const totalPrice = calculateTotalPrice();
-
-      // Initialize payment if price > 0
-      if (totalPrice > 0) {
-        // Load Razorpay script
-        const scriptLoaded = await loadRazorpayScript();
-        if (!scriptLoaded) {
-          toast({
-            title: "Payment Error",
-            description: "Unable to load payment system. Please try again later.",
-            variant: "destructive",
-          });
-          setIsProcessing(false);
-          return;
-        }
-
-        // Create Razorpay options
-        const options: RazorpayOptions = {
-          key: "rzp_test_5wYJG4Y7jeVhsz",
-          amount: totalPrice * 100, // Amount in paise
-          currency: "INR",
-          name: groomer.salon_name,
-          description: `Grooming appointment: ${selectedPackage ? selectedPackage.name : 'Standard Grooming'}`,
-          image: "/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png",
-          handler: async function(response: any) {
-            try {
-              // Create booking record with payment ID
-              const { data, error } = await supabase
-                .from('grooming_bookings')
-                .insert({
-                  groomer_id: groomer.id,
-                  user_id: user.id,
-                  date: format(selectedDate, 'yyyy-MM-dd'),
-                  time: selectedTime,
-                  package_id: selectedPackage?.id,
-                  pet_details: petDetails,
-                  service_type: selectedServiceType,
-                  home_address: selectedServiceType === 'home' ? homeAddress : null,
-                  additional_cost: selectedServiceType === 'home' ? groomer.home_service_cost : 0,
-                  status: 'confirmed',
-                  payment_id: response.razorpay_payment_id
-                })
-                .select()
-                .single();
-
-              if (error) throw error;
-
-              // Send confirmation email if user has an email
-              if (user.email) {
-                await sendConfirmationEmail(user.email);
-              }
-
-              setIsBookingConfirmed(true);
-              toast({
-                title: "Booking Confirmed!",
-                description: `Your grooming appointment with ${groomer.salon_name} has been booked.`,
-              });
-            } catch (error) {
-              console.error("Payment processing error:", error);
-              toast({
-                title: "Booking Failed",
-                description: "There was an error processing your booking. Please try again.",
-                variant: "destructive",
-              });
-            } finally {
-              setIsProcessing(false);
-            }
-          },
-          prefill: {
-            name: user.user_metadata?.full_name || "",
-            email: user.email || "",
-            contact: ""
-          },
-          theme: {
-            color: "#00D26A"
-          },
-          modal: {
-            ondismiss: function() {
-              setIsProcessing(false);
-            },
-            escape: true,
-            animation: true
-          }
-        };
-
-        // Create and open Razorpay checkout
-        const razorpay = new window.Razorpay(options);
-        razorpay.open();
-      } else {
-        // Free service - no payment required
-        const { data, error } = await supabase
-          .from('grooming_bookings')
-          .insert({
-            groomer_id: groomer.id,
-            user_id: user.id,
-            date: format(selectedDate, 'yyyy-MM-dd'),
-            time: selectedTime,
-            package_id: selectedPackage?.id,
-            pet_details: petDetails,
-            service_type: selectedServiceType,
-            home_address: selectedServiceType === 'home' ? homeAddress : null,
-            additional_cost: selectedServiceType === 'home' ? groomer.home_service_cost : 0,
-            status: 'confirmed'
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        // Send confirmation email if user has an email
-        if (user.email) {
-          await sendConfirmationEmail(user.email);
-        }
-
-        setIsBookingConfirmed(true);
-        toast({
-          title: "Booking Confirmed!",
-          description: `Your grooming appointment with ${groomer.salon_name} has been booked.`,
-        });
-        setIsProcessing(false);
-      }
-    } catch (error) {
-      console.error("Booking error:", error);
-      toast({
-        title: "Booking Failed",
-        description: "There was an error processing your booking. Please try again.",
-        variant: "destructive",
-      });
-      setIsProcessing(false);
-    }
   };
 
   const resetBookingForm = () => {
@@ -403,43 +147,15 @@ export default function GroomerDetail() {
             </div>
             
             {(groomer.provides_salon_service || groomer.provides_home_service) && (
-              <div className="mt-8 bg-gray-50 p-6 rounded-lg">
-                <h2 className="text-lg font-semibold mb-4 text-green-800">Book an Appointment</h2>
-                
-                {/* Service Type Selection with reduced size */}
-                {groomer.provides_salon_service && groomer.provides_home_service && (
-                  <div className="mb-4">
-                    <ServiceTypeSelection
-                      selectedType={selectedServiceType}
-                      onChange={handleServiceTypeChange}
-                      isProcessing={isProcessing}
-                      groomerProvidesSalon={groomer.provides_salon_service}
-                      groomerProvidesHome={groomer.provides_home_service}
-                      serviceOptions={{
-                        salon: { type: 'salon', additionalCost: 0, selected: selectedServiceType === 'salon' },
-                        home: { type: 'home', additionalCost: groomer.home_service_cost, selected: selectedServiceType === 'home' }
-                      }}
-                    />
-                  </div>
-                )}
-
-                {/* Display base price + any additional cost for home service */}
-                <div className="mb-6">
-                  <PriceDisplay 
-                    basePrice={selectedPackage ? selectedPackage.price : groomer.price} 
-                    homeServiceCost={groomer.home_service_cost} 
-                    serviceType={selectedServiceType}
-                  />
-                </div>
-
-                <Button 
-                  size="lg" 
-                  className="w-full"
-                  onClick={handleBookingDialogOpen}
-                >
-                  Book Now
-                </Button>
-              </div>
+              <BookingSection
+                groomer={groomer}
+                selectedPackage={selectedPackage}
+                selectedServiceType={selectedServiceType}
+                packages={packages}
+                onBookNowClick={handleBookingDialogOpen}
+                onServiceTypeChange={handleServiceTypeChange}
+                isProcessing={isProcessing}
+              />
             )}
             
             <div className="mt-8">
@@ -506,7 +222,11 @@ export default function GroomerDetail() {
         petDetails={petDetails}
         homeAddress={homeAddress}
         isBookingConfirmed={isBookingConfirmed}
-        totalPrice={calculateTotalPrice()}
+        totalPrice={calculateTotalPrice(
+          selectedPackage ? selectedPackage.price : groomer.price,
+          selectedServiceType, 
+          groomer.home_service_cost
+        )}
         isProcessing={isProcessing}
         
         onDateChange={setSelectedDate}
@@ -515,7 +235,7 @@ export default function GroomerDetail() {
         onServiceTypeChange={handleServiceTypeChange}
         onPetDetailsChange={setPetDetails}
         onHomeAddressChange={setHomeAddress}
-        onConfirm={handleBookingConfirm}
+        onConfirm={onConfirmBooking}
       />
     </div>
   );
