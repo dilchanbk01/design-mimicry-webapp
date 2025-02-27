@@ -1,19 +1,10 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { EventCard } from "@/components/events/EventCard";
-
-interface Event {
-  id: string;
-  title: string;
-  date: string;
-  image_url: string;
-  location: string;
-  price: number;
-}
+import { Event } from "@/types/events";
 
 interface EventAnalytics {
   tickets_sold: number;
@@ -39,7 +30,25 @@ export function EventsSection() {
         .order('date', { ascending: true });
 
       if (eventsData) {
-        setEvents(eventsData);
+        // Cast the data to match the expected Event type
+        const typedEvents = eventsData.map(event => {
+          return {
+            ...event,
+            // Ensure all required fields exist with defaults if missing
+            description: event.description || "",
+            duration: event.duration || 0,
+            capacity: event.capacity || 0,
+            event_type: event.event_type || "",
+            organizer_name: event.organizer_name || "",
+            organizer_email: event.organizer_email || "",
+            organizer_phone: event.organizer_phone || "",
+            organizer_website: event.organizer_website || "",
+            pet_types: event.pet_types || "",
+            pet_requirements: event.pet_requirements || ""
+          } as Event;
+        });
+        
+        setEvents(typedEvents);
         
         // Fetch analytics for each event
         const analyticsData: Record<string, EventAnalytics> = {};
@@ -65,14 +74,14 @@ export function EventsSection() {
   }, []);
 
   if (loading) {
-    return <div className="text-center py-8">Loading events...</div>;
+    return <div className="text-center py-8 text-white">Loading events...</div>;
   }
 
   if (events.length === 0) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-500 mb-4">You haven't created any events yet.</p>
-        <Button onClick={() => navigate('/create-event')}>
+        <p className="text-white mb-4">You haven't created any events yet.</p>
+        <Button onClick={() => navigate('/create-event')} className="bg-white text-green-600 hover:bg-white/90">
           Create Your First Event
         </Button>
       </div>
