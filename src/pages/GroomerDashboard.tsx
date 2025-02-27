@@ -671,7 +671,7 @@ export default function GroomerDashboard() {
                 alt="Petsu Logo" 
                 className="h-8 w-auto"
               />
-              <span className="text-2xl font-bold">Petsu Groomer</span>
+              <span className="text-2xl font-bold"></span>
             </div>
             <div className="flex items-center gap-4">
               <Button variant="ghost" className="text-white hover:bg-green-700" onClick={() => setShowEditProfile(true)}>
