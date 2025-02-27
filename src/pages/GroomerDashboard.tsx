@@ -20,7 +20,8 @@ import {
   Store,
   Eye,
   EyeOff,
-  Clock
+  Clock,
+  RefreshCw
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -29,7 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { BookingsSection } from "@/components/groomer-dashboard/BookingsSection";
-import { format, addDays, eachDayOfInterval, startOfDay, parseISO } from "date-fns";
+import { format, addDays, eachDayOfInterval, startOfDay, parseISO, isToday } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface GroomerProfile {
@@ -61,6 +62,7 @@ interface BookingSummary {
   completed: number;
   pending: number;
   cancelled: number;
+  today: number;
 }
 
 interface Revenue {
@@ -79,13 +81,15 @@ export default function GroomerDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [profile, setProfile] = useState<GroomerProfile | null>(null);
   const [packages, setPackages] = useState<GroomingPackage[]>([]);
   const [bookings, setBookings] = useState<BookingSummary>({
     total: 0,
     completed: 0,
     pending: 0,
-    cancelled: 0
+    cancelled: 0,
+    today: 0
   });
   const [revenue, setRevenue] = useState<Revenue[]>([]);
   const [timeframe, setTimeframe] = useState<'day' | 'week' | 'month'>('week');
@@ -116,27 +120,38 @@ export default function GroomerDashboard() {
     confirmPassword: ''
   });
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
-  const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [availableTimes, setAvailableTimes] = useState<{[key: string]: boolean}>({
-    "09:00 AM": true,
-    "09:30 AM": true,
-    "10:00 AM": true,
-    "10:30 AM": true,
-    "11:00 AM": true,
-    "11:30 AM": true,
-    "12:00 PM": true,
-    "12:30 PM": true,
-    "01:00 PM": true,
-    "01:30 PM": true,
-    "02:00 PM": true,
-    "02:30 PM": true,
-    "03:00 PM": true,
-    "03:30 PM": true,
-    "04:00 PM": true,
-    "04:30 PM": true,
-    "05:00 PM": true,
-    "05:30 PM": true,
-    "06:00 PM": true,
+    "09:00": true,
+    "09:30": true,
+    "10:00": true,
+    "10:30": true,
+    "11:00": true,
+    "11:30": true,
+    "12:00": true,
+    "12:30": true,
+    "13:00": true,
+    "13:30": true,
+    "14:00": true,
+    "14:30": true,
+    "15:00": true,
+    "15:30": true,
+    "16:00": true,
+    "16:30": true,
+    "17:00": true,
+    "17:30": true,
+    "18:00": true,
+    "18:30": true,
+    "19:00": true,
+    "19:30": true,
+    "20:00": true,
+    "20:30": true,
+    "21:00": true,
+    "21:30": true,
+    "22:00": true,
+    "22:30": true,
+    "23:00": true,
+    "23:30": true,
+    "00:00": true,
   });
 
   useEffect(() => {
@@ -227,22 +242,59 @@ export default function GroomerDashboard() {
     }
   };
 
+  const refreshData = async () => {
+    if (!profile) return;
+    
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        fetchBookingSummary(),
+        fetchPackages(),
+        fetchRevenueData(timeframe)
+      ]);
+      
+      toast({
+        title: "Data Refreshed",
+        description: "Your dashboard data has been updated.",
+      });
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      toast({
+        title: "Refresh Failed",
+        description: "Unable to refresh data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const fetchBookingSummary = async () => {
     if (!profile) return;
     
     try {
       const { data, error } = await supabase
         .from("grooming_bookings")
-        .select("status")
+        .select("status, date")
         .eq("groomer_id", profile.id);
 
       if (error) throw error;
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const todaysBookings = data.filter(booking => {
+        const bookingDate = new Date(booking.date);
+        bookingDate.setHours(0, 0, 0, 0);
+        return bookingDate.getTime() === today.getTime();
+      });
       
       const summary = {
         total: data.length,
         completed: data.filter(b => b.status === 'completed').length,
         pending: data.filter(b => b.status === 'confirmed').length,
-        cancelled: data.filter(b => b.status === 'cancelled').length
+        cancelled: data.filter(b => b.status === 'cancelled').length,
+        today: todaysBookings.length
       };
       
       setBookings(summary);
@@ -275,7 +327,6 @@ export default function GroomerDashboard() {
     if (!profile) return;
     
     try {
-      // Fix the type error by using a different approach
       const { data, error } = await supabase
         .from('groomer_time_slots')
         .select('*')
@@ -287,7 +338,6 @@ export default function GroomerDashboard() {
       }
       
       if (data && data.length > 0) {
-        // Cast the data to the correct type
         const timeSlots: TimeSlot[] = data.map(slot => ({
           groomer_id: slot.groomer_id,
           date: slot.date,
@@ -306,11 +356,14 @@ export default function GroomerDashboard() {
           groomer_id: profile.id,
           date: format(day, 'yyyy-MM-dd'),
           times: [
-            "09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", 
-            "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM",
-            "01:00 PM", "01:30 PM", "02:00 PM", "02:30 PM",
-            "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM",
-            "05:00 PM", "05:30 PM", "06:00 PM"
+            "09:00", "09:30", "10:00", "10:30", 
+            "11:00", "11:30", "12:00", "12:30",
+            "13:00", "13:30", "14:00", "14:30",
+            "15:00", "15:30", "16:00", "16:30",
+            "17:00", "17:30", "18:00", "18:30",
+            "19:00", "19:30", "20:00", "20:30",
+            "21:00", "21:30", "22:00", "22:30",
+            "23:00", "23:30", "00:00"
           ]
         }));
         
@@ -540,40 +593,14 @@ export default function GroomerDashboard() {
     }));
   };
 
-  const handleDateChange = (date: string) => {
-    setSelectedDate(date);
-    
-    // Find if we already have settings for this date
-    const existingSlot = availableSlots.find(slot => slot.date === date);
-    
-    if (existingSlot) {
-      // Create a times object with all times set to false by default
-      const timesObj: {[key: string]: boolean} = {};
-      Object.keys(availableTimes).forEach(time => {
-        timesObj[time] = false;
-      });
-      
-      // Set the available times to true
-      existingSlot.times.forEach(time => {
-        timesObj[time] = true;
-      });
-      
-      setAvailableTimes(timesObj);
-    } else {
-      // Reset to all available if no settings for this date
-      const timesObj: {[key: string]: boolean} = {};
-      Object.keys(availableTimes).forEach(time => {
-        timesObj[time] = true;
-      });
-      setAvailableTimes(timesObj);
-    }
-  };
-
   const handleSaveTimeSlots = async () => {
     if (!profile) return;
     
     try {
-      // Get the available times for the selected date
+      // Get the selected date - using today's date
+      const selectedDate = format(new Date(), 'yyyy-MM-dd');
+      
+      // Get the available times
       const selectedTimes = Object.entries(availableTimes)
         .filter(([_, isAvailable]) => isAvailable)
         .map(([time]) => time);
@@ -598,7 +625,7 @@ export default function GroomerDashboard() {
         });
       }
       
-      // Save to the database - Fix the type error by using the correct structure
+      // Save to the database
       const { error } = await supabase
         .from('groomer_time_slots')
         .upsert({
@@ -613,7 +640,7 @@ export default function GroomerDashboard() {
       
       toast({
         title: "Time Slots Updated",
-        description: `Availability for ${format(parseISO(selectedDate), 'MMMM d, yyyy')} has been updated`,
+        description: `Availability for today has been updated`,
       });
     } catch (error) {
       console.error("Error saving time slots:", error);
@@ -635,11 +662,15 @@ export default function GroomerDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-[#4CAF50] text-white shadow-md">
+      <div className="bg-[#0dcf6a] text-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-3">
-              <Scissors className="h-8 w-8" />
+              <img 
+                src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
+                alt="Petsu Logo" 
+                className="h-8 w-auto"
+              />
               <span className="text-2xl font-bold">Petsu Groomer</span>
             </div>
             <div className="flex items-center gap-4">
@@ -651,7 +682,7 @@ export default function GroomerDashboard() {
                 variant={profile?.is_available ? "ghost" : "outline"}
                 className={profile?.is_available 
                   ? "text-white hover:bg-green-700 border border-white"
-                  : "bg-white text-[#4CAF50] hover:bg-gray-100"
+                  : "bg-white text-[#0dcf6a] hover:bg-gray-100"
                 }
                 onClick={handleToggleAvailability}
               >
@@ -667,7 +698,7 @@ export default function GroomerDashboard() {
                   </>
                 )}
               </Button>
-              <Button variant="outline" className="bg-white text-[#4CAF50] hover:bg-gray-100" onClick={handleSignOut}>
+              <Button variant="outline" className="bg-white text-[#0dcf6a] hover:bg-gray-100" onClick={handleSignOut}>
                 Sign Out
               </Button>
             </div>
@@ -676,12 +707,35 @@ export default function GroomerDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Welcome, {profile?.salon_name}</h1>
-          <p className="text-gray-600">Manage your grooming business</p>
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Welcome, {profile?.salon_name}</h1>
+            <p className="text-gray-600">Manage your grooming business</p>
+          </div>
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2"
+            onClick={refreshData}
+            disabled={refreshing}
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? 'Refreshing...' : 'Refresh Data'}
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-500">Today's Appointments</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center">
+                <Calendar className="h-5 w-5 text-blue-500 mr-2" />
+                <span className="text-2xl font-bold">{bookings.today}</span>
+              </div>
+            </CardContent>
+          </Card>
+          
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-500">Total Bookings</CardTitle>
@@ -729,7 +783,7 @@ export default function GroomerDashboard() {
           
           <TabsContent value="appointments" className="space-y-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Your Appointments</h2>
+              <h2 className="text-xl font-semibold">Today's Appointments</h2>
             </div>
             
             {profile && <BookingsSection groomerId={profile.id} />}
@@ -756,12 +810,12 @@ export default function GroomerDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {packages.map((pkg) => (
                   <Card key={pkg.id} className="overflow-hidden">
-                    <div className="bg-[#4CAF50] h-2"></div>
+                    <div className="bg-[#0dcf6a] h-2"></div>
                     <CardContent className="p-6">
                       <h3 className="font-semibold text-lg mb-2">{pkg.name}</h3>
                       <p className="text-gray-600 text-sm mb-4 line-clamp-3">{pkg.description}</p>
                       <div className="flex justify-between items-center">
-                        <span className="text-2xl font-bold text-[#4CAF50]">₹{pkg.price}</span>
+                        <span className="text-2xl font-bold text-[#0dcf6a]">₹{pkg.price}</span>
                         <Button variant="outline" size="sm" onClick={() => handleEditPackage(pkg)}>
                           <Edit className="h-4 w-4 mr-2" />
                           Edit
@@ -799,7 +853,7 @@ export default function GroomerDashboard() {
                     {revenue.map((item, index) => (
                       <div key={index} className="flex flex-col items-center">
                         <div 
-                          className="bg-[#4CAF50] w-6 md:w-8 rounded-t" 
+                          className="bg-[#0dcf6a] w-6 md:w-8 rounded-t" 
                           style={{ height: `${(item.amount / 1000) * 250}px` }}
                         ></div>
                         <span className="text-xs mt-2">{timeframe === 'day' ? `${item.day}h` : `${item.day}`}</span>
@@ -818,8 +872,8 @@ export default function GroomerDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center">
-                      <DollarSign className="h-5 w-5 text-green-500 mr-2" />
-                      <span className="text-2xl font-bold">₹{revenue.reduce((sum, item) => sum + item.amount, 0)}</span>
+                      <span className="text-green-500 mr-2 font-medium">₹</span>
+                      <span className="text-2xl font-bold">{revenue.reduce((sum, item) => sum + item.amount, 0)}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -830,9 +884,9 @@ export default function GroomerDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center">
-                      <DollarSign className="h-5 w-5 text-blue-500 mr-2" />
+                      <span className="text-blue-500 mr-2 font-medium">₹</span>
                       <span className="text-2xl font-bold">
-                        ₹{bookings.completed > 0 
+                        {bookings.completed > 0 
                           ? Math.round(revenue.reduce((sum, item) => sum + item.amount, 0) / bookings.completed) 
                           : 0}
                       </span>
@@ -870,38 +924,8 @@ export default function GroomerDashboard() {
               <CardContent>
                 <div className="space-y-6">
                   <div className="space-y-3">
-                    <Label htmlFor="date-select">Select Date</Label>
-                    <div className="flex gap-4 flex-wrap">
-                      {eachDayOfInterval({
-                        start: startOfDay(new Date()),
-                        end: addDays(startOfDay(new Date()), 13)
-                      }).map((date) => {
-                        const dateStr = format(date, 'yyyy-MM-dd');
-                        const isSelected = dateStr === selectedDate;
-                        const dayStr = format(date, 'E');
-                        const dateNum = format(date, 'd');
-                        
-                        return (
-                          <button
-                            key={dateStr}
-                            onClick={() => handleDateChange(dateStr)}
-                            className={`flex flex-col items-center justify-center h-16 w-16 rounded-lg border transition-colors ${
-                              isSelected 
-                                ? 'bg-green-100 border-green-500 text-green-800' 
-                                : 'border-gray-200 hover:border-green-300'
-                            }`}
-                          >
-                            <span className="text-xs font-medium">{dayStr}</span>
-                            <span className="text-lg font-bold">{dateNum}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <Label>Available Times for {format(parseISO(selectedDate), 'MMMM d, yyyy')}</Label>
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="font-medium">Available Times</h3>
                       <Button 
                         variant="outline" 
                         size="sm"
