@@ -71,6 +71,10 @@ function App() {
             <Route path="/pet-grooming/groomer/:id" element={<GroomerDetail />} />
             <Route path="/pet-grooming/booking/:id" element={<GroomerBooking />} />
             <Route path="/groomer-pending" element={<GroomerPending />} />
+            
+            {/* Add the alternative route to handle /groomer/:id URLs */}
+            <Route path="/groomer/:id" element={<GroomerDetail />} />
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Router>
