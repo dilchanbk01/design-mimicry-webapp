@@ -56,12 +56,18 @@ export default function AdminDashboard() {
     total_revenue: 0
   });
   const [groomers, setGroomers] = useState<GroomerProfile[]>([]);
+  const [activeTab, setActiveTab] = useState("events");
 
   useEffect(() => {
     checkAdminStatus();
     fetchDashboardData();
-    fetchGroomers();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === "groomers") {
+      fetchGroomers();
+    }
+  }, [activeTab]);
 
   const checkAdminStatus = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -163,18 +169,40 @@ export default function AdminDashboard() {
   const fetchGroomers = async () => {
     try {
       console.log("Fetching groomer applications...");
+      
+      // Drop any filters to see all groomer profiles
       const { data, error } = await supabase
         .from("groomer_profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
-
+        .select("*");
+      
       if (error) {
         console.error("Error fetching groomers:", error);
         throw error;
       }
       
-      console.log("Groomer data:", data);
-      setGroomers(data || []);
+      console.log("Raw groomer data:", data);
+      
+      if (data && data.length > 0) {
+        // Process the data to ensure we have all fields needed
+        const processedData = data.map(groomer => ({
+          id: groomer.id,
+          salon_name: groomer.salon_name || "Unnamed Salon",
+          experience_years: groomer.experience_years || 0,
+          application_status: groomer.application_status || "pending",
+          created_at: groomer.created_at || new Date().toISOString(),
+          admin_notes: groomer.admin_notes
+        }));
+        
+        console.log("Processed groomer data:", processedData);
+        setGroomers(processedData);
+        
+        // Log specific details about pending applications
+        const pendingApplications = data.filter(g => g.application_status === 'pending');
+        console.log(`Found ${pendingApplications.length} pending applications:`, pendingApplications);
+      } else {
+        console.log("No groomer data found or empty array returned");
+        setGroomers([]);
+      }
     } catch (error) {
       console.error("Error fetching groomers:", error);
       toast({
@@ -187,18 +215,25 @@ export default function AdminDashboard() {
 
   const handleGroomerStatus = async (groomerId: string, status: 'approved' | 'rejected') => {
     try {
+      console.log(`Updating groomer ${groomerId} to status: ${status}`);
+      
       const { error } = await supabase
         .from("groomer_profiles")
         .update({ application_status: status })
         .eq("id", groomerId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating groomer status:", error);
+        throw error;
+      }
 
+      console.log("Groomer status updated successfully");
       toast({
         title: "Success",
         description: `Groomer application ${status}`,
       });
 
+      // Refetch the groomers to update the UI
       fetchGroomers();
     } catch (error) {
       console.error("Error updating groomer status:", error);
@@ -208,6 +243,12 @@ export default function AdminDashboard() {
         variant: "destructive",
       });
     }
+  };
+
+  // For debugging - force fetch groomers
+  const handleRefreshGroomers = () => {
+    console.log("Manual refresh of groomers requested");
+    fetchGroomers();
   };
 
   if (loading) {
@@ -231,7 +272,10 @@ export default function AdminDashboard() {
             </Button>
           </div>
 
-          <Tabs defaultValue="events">
+          <Tabs 
+            defaultValue="events" 
+            onValueChange={(value) => setActiveTab(value)}
+          >
             <TabsList className="mb-4">
               <TabsTrigger value="events">Events</TabsTrigger>
               <TabsTrigger value="groomers">Groomers</TabsTrigger>
@@ -247,10 +291,17 @@ export default function AdminDashboard() {
             </TabsContent>
 
             <TabsContent value="groomers">
+              <div className="mb-4 flex justify-between items-center">
+                <h2 className="text-xl font-semibold">Groomer Applications</h2>
+                <Button onClick={handleRefreshGroomers} variant="outline" size="sm">
+                  Refresh
+                </Button>
+              </div>
+              
               <div className="space-y-4">
                 {groomers.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
-                    No groomer applications found
+                    No groomer applications found. Try refreshing or check the database.
                   </div>
                 ) : (
                   groomers.map((groomer) => (
@@ -269,6 +320,9 @@ export default function AdminDashboard() {
                             }`}>
                               {groomer.application_status}
                             </span>
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            ID: {groomer.id}
                           </p>
                         </div>
                         {groomer.application_status === 'pending' && (
