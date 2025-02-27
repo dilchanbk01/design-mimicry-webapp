@@ -117,6 +117,35 @@ export default function GroomerDetail() {
     }
   };
 
+  // Function to send confirmation email
+  const sendConfirmationEmail = async (userEmail: string, bookingDetails: any) => {
+    try {
+      const { error } = await supabase.functions.invoke('send-confirmation-email', {
+        body: {
+          to: userEmail,
+          subject: "Your Grooming Appointment is Confirmed!",
+          htmlContent: "",
+          bookingType: "grooming",
+          bookingDetails: {
+            groomerName: groomer?.salon_name,
+            date: bookingDate,
+            time: bookingTime,
+            serviceName: selectedPackage ? selectedPackage.name : "Standard Grooming",
+            petDetails: petDetails
+          }
+        }
+      });
+
+      if (error) {
+        console.error("Error sending confirmation email:", error);
+      } else {
+        console.log("Confirmation email sent successfully");
+      }
+    } catch (err) {
+      console.error("Exception when sending confirmation email:", err);
+    }
+  };
+
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -174,6 +203,16 @@ export default function GroomerDetail() {
               .insert(booking);
 
             if (error) throw error;
+
+            // Send confirmation email
+            if (user.email) {
+              await sendConfirmationEmail(user.email, {
+                groomerName: groomer.salon_name,
+                date: bookingDate,
+                time: bookingTime,
+                serviceName: selectedPackage ? selectedPackage.name : "Standard Grooming"
+              });
+            }
 
             // Show success animation
             setShowConfirmation(true);
@@ -549,6 +588,9 @@ export default function GroomerDetail() {
               </p>
               <p className="text-sm text-gray-500">
                 You can view your appointment details in your profile.
+              </p>
+              <p className="text-sm text-green-600">
+                A confirmation email has been sent to your registered email address.
               </p>
             </div>
           </div>

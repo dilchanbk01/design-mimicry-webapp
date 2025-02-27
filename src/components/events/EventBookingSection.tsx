@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus, Ticket, Info } from "lucide-react";
@@ -16,7 +17,7 @@ interface EventBookingSectionProps {
   price: number;
   remainingTickets: number | null;
   isBooked: boolean;
-  onBookingComplete: () => void;
+  onBookingComplete: (numberOfTickets: number) => void;
 }
 
 export function EventBookingSection({
@@ -72,7 +73,7 @@ export function EventBookingSection({
           .insert(bookings);
 
         if (error) throw error;
-        onBookingComplete();
+        onBookingComplete(numberOfTickets);
         toast({
           title: "Success",
           description: "Your free event has been booked successfully!",
@@ -122,7 +123,7 @@ export function EventBookingSection({
             .insert(bookings);
 
           if (error) throw error;
-          onBookingComplete();
+          onBookingComplete(numberOfTickets);
 
         } catch (error) {
           console.error("Error booking event:", error);

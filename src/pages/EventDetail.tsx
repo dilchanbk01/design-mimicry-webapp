@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Instagram, Ticket } from "lucide-react";
@@ -63,6 +64,37 @@ export default function EventDetail() {
       }
     } catch (error) {
       console.error("Error fetching remaining tickets:", error);
+    }
+  };
+
+  // Function to send confirmation email
+  const sendConfirmationEmail = async (userEmail: string, numberOfTickets: number) => {
+    if (!event) return;
+    
+    try {
+      const { error } = await supabase.functions.invoke('send-confirmation-email', {
+        body: {
+          to: userEmail,
+          subject: `Your Booking Confirmation for ${event.title}`,
+          htmlContent: "",
+          bookingType: "event",
+          bookingDetails: {
+            title: event.title,
+            date: event.date,
+            location: event.location,
+            tickets: numberOfTickets,
+            organizer: event.organizer_name
+          }
+        }
+      });
+
+      if (error) {
+        console.error("Error sending confirmation email:", error);
+      } else {
+        console.log("Event confirmation email sent successfully");
+      }
+    } catch (err) {
+      console.error("Exception when sending event confirmation email:", err);
     }
   };
 
@@ -138,9 +170,15 @@ export default function EventDetail() {
     fetchEventAndBookings();
   }, [id, navigate, toast]);
 
-  const handleBookingComplete = () => {
-    setRemainingTickets(prev => prev !== null ? prev - 1 : null);
+  const handleBookingComplete = async (numberOfTickets: number) => {
+    setRemainingTickets(prev => prev !== null ? prev - numberOfTickets : null);
     setShowTicketAnimation(true);
+
+    // Send confirmation email
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.email && event) {
+      await sendConfirmationEmail(user.email, numberOfTickets);
+    }
 
     setTimeout(() => {
       setShowTicketAnimation(false);
@@ -149,7 +187,7 @@ export default function EventDetail() {
 
     toast({
       title: "Success!",
-      description: "Ticket booked successfully!",
+      description: `${numberOfTickets} ticket${numberOfTickets > 1 ? 's' : ''} booked successfully!`,
     });
   };
 
@@ -266,6 +304,9 @@ export default function EventDetail() {
             </h2>
             <p className="text-gray-600 mt-2 text-center animate-[fade-in_0.5s_ease-out_0.2s]">
               Ticket booked successfully
+            </p>
+            <p className="text-sm text-green-600 mt-1 text-center animate-[fade-in_0.5s_ease-out_0.3s]">
+              Check your email for booking confirmation
             </p>
           </div>
         </div>
