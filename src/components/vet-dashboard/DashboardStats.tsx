@@ -21,7 +21,7 @@ export function DashboardStats() {
         const formattedToday = today.toISOString().split('T')[0];
 
         // Get today's appointments count
-        const { data: appointments, error: appointmentsError } = await supabase
+        const { data: todayAppts, error: appointmentsError } = await supabase
           .from('consultations')
           .select('id')
           .eq('vet_id', user.id)
@@ -29,29 +29,29 @@ export function DashboardStats() {
           .neq('status', 'cancelled');
 
         if (appointmentsError) throw appointmentsError;
-        setTodayAppointments(appointments?.length || 0);
+        setTodayAppointments(todayAppts?.length || 0);
 
         // Get active chats count
-        const { data: chats, error: chatsError } = await supabase
+        const { data: activeConsultations, error: chatsError } = await supabase
           .from('consultations')
           .select('id')
           .eq('vet_id', user.id)
           .eq('status', 'active');
 
         if (chatsError) throw chatsError;
-        setActiveChats(chats?.length || 0);
+        setActiveChats(activeConsultations?.length || 0);
 
         // Get total patients
-        const { data: patients, error: patientsError } = await supabase
+        const { data: patientData, error: patientsError } = await supabase
           .from('consultations')
           .select('user_id')
           .eq('vet_id', user.id)
           .neq('status', 'cancelled');
 
         if (patientsError) throw patientsError;
-        if (patients) {
+        if (patientData) {
           // Count unique patient IDs
-          const uniquePatients = new Set(patients.map(p => p.user_id));
+          const uniquePatients = new Set(patientData.map(p => p.user_id));
           setTotalPatients(uniquePatients.size);
         }
 

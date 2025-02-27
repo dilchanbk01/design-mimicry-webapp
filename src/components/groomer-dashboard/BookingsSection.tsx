@@ -36,28 +36,6 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
   useEffect(() => {
     fetchBookings();
 
-    // Enable realtime for the grooming_bookings table
-    const enableRealtimeForTable = async () => {
-      try {
-        // Check if replication is already enabled for table
-        const { data: replicatedTables, error: replicatedError } = await supabase
-          .from('pg_catalog.pg_publication_tables')
-          .select('tablename')
-          .eq('pubname', 'supabase_realtime');
-        
-        if (replicatedError) {
-          console.error("Error checking replicated tables:", replicatedError);
-        }
-        
-        // Log the tables currently enabled for realtime
-        console.log("Tables with realtime enabled:", replicatedTables);
-      } catch (error) {
-        console.error("Error checking realtime status:", error);
-      }
-    };
-    
-    enableRealtimeForTable();
-
     // Set up realtime subscription for booking updates
     const channel = supabase
       .channel('grooming_bookings_changes')
