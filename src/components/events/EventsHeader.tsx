@@ -29,17 +29,17 @@ export function EventsHeader({
             className="text-white hover:bg-white/20"
             onClick={() => navigate(-1)}
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-6 w-6" />
           </Button>
 
           <img 
             src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
             alt="Petsu"
-            className="h-8 sm:h-10 cursor-pointer"
+            className="h-12 cursor-pointer"
             onClick={() => navigate('/')}
           />
 
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-4">
             {isSearchOpen ? (
               <div className="relative">
                 <Input
@@ -47,7 +47,7 @@ export function EventsHeader({
                   placeholder="Search events..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pr-10 rounded-full bg-white shadow-lg w-48 sm:w-64"
+                  className="pr-10 rounded-full bg-white shadow-lg w-64"
                   autoFocus
                   onBlur={() => setIsSearchOpen(false)}
                 />
@@ -71,7 +71,7 @@ export function EventsHeader({
               className="text-white hover:bg-white/20"
               onClick={() => navigate('/profile')}
             >
-              <User className="h-5 w-5" />
+              <User className="h-6 w-6" />
             </Button>
           </div>
         </div>
