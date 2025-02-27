@@ -4,9 +4,28 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Calendar, Clock, User, Home, Store, Phone, Mail } from "lucide-react";
+import { 
+  Calendar, 
+  Clock, 
+  User, 
+  Home, 
+  Store, 
+  Phone, 
+  Mail, 
+  Search,
+  Filter
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, isToday, isTomorrow, formatDistanceToNow } from "date-fns";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 
 interface Booking {
   id: string;
@@ -30,7 +49,11 @@ interface Booking {
 
 export function BookingsSection({ groomerId }: { groomerId: string }) {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterServiceType, setFilterServiceType] = useState<string>("all");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -57,6 +80,10 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
       supabase.removeChannel(channel);
     };
   }, [groomerId]);
+
+  useEffect(() => {
+    filterBookings();
+  }, [bookings, searchTerm, filterStatus, filterServiceType]);
 
   const fetchBookings = async () => {
     try {
@@ -119,17 +146,8 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
         })
       );
 
-      // Filter for only upcoming appointments (today or future dates)
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      
-      const upcomingBookings = bookingsWithUserDetails.filter(booking => {
-        const bookingDate = new Date(booking.date);
-        return bookingDate >= today;
-      });
-      
       // Sort by date and time
-      upcomingBookings.sort((a, b) => {
+      const sortedBookings = bookingsWithUserDetails.sort((a, b) => {
         const dateA = new Date(a.date);
         const dateB = new Date(b.date);
         
@@ -140,7 +158,8 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
         return a.time.localeCompare(b.time);
       });
       
-      setBookings(upcomingBookings);
+      setBookings(sortedBookings);
+      setFilteredBookings(sortedBookings);
     } catch (error) {
       console.error("Error fetching bookings:", error);
       toast({
@@ -151,6 +170,33 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const filterBookings = () => {
+    let filtered = [...bookings];
+
+    // Filter by search term (name, email, pet details)
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(booking => 
+        (booking.user_name?.toLowerCase().includes(term)) || 
+        (booking.user_email?.toLowerCase().includes(term)) || 
+        (booking.pet_details?.toLowerCase().includes(term)) ||
+        (booking.time?.includes(term))
+      );
+    }
+
+    // Filter by status
+    if (filterStatus !== "all") {
+      filtered = filtered.filter(booking => booking.status === filterStatus);
+    }
+
+    // Filter by service type
+    if (filterServiceType !== "all") {
+      filtered = filtered.filter(booking => booking.service_type === filterServiceType);
+    }
+
+    setFilteredBookings(filtered);
   };
 
   const getStatusColor = (status: string) => {
@@ -166,30 +212,113 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
     }
   };
 
+  const formatBookingDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    if (isToday(date)) {
+      return "Today";
+    } else if (isTomorrow(date)) {
+      return "Tomorrow";
+    } else {
+      return format(date, 'dd MMM yyyy');
+    }
+  };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setFilterStatus("all");
+    setFilterServiceType("all");
+  };
+
   return (
     <TooltipProvider>
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-xl flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-[#4CAF50]" />
-            Upcoming Appointments
+          <CardTitle className="text-xl flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-[#4CAF50]" />
+              <span>Appointments</span>
+            </div>
+            <div className="text-sm font-normal text-gray-500">
+              {filteredBookings.length} {filteredBookings.length === 1 ? 'booking' : 'bookings'} found
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="mb-4">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-grow">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  placeholder="Search by name, email, or pet details"
+                  className="pl-9"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <Select
+                value={filterStatus}
+                onValueChange={setFilterStatus}
+              >
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={filterServiceType}
+                onValueChange={setFilterServiceType}
+              >
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Service Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="salon">Salon</SelectItem>
+                  <SelectItem value="home">Home</SelectItem>
+                </SelectContent>
+              </Select>
+              {(searchTerm || filterStatus !== "all" || filterServiceType !== "all") && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={clearFilters}
+                  className="flex items-center gap-1"
+                >
+                  <Filter className="h-3.5 w-3.5" />
+                  Clear Filters
+                </Button>
+              )}
+            </div>
+          </div>
+
           {loading ? (
             <div className="space-y-3">
               {[...Array(3)].map((_, i) => (
                 <div key={i} className="bg-gray-100 animate-pulse h-24 rounded-lg" />
               ))}
             </div>
-          ) : bookings.length === 0 ? (
+          ) : filteredBookings.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Calendar className="h-10 w-10 mx-auto mb-2 text-gray-400" />
-              <p>No upcoming bookings</p>
+              <p>No bookings found</p>
+              {(searchTerm || filterStatus !== "all" || filterServiceType !== "all") && (
+                <Button 
+                  variant="link" 
+                  onClick={clearFilters}
+                  className="mt-2"
+                >
+                  Clear filters to see all bookings
+                </Button>
+              )}
             </div>
           ) : (
             <div className="space-y-3 mt-2">
-              {bookings.map((booking) => (
+              {filteredBookings.map((booking) => (
                 <div
                   key={booking.id}
                   className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
@@ -200,9 +329,9 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
                         <Calendar className="h-5 w-5" />
                       </div>
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center flex-wrap gap-2">
                           <h3 className="font-medium">
-                            {format(new Date(booking.date), 'dd MMM yyyy')}
+                            {formatBookingDate(booking.date)}
                           </h3>
                           <Badge variant="outline" className={getStatusColor(booking.status)}>
                             {booking.status}
@@ -216,10 +345,10 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
                               {booking.service_type === 'home' ? 'Home Visit' : 'At Salon'}
                             </span>
                           </Badge>
-                        </div>
-                        <div className="text-sm text-gray-500 flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {booking.time}
+                          <span className="text-sm text-gray-500 font-medium flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5" />
+                            {booking.time}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -261,6 +390,10 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
                       <p className="text-gray-700 mt-1">{booking.home_address}</p>
                     </div>
                   )}
+
+                  <div className="mt-2 text-xs text-gray-500">
+                    Booked {formatDistanceToNow(new Date(booking.created_at), { addSuffix: true })}
+                  </div>
                 </div>
               ))}
             </div>
