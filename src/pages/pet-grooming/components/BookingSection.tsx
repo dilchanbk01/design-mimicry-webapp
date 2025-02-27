@@ -33,17 +33,17 @@ export function BookingSection({
       <h2 className="text-lg font-semibold text-green-800 mb-4">Book an Appointment</h2>
       
       <ServiceTypeSelection 
-        providesSalonService={groomer.provides_salon_service} 
-        providesHomeService={groomer.provides_home_service}
-        selectedServiceType={selectedServiceType}
-        onServiceTypeChange={onServiceTypeChange}
+        selectedType={selectedServiceType}
+        onChange={onServiceTypeChange}
+        groomerProvidesSalon={groomer.provides_salon_service}
+        groomerProvidesHome={groomer.provides_home_service}
         isProcessing={isProcessing}
       />
       
       <div className="mt-6 border-t border-gray-100 pt-5">
         <PriceDisplay 
           basePrice={basePrice}
-          additionalCost={homeServiceCost}
+          homeServiceCost={homeServiceCost}
           serviceType={selectedServiceType}
         />
         

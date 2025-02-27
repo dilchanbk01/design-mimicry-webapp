@@ -1,16 +1,13 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Home, Store, Info } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Label } from "@/components/ui/label";
 import type { ServiceOption } from "../types/packages";
 
 interface ServiceTypeSelectionProps {
   selectedType: 'salon' | 'home';
   onChange: (type: 'salon' | 'home') => void;
   isProcessing?: boolean;
-  groomerProvidesSalon?: boolean; 
+  groomerProvidesSalon?: boolean;
   groomerProvidesHome?: boolean;
   serviceOptions?: {
     salon: ServiceOption;
