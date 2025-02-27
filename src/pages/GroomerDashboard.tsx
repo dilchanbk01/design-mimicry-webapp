@@ -142,17 +142,15 @@ export default function GroomerDashboard() {
     if (!profile) return;
     
     try {
-      // Using the raw query method to work with the new table
+      // Use raw query for newly created table that hasn't been added to types
       const { data, error } = await supabase
-        .from('grooming_packages')
-        .select('*')
-        .eq('groomer_id', profile.id);
+        .rpc('fetch_groomer_packages', { groomer_id_param: profile.id });
 
       if (error) throw error;
       
       if (data) {
-        // Ensure proper typing of the data
-        const typedPackages: GroomingPackage[] = data.map(pkg => ({
+        // Convert raw data to properly typed objects
+        const typedPackages: GroomingPackage[] = data.map((pkg: any) => ({
           id: pkg.id,
           name: pkg.name,
           description: pkg.description,
@@ -233,40 +231,26 @@ export default function GroomerDashboard() {
         return;
       }
 
-      const newPackageData = {
-        name: newPackage.name,
-        description: newPackage.description,
-        price: newPackage.price,
-        groomer_id: profile.id
-      };
-
-      const { data, error } = await supabase
-        .from('grooming_packages')
-        .insert(newPackageData)
-        .select();
+      // Use RPC for newly created table that hasn't been added to types
+      const { data, error } = await supabase.rpc('add_grooming_package', {
+        name_param: newPackage.name,
+        description_param: newPackage.description,
+        price_param: newPackage.price,
+        groomer_id_param: profile.id
+      });
 
       if (error) throw error;
 
-      if (data) {
-        // Ensure proper typing for the new packages
-        const typedNewPackages: GroomingPackage[] = data.map(pkg => ({
-          id: pkg.id,
-          name: pkg.name,
-          description: pkg.description,
-          price: pkg.price,
-          groomer_id: pkg.groomer_id,
-          created_at: pkg.created_at
-        }));
-        
-        setPackages(prevPackages => [...typedNewPackages, ...prevPackages]);
-        toast({
-          title: "Package Added",
-          description: "Your grooming package has been added successfully",
-        });
-        
-        setNewPackage({ name: '', description: '', price: 0 });
-        setShowAddPackage(false);
-      }
+      // Fetch the latest packages after adding a new one
+      fetchPackages();
+      
+      toast({
+        title: "Package Added",
+        description: "Your grooming package has been added successfully",
+      });
+      
+      setNewPackage({ name: '', description: '', price: 0 });
+      setShowAddPackage(false);
     } catch (error) {
       console.error("Error adding package:", error);
       toast({
