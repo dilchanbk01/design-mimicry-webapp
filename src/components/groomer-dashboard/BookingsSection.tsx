@@ -35,6 +35,28 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
 
   useEffect(() => {
     fetchBookings();
+
+    // Set up realtime subscription for booking updates
+    const channel = supabase
+      .channel('grooming_bookings_changes')
+      .on('postgres_changes', 
+        {
+          event: '*', 
+          schema: 'public',
+          table: 'grooming_bookings',
+          filter: `groomer_id=eq.${groomerId}`
+        }, 
+        () => {
+          console.log("Booking changed, refreshing data...");
+          fetchBookings();
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [groomerId]);
 
   const fetchBookings = async () => {
@@ -58,8 +80,8 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
               .eq("id", booking.user_id)
               .single();
 
-            const { data: userAuth } = await supabase.auth
-              .admin.getUserById(booking.user_id);
+            // Get user email from auth.users
+            const { data: { user: userAuth } } = await supabase.auth.admin.getUserById(booking.user_id);
 
             // Get package details if available
             let packageName = "Standard Grooming";
@@ -81,7 +103,7 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
             return {
               ...booking,
               user_name: userData?.full_name || "Unknown",
-              user_email: userAuth?.user?.email || "Unknown",
+              user_email: userAuth?.email || "Unknown",
               user_phone: userData?.phone_number || "Not provided",
               package_name: packageName,
               // Make sure all required fields are present
@@ -208,11 +230,7 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
                       <div>
                         <div className="flex items-center gap-2">
                           <h3 className="font-medium">
-                            {new Date(booking.date).toLocaleDateString("en-IN", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })}
+                            {format(new Date(booking.date), 'dd MMM yyyy')}
                           </h3>
                           <Badge variant="outline" className={getStatusColor(booking.status)}>
                             <span className="flex items-center gap-1">
