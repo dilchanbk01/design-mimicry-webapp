@@ -1,242 +1,122 @@
 
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { addDays } from "date-fns";
-import { useToast } from "@/components/ui/use-toast";
-import { GroomingHeader } from "./components/GroomingHeader";
-import { BookingDialog } from "./components/BookingDialog";
+import { useParams } from "react-router-dom";
+import { useGroomer } from "./hooks/useGroomer";
+import { GroomerImageBanner } from "./components/GroomerImageBanner";
 import { GroomerTitle } from "./components/GroomerTitle";
+import { GroomerInfo } from "./components/GroomerInfo";
+import { GroomerSpecializations } from "./components/GroomerSpecializations";
 import { GroomerBio } from "./components/GroomerBio";
 import { GroomerServices } from "./components/GroomerServices";
-import { GroomerInfo } from "./components/GroomerInfo";
 import { GroomerPackages } from "./components/GroomerPackages";
-import { GroomerSpecializations } from "./components/GroomerSpecializations";
-import { GroomerImageBanner } from "./components/GroomerImageBanner";
-import { BookingSection } from "./components/BookingSection";
-import { calculateTotalPrice } from "./utils/booking";
-import { useGroomer } from "./hooks/useGroomer";
-import { useBooking } from "./hooks/useBooking";
-import { Instagram } from "lucide-react";
-import type { GroomingPackage } from "./types/packages";
+import { GroomerBookingSection } from "./components/GroomerBookingSection";
+import { useToast } from "@/hooks/use-toast";
 
 export default function GroomerDetail() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  
   const { groomer, packages, isLoading } = useGroomer(id);
-  const { handleBookingConfirm, isProcessing, isBookingConfirmed, setIsBookingConfirmed } = useBooking(groomer);
-  
-  const [isBookingOpen, setIsBookingOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date>(addDays(new Date(), 1));
-  const [selectedTime, setSelectedTime] = useState<string>("");
   const [selectedServiceType, setSelectedServiceType] = useState<'salon' | 'home'>('salon');
-  const [selectedPackage, setSelectedPackage] = useState<GroomingPackage | null>(null);
-  const [petDetails, setPetDetails] = useState<string>("");
-  const [homeAddress, setHomeAddress] = useState<string>("");
-  
-  // Handle loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-white">
-        <GroomingHeader />
-        <div className="container mx-auto px-4 py-10">
-          <div className="flex flex-col items-center justify-center space-y-4">
-            <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-lg text-gray-600">Loading groomer details...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // Handle case when groomer doesn't exist or is no longer available
-  if (!groomer) {
-    return (
-      <div className="min-h-screen bg-white">
-        <GroomingHeader />
-        <div className="container mx-auto px-4 py-10">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Groomer Not Found</h2>
-            <p className="text-gray-600 mb-6">The groomer you're looking for doesn't exist or is no longer available.</p>
-            <button 
-              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-              onClick={() => navigate("/pet-grooming")}
-            >
-              Back to Pet Grooming
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const { toast } = useToast();
+  const [bookingCompleted, setBookingCompleted] = useState(false);
 
-  const handleServiceTypeChange = (type: 'salon' | 'home') => {
-    setSelectedServiceType(type);
-    // Reset the selected package when changing service type
-    setSelectedPackage(null);
-  };
-
-  const handlePackageSelect = (pkg: GroomingPackage | null) => {
-    setSelectedPackage(pkg);
-  };
-
-  const handleBookingDialogOpen = () => {
-    // Set default package if none selected
-    if (!selectedPackage && packages.length > 0) {
-      setSelectedPackage(packages[0]);
-    }
-    setIsBookingOpen(true);
-  };
-
-  const onConfirmBooking = async () => {
-    await handleBookingConfirm({
-      selectedDate,
-      selectedTime,
-      selectedServiceType,
-      selectedPackage,
-      petDetails,
-      homeAddress
+  const handleBookingComplete = () => {
+    setBookingCompleted(true);
+    toast({
+      title: "Booking Successful!",
+      description: `Your appointment with ${groomer?.salon_name} has been confirmed.`,
     });
   };
 
-  const resetBookingForm = () => {
-    setSelectedDate(addDays(new Date(), 1));
-    setSelectedTime("");
-    setSelectedPackage(null);
-    setPetDetails("");
-    setHomeAddress("");
-    setIsBookingConfirmed(false);
-    setIsBookingOpen(false);
-  };
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
+  if (!groomer) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-500">Groomer not found.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      <GroomingHeader />
+    <div className="min-h-screen bg-gray-50">
+      <GroomerImageBanner profileImageUrl={groomer.profile_image_url} />
       
-      <GroomerImageBanner 
-        imageUrl={groomer.profile_image_url} 
-        altText={groomer.salon_name} 
-      />
-      
-      <div className="container mx-auto px-4 py-6 flex-grow">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <GroomerTitle title={groomer.salon_name} />
-            
-            <div className="mt-4">
-              <GroomerSpecializations specializations={groomer.specializations} />
-            </div>
-            
-            <div className="mt-6">
-              <GroomerServices 
-                providesSalonService={groomer.provides_salon_service} 
-                providesHomeService={groomer.provides_home_service} 
+      <div className="container mx-auto px-4 py-6 -mt-12 relative">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-2 space-y-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <GroomerTitle 
+                name={groomer.salon_name} 
+                years={groomer.experience_years}
+                isAvailable={groomer.is_available}
               />
-            </div>
-
-            {/* Packages moved above booking section */}
-            <div className="mt-8">
-              <GroomerPackages 
-                packages={packages} 
-                selectedPackage={selectedPackage}
-                onSelectPackage={handlePackageSelect}
-                groomerPrice={groomer.price}
-                isProcessing={isProcessing}
-              />
-            </div>
-            
-            {(groomer.provides_salon_service || groomer.provides_home_service) && (
-              <BookingSection
-                groomer={groomer}
-                selectedPackage={selectedPackage}
-                selectedServiceType={selectedServiceType}
-                packages={packages}
-                onBookNowClick={handleBookingDialogOpen}
-                onServiceTypeChange={handleServiceTypeChange}
-                isProcessing={isProcessing}
-              />
-            )}
-            
-            <div className="mt-8">
-              <GroomerBio bio={groomer.bio} />
-            </div>
-            
-            <div className="mt-8">
+              
               <GroomerInfo 
-                experienceYears={groomer.experience_years} 
-                address={groomer.address} 
+                address={groomer.address}
+                contactNumber={groomer.contact_number}
+              />
+              
+              <GroomerSpecializations 
+                specializations={groomer.specializations} 
+              />
+              
+              {groomer.bio && (
+                <GroomerBio bio={groomer.bio} />
+              )}
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <GroomerServices 
+                providesSalonService={groomer.provides_salon_service}
+                providesHomeService={groomer.provides_home_service}
+                homeServiceCost={groomer.home_service_cost}
               />
             </div>
+            
+            {packages.length > 0 && (
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <GroomerPackages packages={packages} />
+              </div>
+            )}
           </div>
           
-          <div className="lg:col-span-1">
-            {/* Empty column for layout balance */}
+          <div className="md:col-span-1">
+            <div className="sticky top-6">
+              <GroomerBookingSection
+                groomer={groomer}
+                packages={packages}
+                selectedServiceType={selectedServiceType}
+                onServiceTypeChange={setSelectedServiceType}
+                onBookingComplete={handleBookingComplete}
+              />
+              
+              {bookingCompleted && (
+                <div className="mt-4 bg-green-50 p-4 rounded-lg border border-green-200">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-green-800">Booking Confirmed!</h3>
+                      <p className="text-sm text-green-600">Thank you for booking with us.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
-      
-      {/* Footer */}
-      <footer className="bg-[#00D26A] py-4 mt-auto">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col items-center justify-center space-y-2">
-            <div className="flex items-center space-x-4 text-white">
-              <a 
-                href="https://instagram.com/petsu" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 hover:text-white/80 transition-colors"
-              >
-                <Instagram size={14} />
-                <span className="text-xs">Follow us</span>
-              </a>
-            </div>
-
-            <p className="text-[10px] text-white/90 text-center">
-              © 2025 Petsu. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
-      
-      {/* Booking Dialog */}
-      <BookingDialog 
-        isOpen={isBookingOpen}
-        onClose={resetBookingForm}
-        groomer={{
-          id: groomer.id,
-          name: groomer.salon_name,
-          address: groomer.address,
-          experienceYears: groomer.experience_years,
-          specializations: groomer.specializations,
-          price: groomer.price,
-          profileImageUrl: groomer.profile_image_url,
-          providesHomeService: groomer.provides_home_service,
-          providesSalonService: groomer.provides_salon_service
-        }}
-        packages={packages}
-        selectedDate={selectedDate}
-        selectedTime={selectedTime}
-        selectedPackage={selectedPackage}
-        selectedServiceType={selectedServiceType}
-        petDetails={petDetails}
-        homeAddress={homeAddress}
-        isBookingConfirmed={isBookingConfirmed}
-        totalPrice={calculateTotalPrice(
-          selectedPackage ? selectedPackage.price : groomer.price,
-          selectedServiceType, 
-          groomer.home_service_cost
-        )}
-        isProcessing={isProcessing}
-        
-        onDateChange={setSelectedDate}
-        onTimeChange={setSelectedTime}
-        onPackageChange={setSelectedPackage}
-        onServiceTypeChange={handleServiceTypeChange}
-        onPetDetailsChange={setPetDetails}
-        onHomeAddressChange={setHomeAddress}
-        onConfirm={onConfirmBooking}
-      />
     </div>
   );
 }
