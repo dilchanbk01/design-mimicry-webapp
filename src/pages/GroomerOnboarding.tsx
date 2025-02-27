@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { GroomerFormFields } from "@/components/groomer-onboarding/GroomerFormFields";
 import { GroomerFormData, initialFormData } from "@/components/groomer-onboarding/schema";
@@ -38,12 +38,11 @@ export default function GroomerOnboarding() {
           title: "Application Already Submitted",
           description: "You have already submitted an application.",
         });
-        navigate("/");
+        navigate("/groomer-pending");
         return;
       }
     } catch (error) {
       console.error("Auth check error:", error);
-      navigate("/groomer-auth");
     }
   };
 
@@ -79,13 +78,19 @@ export default function GroomerOnboarding() {
         return;
       }
 
+      // Validate required fields
+      if (!formData.salonName || !formData.experienceYears || formData.specializations.length === 0 ||
+          !formData.streetAddress || !formData.city || !formData.pincode || !formData.contactNumber) {
+        throw new Error("Please fill out all required fields");
+      }
+
       let profileImageUrl = null;
 
       if (formData.profileImage) {
         const fileExt = formData.profileImage.name.split('.').pop();
         const filePath = `${user.id}-${Date.now()}.${fileExt}`;
         
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError, data: uploadData } = await supabase.storage
           .from('groomer-profiles')
           .upload(filePath, formData.profileImage);
 
@@ -115,22 +120,26 @@ export default function GroomerOnboarding() {
         bio: formData.bio,
         profile_image_url: profileImageUrl,
         provides_home_service: formData.providesHomeService,
-        provides_salon_service: formData.providesSalonService
+        provides_salon_service: formData.providesSalonService,
+        application_status: 'pending'
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Submission error:", error);
+        throw error;
+      }
 
       toast({
         title: "Application Submitted!",
         description: "We'll review your application and get back to you soon.",
       });
 
-      navigate("/");
+      navigate("/groomer-pending");
     } catch (error) {
       console.error("Onboarding error:", error);
       toast({
         title: "Error",
-        description: "There was an error submitting your application. Please try again.",
+        description: error.message || "There was an error submitting your application. Please try again.",
         variant: "destructive",
       });
     } finally {
