@@ -91,62 +91,77 @@ export function EventBookingSection({
       return;
     }
 
-    const res = await loadRazorpayScript();
-    if (!res) {
+    try {
+      setBookingInProgress(true);
+      
+      // Load the Razorpay script
+      const res = await loadRazorpayScript();
+      if (!res) {
+        toast({
+          title: "Error",
+          description: "Payment system failed to load",
+          variant: "destructive",
+        });
+        setBookingInProgress(false);
+        return;
+      }
+
+      const options = {
+        key: "rzp_test_5wYJG4Y7jeVhsz",
+        amount: totalAmount * 100,
+        currency: "INR",
+        name: "Petsu",
+        description: `Booking for event`,
+        image: "/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png",
+        handler: async function (response: any) {
+          try {
+            const bookings = Array(numberOfTickets).fill(null).map(() => ({
+              event_id: eventId,
+              user_id: user.id,
+              status: 'confirmed',
+              payment_id: response.razorpay_payment_id
+            }));
+
+            const { error } = await supabase
+              .from("bookings")
+              .insert(bookings);
+
+            if (error) throw error;
+            onBookingComplete(numberOfTickets);
+
+          } catch (error) {
+            console.error("Error booking event:", error);
+            toast({
+              title: "Booking Failed",
+              description: "Unable to complete your booking. Please try again later.",
+              variant: "destructive",
+            });
+          } finally {
+            setBookingInProgress(false);
+          }
+        },
+        prefill: {
+          email: user.email,
+          contact: "",
+        },
+        theme: {
+          color: "#00D26A",
+        },
+      };
+
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+      setBookingInProgress(false);
+      
+    } catch (error) {
+      console.error("Error initiating payment:", error);
       toast({
-        title: "Error",
-        description: "Payment system failed to load",
+        title: "Payment Error",
+        description: "Unable to initiate payment. Please try again later.",
         variant: "destructive",
       });
-      return;
+      setBookingInProgress(false);
     }
-
-    const options = {
-      key: "rzp_test_5wYJG4Y7jeVhsz",
-      amount: totalAmount * 100,
-      currency: "INR",
-      name: "Petsu",
-      description: `Booking for event`,
-      image: "/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png",
-      handler: async function (response: any) {
-        try {
-          setBookingInProgress(true);
-          const bookings = Array(numberOfTickets).fill(null).map(() => ({
-            event_id: eventId,
-            user_id: user.id,
-            status: 'confirmed',
-            payment_id: response.razorpay_payment_id
-          }));
-
-          const { error } = await supabase
-            .from("bookings")
-            .insert(bookings);
-
-          if (error) throw error;
-          onBookingComplete(numberOfTickets);
-
-        } catch (error) {
-          console.error("Error booking event:", error);
-          toast({
-            title: "Booking Failed",
-            description: "Unable to complete your booking. Please try again later.",
-            variant: "destructive",
-          });
-        } finally {
-          setBookingInProgress(false);
-        }
-      },
-      prefill: {
-        email: user.email,
-        contact: "",
-      },
-      theme: {
-        color: "#00D26A",
-      },
-    };
-
-    const paymentObject = new window.Razorpay(options);
-    paymentObject.open();
   };
 
   const loadRazorpayScript = () => {
@@ -180,7 +195,10 @@ export function EventBookingSection({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setShowPriceBreakdown(true)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowPriceBreakdown(true);
+                    }}
                     className="p-0 h-auto hover:bg-transparent"
                   >
                     <Info className="h-4 w-4 text-gray-400" />
@@ -222,7 +240,10 @@ export function EventBookingSection({
       </div>
       
       <Button
-        onClick={handlePayment}
+        onClick={(e) => {
+          e.stopPropagation();
+          handlePayment();
+        }}
         disabled={bookingInProgress || remainingTickets === 0 || isBooked}
         className={`w-full ${
           isBooked

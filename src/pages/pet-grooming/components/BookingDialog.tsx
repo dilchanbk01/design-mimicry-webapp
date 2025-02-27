@@ -90,6 +90,10 @@ export function BookingDialog({
   };
 
   // Handle address fields changes
+  useEffect(() => {
+    updateAddress();
+  }, [streetAddress, city, pincode]);
+
   const updateAddress = () => {
     const fullAddress = [
       streetAddress,
@@ -109,21 +113,16 @@ export function BookingDialog({
     }
   }, [isOpen]);
 
+  // When selectedPackage changes, update the totalPrice
+  useEffect(() => {
+    // This is just for debugging - the actual price calculation happens in the parent component
+    console.log("Selected package changed:", selectedPackage?.name, "Price:", selectedPackage?.price);
+  }, [selectedPackage]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 right-0 z-50 flex justify-end">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="absolute top-2 right-2 h-6 w-6 p-0 rounded-full" 
-            onClick={onClose}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        
-        <DialogHeader className="pt-6">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+        <DialogHeader className="pt-2">
           <DialogTitle>Book Appointment</DialogTitle>
           <DialogDescription>
             Schedule your grooming appointment with {groomer.name}
@@ -144,7 +143,7 @@ export function BookingDialog({
             <Button onClick={onClose} className="w-full">Close</Button>
           </div>
         ) : (
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="date">Date</Label>
@@ -199,10 +198,7 @@ export function BookingDialog({
                       id="streetAddress"
                       placeholder="House/Flat No., Building Name, Street"
                       value={streetAddress}
-                      onChange={(e) => {
-                        setStreetAddress(e.target.value);
-                        updateAddress();
-                      }}
+                      onChange={(e) => setStreetAddress(e.target.value)}
                       disabled={isProcessing}
                       required
                     />
@@ -214,10 +210,7 @@ export function BookingDialog({
                         id="city"
                         placeholder="City"
                         value={city}
-                        onChange={(e) => {
-                          setCity(e.target.value);
-                          updateAddress();
-                        }}
+                        onChange={(e) => setCity(e.target.value)}
                         disabled={isProcessing}
                         required
                       />
@@ -228,11 +221,7 @@ export function BookingDialog({
                         id="pincode"
                         placeholder="Pincode"
                         value={pincode}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                          setPincode(value);
-                          updateAddress();
-                        }}
+                        onChange={(e) => setPincode(e.target.value)}
                         maxLength={6}
                         disabled={isProcessing}
                         required
@@ -279,10 +268,12 @@ export function BookingDialog({
                 onChange={(e) => onPetDetailsChange(e.target.value)}
                 disabled={isProcessing}
                 required
+                className="resize-none"
+                rows={3}
               />
             </div>
             
-            <Separator className="my-4" />
+            <Separator className="my-2" />
             
             <div className="flex justify-between items-center">
               <span className="font-medium">Total Price:</span>
