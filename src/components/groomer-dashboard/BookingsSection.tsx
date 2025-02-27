@@ -18,9 +18,11 @@ interface Booking {
   service_type: string;
   created_at: string;
   payment_id: string;
+  package_id: string | null;
   user_email?: string;
   user_name?: string;
   package_name?: string;
+  groomer_id: string;
 }
 
 export function BookingsSection({ groomerId }: { groomerId: string }) {
