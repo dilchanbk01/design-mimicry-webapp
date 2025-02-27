@@ -14,6 +14,12 @@ declare global {
   }
 }
 
+interface RazorpayResponse {
+  razorpay_payment_id: string;
+  razorpay_order_id?: string;
+  razorpay_signature?: string;
+}
+
 export function useBooking(groomer: GroomerProfile | null) {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -22,11 +28,10 @@ export function useBooking(groomer: GroomerProfile | null) {
 
   const initializePayment = async (amount: number, orderData: any) => {
     // Load Razorpay script
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    document.body.appendChild(script);
-
-    return new Promise((resolve, reject) => {
+    return new Promise<RazorpayResponse>((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
       script.onload = () => {
         const options = {
           key: 'rzp_test_dxbW3VfBytQz5L', // Replace with your Razorpay key
@@ -35,7 +40,7 @@ export function useBooking(groomer: GroomerProfile | null) {
           name: 'Petsu Grooming',
           description: 'Grooming Service Payment',
           order_id: orderData.id,
-          handler: function (response: any) {
+          handler: function (response: RazorpayResponse) {
             resolve(response);
           },
           prefill: {
@@ -44,6 +49,11 @@ export function useBooking(groomer: GroomerProfile | null) {
           },
           theme: {
             color: '#4CAF50'
+          },
+          modal: {
+            ondismiss: function() {
+              reject(new Error("Payment cancelled by user"));
+            }
           }
         };
 
@@ -53,6 +63,7 @@ export function useBooking(groomer: GroomerProfile | null) {
       script.onerror = () => {
         reject(new Error("Failed to load Razorpay SDK"));
       };
+      document.body.appendChild(script);
     });
   };
 
@@ -121,12 +132,8 @@ export function useBooking(groomer: GroomerProfile | null) {
           email: user.email
         });
 
-        if (!paymentResponse) {
-          throw new Error("Payment failed");
-        }
-
         // Create booking with payment information
-        const data = await createBooking({
+        await createBooking({
           groomerId: groomer.id,
           userId: user.id,
           selectedDate,
@@ -136,7 +143,7 @@ export function useBooking(groomer: GroomerProfile | null) {
           serviceType: selectedServiceType,
           homeAddress,
           additionalCost: selectedServiceType === 'home' ? groomer.home_service_cost : 0,
-          paymentId: paymentResponse.razorpay_payment_id
+          payment_id: paymentResponse.razorpay_payment_id
         });
 
         // Send confirmation email if user has an email
@@ -169,11 +176,11 @@ export function useBooking(groomer: GroomerProfile | null) {
           title: "Booking Confirmed!",
           description: `Your grooming appointment with ${groomer.salon_name} has been booked.`,
         });
-      } catch (paymentError) {
+      } catch (paymentError: any) {
         console.error("Payment error:", paymentError);
         toast({
           title: "Payment Failed",
-          description: "There was an error processing your payment. Please try again.",
+          description: paymentError.message || "There was an error processing your payment. Please try again.",
           variant: "destructive",
         });
       }

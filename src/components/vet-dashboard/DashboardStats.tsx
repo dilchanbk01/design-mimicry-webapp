@@ -18,38 +18,35 @@ export function DashboardStats() {
         const user = data.user;
         if (!user) return;
 
-        const today = new Date();
-        const formattedToday = today.toISOString().split('T')[0];
+        const today = new Date().toISOString().split('T')[0];
 
-        // Get today's appointments count - using a simpler approach without count option
-        const appointmentsResult = await supabase
+        // Get today's appointments
+        const { data: todayData } = await supabase
           .from('consultations')
           .select('id')
           .eq('vet_id', user.id)
-          .eq('date', formattedToday)
-          .neq('status', 'cancelled');
+          .eq('status', 'active')
+          .filter('created_at', 'gte', `${today}T00:00:00`);
+        
+        setTodayAppointments(todayData?.length || 0);
 
-        setTodayAppointments(appointmentsResult.data?.length || 0);
-
-        // Get active chats count - using a simpler approach without count option
-        const chatsResult = await supabase
+        // Get active chats
+        const { data: chatsData } = await supabase
           .from('consultations')
           .select('id')
           .eq('vet_id', user.id)
           .eq('status', 'active');
+        
+        setActiveChats(chatsData?.length || 0);
 
-        setActiveChats(chatsResult.data?.length || 0);
-
-        // Get total patients
-        const patientsResult = await supabase
+        // Get unique patients
+        const { data: patientsData } = await supabase
           .from('consultations')
           .select('user_id')
-          .eq('vet_id', user.id)
-          .neq('status', 'cancelled');
-
-        if (patientsResult.data) {
-          // Count unique patient IDs
-          const uniquePatients = new Set(patientsResult.data.map(p => p.user_id));
+          .eq('vet_id', user.id);
+        
+        if (patientsData) {
+          const uniquePatients = new Set(patientsData.map(p => p.user_id));
           setTotalPatients(uniquePatients.size);
         }
 

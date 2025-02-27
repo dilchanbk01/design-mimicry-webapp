@@ -53,6 +53,7 @@ export const createBooking = async ({
   serviceType,
   homeAddress,
   additionalCost,
+  payment_id,
 }: {
   groomerId: string;
   userId: string;
@@ -63,6 +64,7 @@ export const createBooking = async ({
   serviceType: 'salon' | 'home';
   homeAddress: string;
   additionalCost: number;
+  payment_id: string;
 }) => {
   const { data, error } = await supabase
     .from('grooming_bookings')
@@ -76,6 +78,7 @@ export const createBooking = async ({
       service_type: serviceType,
       home_address: serviceType === 'home' ? homeAddress : null,
       additional_cost: additionalCost,
+      payment_id: payment_id,
       status: 'confirmed'
     })
     .select()
