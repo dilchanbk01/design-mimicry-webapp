@@ -17,7 +17,7 @@ export function ProfileHeader({ fullName }: ProfileHeaderProps) {
       </Avatar>
       <div>
         <h1 className="text-xl font-semibold">
-          Hey{fullName ? `, ${fullName}` : ""}!
+          Hello, {fullName || "there"}!
         </h1>
         <button 
           onClick={() => navigate("/profile/edit")}

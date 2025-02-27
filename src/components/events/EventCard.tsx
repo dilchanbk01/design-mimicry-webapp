@@ -1,18 +1,25 @@
 
-import { Calendar, MapPin, Clock } from "lucide-react";
+import { Calendar, MapPin, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import type { Event } from "@/types/events";
 import { getOptimizedImageUrl } from "@/utils/imageCompression";
 
 interface EventCardProps {
   event: Event;
   isBooked: boolean;
+  isOrganizer?: boolean;
+  analytics?: {
+    ticketsSold: number;
+    totalAmount: number;
+  };
 }
 
-export function EventCard({ event, isBooked }: EventCardProps) {
+export function EventCard({ event, isBooked, isOrganizer, analytics }: EventCardProps) {
   const navigate = useNavigate();
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   return (
     <div
@@ -50,6 +57,43 @@ export function EventCard({ event, isBooked }: EventCardProps) {
             <span className="font-semibold">₹{event.price}</span>
           </div>
         </div>
+
+        {isOrganizer && analytics && (
+          <div className="mt-4">
+            <Button
+              variant="ghost"
+              className="w-full justify-between text-sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowAnalytics(!showAnalytics);
+              }}
+            >
+              Event Analytics
+              {showAnalytics ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
+            
+            {showAnalytics && (
+              <div 
+                className="mt-2 p-4 bg-gray-50 rounded-lg space-y-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Tickets Sold:</span>
+                  <span className="font-semibold">{analytics.ticketsSold}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Total Revenue:</span>
+                  <span className="font-semibold text-green-600">₹{analytics.totalAmount}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <Button
           className={`w-full mt-6 ${
             isBooked

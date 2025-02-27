@@ -59,8 +59,8 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-primary/10 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="min-h-screen bg-[#0dcf6a] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
       </div>
     );
   }
@@ -83,18 +83,16 @@ export default function Profile() {
   };
 
   return (
-    <div className="min-h-screen bg-primary/10">
+    <div className="min-h-screen bg-[#0dcf6a]">
       <header className="fixed top-0 left-0 right-0 bg-transparent z-50">
         <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-center">
-            {activeTab !== "profile" && (
-              <button
-                onClick={() => navigate("/profile")}
-                className="absolute left-4 text-gray-600 hover:text-gray-800"
-              >
-                <ChevronLeft className="h-6 w-6" />
-              </button>
-            )}
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => navigate("/")}
+              className="text-white hover:text-white/80 transition-colors"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
             
             <img 
               src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
@@ -106,7 +104,7 @@ export default function Profile() {
             {activeTab !== "profile" && (
               <button
                 onClick={handleSignOut}
-                className="absolute right-4 text-sm text-gray-600 hover:text-gray-800"
+                className="text-sm text-white hover:text-white/80"
               >
                 Sign out
               </button>
