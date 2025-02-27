@@ -76,7 +76,7 @@ export default function GroomerDetail() {
     setSelectedPackage(null);
   };
 
-  const handlePackageSelect = (pkg: GroomingPackage) => {
+  const handlePackageSelect = (pkg: GroomingPackage | null) => {
     setSelectedPackage(pkg);
   };
 
@@ -89,7 +89,7 @@ export default function GroomerDetail() {
   };
 
   const calculateTotalPrice = () => {
-    if (!selectedPackage) return 0;
+    if (!selectedPackage) return groomer.price;
     
     let totalPrice = selectedPackage.price;
     
@@ -102,10 +102,10 @@ export default function GroomerDetail() {
   };
 
   const handleBookingConfirm = async () => {
-    if (!selectedPackage || !selectedDate || !selectedTime) {
+    if (!selectedDate || !selectedTime) {
       toast({
         title: "Incomplete information",
-        description: "Please select a package, date, and time.",
+        description: "Please select a date and time.",
         variant: "destructive",
       });
       return;
@@ -144,7 +144,7 @@ export default function GroomerDetail() {
           user_id: user.id,
           date: format(selectedDate, 'yyyy-MM-dd'),
           time: selectedTime,
-          package_id: selectedPackage.id,
+          package_id: selectedPackage?.id,
           pet_details: petDetails,
           service_type: selectedServiceType,
           home_address: selectedServiceType === 'home' ? homeAddress : null,
@@ -206,7 +206,7 @@ export default function GroomerDetail() {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            <GroomerTitle name={groomer.salon_name} />
+            <GroomerTitle title={groomer.salon_name} />
             
             <div className="mt-4">
               <GroomerSpecializations specializations={groomer.specializations} />
@@ -229,6 +229,15 @@ export default function GroomerDetail() {
                     <ServiceTypeSelection
                       selectedType={selectedServiceType}
                       onChange={handleServiceTypeChange}
+                      homeAddress={homeAddress}
+                      onHomeAddressChange={setHomeAddress}
+                      isProcessing={isProcessing}
+                      groomerProvidesSalon={groomer.provides_salon_service}
+                      groomerProvidesHome={groomer.provides_home_service}
+                      serviceOptions={{
+                        salon: { type: 'salon', additionalCost: 0, selected: selectedServiceType === 'salon' },
+                        home: { type: 'home', additionalCost: groomer.home_service_cost, selected: selectedServiceType === 'home' }
+                      }}
                     />
                   </div>
                 )}
@@ -269,6 +278,8 @@ export default function GroomerDetail() {
               packages={packages} 
               selectedPackage={selectedPackage}
               onSelectPackage={handlePackageSelect}
+              groomerPrice={groomer.price}
+              isProcessing={isProcessing}
             />
           </div>
         </div>
@@ -301,7 +312,7 @@ export default function GroomerDetail() {
         isProcessing={isProcessing}
         
         onDateChange={setSelectedDate}
-        onTimeChange={setTimeChange}
+        onTimeChange={setSelectedTime}
         onPackageChange={setSelectedPackage}
         onServiceTypeChange={handleServiceTypeChange}
         onPetDetailsChange={setPetDetails}
@@ -311,8 +322,4 @@ export default function GroomerDetail() {
       />
     </div>
   );
-
-  function setTimeChange(time: string) {
-    setSelectedTime(time);
-  }
 }

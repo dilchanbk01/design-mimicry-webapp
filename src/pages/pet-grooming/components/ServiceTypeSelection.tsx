@@ -1,36 +1,42 @@
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Home, Store, Info } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import type { ServiceOption } from "../types/packages";
 
 interface ServiceTypeSelectionProps {
-  groomerProvidesSalon: boolean;
-  groomerProvidesHome: boolean;
-  serviceOptions: {
+  selectedType: 'salon' | 'home';
+  onChange: (type: 'salon' | 'home') => void;
+  homeAddress?: string;
+  onHomeAddressChange?: (address: string) => void;
+  isProcessing?: boolean;
+  groomerProvidesSalon?: boolean; 
+  groomerProvidesHome?: boolean;
+  serviceOptions?: {
     salon: ServiceOption;
     home: ServiceOption;
   };
-  onSelectServiceType: (type: 'salon' | 'home') => void;
-  homeAddress: string;
-  onHomeAddressChange: (address: string) => void;
-  isProcessing: boolean;
 }
 
 export function ServiceTypeSelection({
-  groomerProvidesSalon,
-  groomerProvidesHome,
-  serviceOptions,
-  onSelectServiceType,
-  homeAddress,
-  onHomeAddressChange,
-  isProcessing
+  selectedType,
+  onChange,
+  homeAddress = '',
+  onHomeAddressChange = () => {},
+  isProcessing = false,
+  groomerProvidesSalon = true,
+  groomerProvidesHome = true,
+  serviceOptions
 }: ServiceTypeSelectionProps) {
+  // Create default service options if not provided
+  const options = serviceOptions || {
+    salon: { type: 'salon', additionalCost: 0, selected: selectedType === 'salon' },
+    home: { type: 'home', additionalCost: 100, selected: selectedType === 'home' }
+  };
+
   if (!groomerProvidesSalon && !groomerProvidesHome) {
     return null;
   }
@@ -41,7 +47,7 @@ export function ServiceTypeSelection({
       <div className="space-y-3">
         {groomerProvidesSalon && (
           <Card 
-            className={`border rounded-xl ${serviceOptions.salon.selected ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}
+            className={`border rounded-xl ${options.salon.selected ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}
           >
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
@@ -66,13 +72,13 @@ export function ServiceTypeSelection({
                   <p className="text-green-600 font-semibold mt-1">Standard Price</p>
                 </div>
                 <Button 
-                  variant={serviceOptions.salon.selected ? "default" : "outline"} 
+                  variant={options.salon.selected ? "default" : "outline"} 
                   size="sm"
-                  className={serviceOptions.salon.selected ? "bg-green-600 hover:bg-green-700" : "border-green-500 text-green-600 hover:bg-green-50"}
-                  onClick={() => onSelectServiceType('salon')}
+                  className={options.salon.selected ? "bg-green-600 hover:bg-green-700" : "border-green-500 text-green-600 hover:bg-green-50"}
+                  onClick={() => onChange('salon')}
                   disabled={isProcessing}
                 >
-                  {serviceOptions.salon.selected ? "Selected" : "Select"}
+                  {options.salon.selected ? "Selected" : "Select"}
                 </Button>
               </div>
             </CardContent>
@@ -81,7 +87,7 @@ export function ServiceTypeSelection({
 
         {groomerProvidesHome && (
           <Card 
-            className={`border rounded-xl ${serviceOptions.home.selected ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}
+            className={`border rounded-xl ${options.home.selected ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}
           >
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
@@ -99,9 +105,9 @@ export function ServiceTypeSelection({
                           <p className="text-sm text-gray-600">
                             The groomer will visit your home to provide the grooming service.
                           </p>
-                          {serviceOptions.home.additionalCost > 0 && (
+                          {options.home.additionalCost > 0 && (
                             <p className="text-sm text-orange-600 font-medium">
-                              Additional charge: ₹{serviceOptions.home.additionalCost}
+                              Additional charge: ₹{options.home.additionalCost}
                             </p>
                           )}
                         </div>
@@ -110,25 +116,25 @@ export function ServiceTypeSelection({
                   </div>
                   <div className="flex items-center mt-1">
                     <p className="text-green-600 font-semibold">
-                      {serviceOptions.home.additionalCost > 0 ? `+₹${serviceOptions.home.additionalCost}` : 'No additional cost'}
+                      {options.home.additionalCost > 0 ? `+₹${options.home.additionalCost}` : 'No additional cost'}
                     </p>
-                    {serviceOptions.home.additionalCost > 0 && (
+                    {options.home.additionalCost > 0 && (
                       <span className="text-xs text-gray-500 ml-2">for travel expenses</span>
                     )}
                   </div>
                 </div>
                 <Button 
-                  variant={serviceOptions.home.selected ? "default" : "outline"} 
+                  variant={options.home.selected ? "default" : "outline"} 
                   size="sm"
-                  className={serviceOptions.home.selected ? "bg-green-600 hover:bg-green-700" : "border-green-500 text-green-600 hover:bg-green-50"}
-                  onClick={() => onSelectServiceType('home')}
+                  className={options.home.selected ? "bg-green-600 hover:bg-green-700" : "border-green-500 text-green-600 hover:bg-green-50"}
+                  onClick={() => onChange('home')}
                   disabled={isProcessing}
                 >
-                  {serviceOptions.home.selected ? "Selected" : "Select"}
+                  {options.home.selected ? "Selected" : "Select"}
                 </Button>
               </div>
 
-              {serviceOptions.home.selected && (
+              {options.home.selected && (
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <Label htmlFor="homeAddress" className="text-sm font-medium text-gray-700">Your Address</Label>
                   <Textarea
