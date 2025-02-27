@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Calendar, Clock, User, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { Calendar, Clock, User, CheckCircle2, XCircle, AlertCircle, Home, Store, Phone, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -21,8 +21,11 @@ interface Booking {
   package_id: string | null;
   user_email?: string;
   user_name?: string;
+  user_phone?: string;
   package_name?: string;
   groomer_id: string;
+  home_address?: string;
+  additional_cost?: number;
 }
 
 export function BookingsSection({ groomerId }: { groomerId: string }) {
@@ -51,7 +54,7 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
           try {
             const { data: userData } = await supabase
               .from("profiles")
-              .select("id, full_name")
+              .select("id, full_name, phone_number")
               .eq("id", booking.user_id)
               .single();
 
@@ -79,6 +82,7 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
               ...booking,
               user_name: userData?.full_name || "Unknown",
               user_email: userAuth?.user?.email || "Unknown",
+              user_phone: userData?.phone_number || "Not provided",
               package_name: packageName,
               // Make sure all required fields are present
               id: booking.id,
@@ -91,7 +95,9 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
               created_at: booking.created_at,
               payment_id: booking.payment_id || "",
               package_id: booking.package_id || null,
-              groomer_id: booking.groomer_id
+              groomer_id: booking.groomer_id,
+              home_address: booking.home_address || "",
+              additional_cost: booking.additional_cost || 0
             } as Booking;
           } catch (err) {
             console.error("Error fetching user details:", err);
@@ -100,6 +106,7 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
               ...booking,
               user_name: "Unknown",
               user_email: "Unknown",
+              user_phone: "Not provided",
               package_name: "Standard Grooming",
               // Make sure all required fields are present even in error case
               id: booking.id,
@@ -112,7 +119,9 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
               created_at: booking.created_at,
               payment_id: booking.payment_id || "",
               package_id: booking.package_id || null,
-              groomer_id: booking.groomer_id
+              groomer_id: booking.groomer_id,
+              home_address: booking.home_address || "",
+              additional_cost: booking.additional_cost || 0
             } as Booking;
           }
         })
@@ -155,6 +164,12 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
       default:
         return null;
     }
+  };
+
+  const getServiceTypeIcon = (serviceType: string) => {
+    return serviceType === 'home' ? 
+      <Home className="h-4 w-4 text-purple-500" /> : 
+      <Store className="h-4 w-4 text-blue-500" />;
   };
 
   return (
@@ -205,6 +220,12 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
                               {booking.status}
                             </span>
                           </Badge>
+                          <Badge variant="outline" className={booking.service_type === 'home' ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800"}>
+                            <span className="flex items-center gap-1">
+                              {getServiceTypeIcon(booking.service_type)}
+                              {booking.service_type === 'home' ? 'Home Visit' : 'At Salon'}
+                            </span>
+                          </Badge>
                         </div>
                         <div className="text-sm text-gray-500 flex items-center gap-1">
                           <Clock className="h-3 w-3" />
@@ -222,8 +243,18 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>{booking.user_email}</p>
-                          <p className="text-xs">Service: {booking.package_name}</p>
+                          <p className="flex items-center gap-1 mb-1">
+                            <Mail className="h-3 w-3" />
+                            {booking.user_email}
+                          </p>
+                          <p className="flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            {booking.user_phone}
+                          </p>
+                          <p className="text-xs mt-1">Service: {booking.package_name}</p>
+                          {booking.additional_cost > 0 && (
+                            <p className="text-xs">Additional cost: ₹{booking.additional_cost}</p>
+                          )}
                         </TooltipContent>
                       </Tooltip>
                     </div>
@@ -231,6 +262,15 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
                   <div className="text-sm text-gray-600 mt-2 line-clamp-2">
                     <span className="font-medium">Pet details:</span> {booking.pet_details}
                   </div>
+                  
+                  {booking.service_type === 'home' && booking.home_address && (
+                    <div className="mt-2 p-2 bg-purple-50 rounded text-sm">
+                      <span className="font-medium flex items-center gap-1">
+                        <Home className="h-3 w-3" /> Client Address:
+                      </span> 
+                      <p className="text-gray-700 mt-1">{booking.home_address}</p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

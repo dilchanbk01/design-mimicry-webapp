@@ -2,7 +2,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useGroomer } from "./hooks/useGroomer";
 import { calculatePriceDetails } from "./utils/pricing";
 import { GroomerHeader } from "./components/GroomerHeader";
@@ -19,9 +19,6 @@ import { BookingDialog } from "./components/BookingDialog";
 import { BookingConfirmation } from "./components/BookingConfirmation";
 import { ServiceTypeSelection } from "./components/ServiceTypeSelection";
 import type { GroomingPackage, ServiceOption } from "./types/packages";
-
-// Define the additional cost for home service - this could be fetched from the groomer profile in the future
-const HOME_SERVICE_ADDITIONAL_COST = 100; // Example: ₹100 additional for home service
 
 declare global {
   interface Window {
@@ -46,7 +43,7 @@ export default function GroomerDetail() {
     home: ServiceOption;
   }>({
     salon: { type: 'salon', additionalCost: 0, selected: true },
-    home: { type: 'home', additionalCost: HOME_SERVICE_ADDITIONAL_COST, selected: false }
+    home: { type: 'home', additionalCost: 0, selected: false }
   });
   
   const { groomer, packages, isLoading } = useGroomer(id);
@@ -68,17 +65,20 @@ export default function GroomerDetail() {
   // Initialize service options when groomer data is loaded
   useEffect(() => {
     if (groomer) {
+      // Get home service cost from groomer profile
+      const homeServiceCost = groomer.home_service_cost || 100; // Default to 100 if not set
+
       // If groomer doesn't provide salon service but provides home service,
       // default to home service
       if (!groomer.provides_salon_service && groomer.provides_home_service) {
         setServiceOptions({
           salon: { type: 'salon', additionalCost: 0, selected: false },
-          home: { type: 'home', additionalCost: HOME_SERVICE_ADDITIONAL_COST, selected: true }
+          home: { type: 'home', additionalCost: homeServiceCost, selected: true }
         });
       } else {
         setServiceOptions({
           salon: { type: 'salon', additionalCost: 0, selected: true },
-          home: { type: 'home', additionalCost: HOME_SERVICE_ADDITIONAL_COST, selected: false }
+          home: { type: 'home', additionalCost: homeServiceCost, selected: false }
         });
       }
     }
@@ -102,7 +102,7 @@ export default function GroomerDetail() {
     }
   };
 
-  // Function to send confirmation email
+  // Function to send confirmation email to the customer
   const sendConfirmationEmail = async (userEmail: string, bookingDetails: any) => {
     try {
       // Call the send_booking_confirmation function which is available in the database
@@ -134,6 +134,55 @@ export default function GroomerDetail() {
       }
     } catch (err) {
       console.error("Exception when sending confirmation email:", err);
+    }
+  };
+
+  // Function to send notification email to the groomer
+  const sendGroomerNotification = async (userData: any, bookingDetails: any) => {
+    try {
+      // Get groomer email - we'd need a data structure to store this or fetch it from the database
+      const { data: groomerData, error: groomerError } = await supabase
+        .from("groomer_profiles")
+        .select("user_id")
+        .eq("id", groomer?.id)
+        .single();
+
+      if (groomerError || !groomerData) {
+        console.error("Error fetching groomer user ID:", groomerError);
+        return;
+      }
+
+      // Get groomer's email from auth
+      const { data: groomerAuth, error: groomerAuthError } = await supabase.auth
+        .admin.getUserById(groomerData.user_id);
+
+      if (groomerAuthError || !groomerAuth || !groomerAuth.user || !groomerAuth.user.email) {
+        console.error("Error fetching groomer email:", groomerAuthError);
+        return;
+      }
+
+      const groomerEmail = groomerAuth.user.email;
+
+      // Send notification to groomer using edge function
+      await supabase.functions.invoke('send-groomer-notification', {
+        body: {
+          groomerEmail: groomerEmail,
+          groomerName: groomer?.salon_name || "Groomer",
+          customerName: userData.name || "Customer",
+          customerEmail: userData.email || "",
+          customerPhone: userData.phone || null,
+          date: bookingDate,
+          time: bookingTime,
+          serviceName: selectedPackage ? selectedPackage.name : "Standard Grooming",
+          serviceType: serviceOptions.home.selected ? "Home Visit" : "At Salon",
+          address: serviceOptions.home.selected ? homeAddress : groomer?.address || "",
+          petDetails: petDetails
+        }
+      });
+
+      console.log("Groomer notification sent successfully");
+    } catch (err) {
+      console.error("Exception when sending groomer notification:", err);
     }
   };
 
@@ -184,6 +233,17 @@ export default function GroomerDetail() {
       // Convert to paise for Razorpay
       const priceInPaise = totalAmount * 100;
 
+      // Get user profile data for notification
+      const { data: userData, error: userError } = await supabase
+        .from("profiles")
+        .select("full_name, phone_number")
+        .eq("id", user.id)
+        .single();
+
+      if (userError) {
+        console.error("Error fetching user profile:", userError);
+      }
+
       const options = {
         key: "rzp_test_5wYJG4Y7jeVhsz", 
         amount: priceInPaise,
@@ -204,7 +264,7 @@ export default function GroomerDetail() {
               service_type: serviceOptions.home.selected ? 'home' : 'salon',
               package_id: selectedPackage?.id || null,
               home_address: serviceOptions.home.selected ? homeAddress : null,
-              additional_cost: additionalCost
+              additional_cost: serviceOptions.home.selected ? serviceOptions.home.additionalCost : 0
             };
 
             const { error } = await supabase
@@ -213,7 +273,7 @@ export default function GroomerDetail() {
 
             if (error) throw error;
 
-            // Send confirmation email
+            // Send confirmation email to customer
             if (user.email) {
               await sendConfirmationEmail(user.email, {
                 groomerName: groomer.salon_name,
@@ -223,6 +283,19 @@ export default function GroomerDetail() {
                 serviceType: serviceOptions.home.selected ? "Home Visit" : "At Salon"
               });
             }
+
+            // Send notification to groomer
+            await sendGroomerNotification({
+              email: user.email,
+              name: userData?.full_name || user.email,
+              phone: userData?.phone_number
+            }, {
+              groomerName: groomer.salon_name,
+              date: bookingDate,
+              time: bookingTime,
+              serviceName: selectedPackage ? selectedPackage.name : "Standard Grooming",
+              serviceType: serviceOptions.home.selected ? "Home Visit" : "At Salon"
+            });
 
             // Show success animation
             setShowConfirmation(true);

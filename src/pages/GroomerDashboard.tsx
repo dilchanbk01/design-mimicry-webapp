@@ -15,7 +15,9 @@ import {
   Search,
   ChevronDown,
   Edit,
-  Scissors
+  Scissors,
+  Home,
+  Store
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -33,6 +35,7 @@ interface GroomerProfile {
   contact_number: string;
   bio: string | null;
   profile_image_url: string | null;
+  home_service_cost: number | null;
 }
 
 interface GroomingPackage {
@@ -75,14 +78,17 @@ export default function GroomerDashboard() {
     description: '',
     price: 0
   });
+  const [editingPackage, setEditingPackage] = useState<GroomingPackage | null>(null);
   const [showAddPackage, setShowAddPackage] = useState(false);
+  const [showEditPackage, setShowEditPackage] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [editedProfile, setEditedProfile] = useState({
     salon_name: '',
     experience_years: 0,
     bio: '',
     address: '',
-    contact_number: ''
+    contact_number: '',
+    home_service_cost: 0
   });
   const [changePasswordForm, setChangePasswordForm] = useState({
     currentPassword: '',
@@ -129,7 +135,8 @@ export default function GroomerDashboard() {
         experience_years: groomerProfile.experience_years || 0,
         bio: groomerProfile.bio || '',
         address: groomerProfile.address || '',
-        contact_number: groomerProfile.contact_number || ''
+        contact_number: groomerProfile.contact_number || '',
+        home_service_cost: groomerProfile.home_service_cost || 0
       });
     } catch (error) {
       console.error("Error checking groomer status:", error);
@@ -268,6 +275,46 @@ export default function GroomerDashboard() {
     }
   };
 
+  const handleEditPackage = (pkg: GroomingPackage) => {
+    setEditingPackage(pkg);
+    setShowEditPackage(true);
+  };
+
+  const handleUpdatePackage = async () => {
+    if (!profile || !editingPackage) return;
+
+    try {
+      const { error } = await supabase
+        .from('grooming_packages')
+        .update({
+          name: editingPackage.name,
+          description: editingPackage.description,
+          price: editingPackage.price
+        })
+        .eq('id', editingPackage.id);
+
+      if (error) throw error;
+      
+      // Refresh the packages list
+      fetchPackages();
+      
+      toast({
+        title: "Package Updated",
+        description: "Your grooming package has been updated successfully",
+      });
+      
+      setEditingPackage(null);
+      setShowEditPackage(false);
+    } catch (error) {
+      console.error("Error updating package:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update grooming package",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleUpdateProfile = async () => {
     if (!profile) return;
 
@@ -279,7 +326,8 @@ export default function GroomerDashboard() {
           experience_years: editedProfile.experience_years,
           bio: editedProfile.bio,
           address: editedProfile.address,
-          contact_number: editedProfile.contact_number
+          contact_number: editedProfile.contact_number,
+          home_service_cost: editedProfile.home_service_cost
         })
         .eq("id", profile.id)
         .select();
@@ -292,7 +340,8 @@ export default function GroomerDashboard() {
         experience_years: editedProfile.experience_years,
         bio: editedProfile.bio,
         address: editedProfile.address,
-        contact_number: editedProfile.contact_number
+        contact_number: editedProfile.contact_number,
+        home_service_cost: editedProfile.home_service_cost
       });
 
       toast({
@@ -470,7 +519,7 @@ export default function GroomerDashboard() {
                       <p className="text-gray-600 text-sm mb-4 line-clamp-3">{pkg.description}</p>
                       <div className="flex justify-between items-center">
                         <span className="text-2xl font-bold text-[#4CAF50]">₹{pkg.price}</span>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleEditPackage(pkg)}>
                           <Edit className="h-4 w-4 mr-2" />
                           Edit
                         </Button>
@@ -611,6 +660,53 @@ export default function GroomerDashboard() {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Package Dialog */}
+      <Dialog open={showEditPackage} onOpenChange={setShowEditPackage}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Grooming Package</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Package Name</Label>
+              <Input
+                id="edit-name"
+                placeholder="e.g. Deluxe Dog Grooming"
+                value={editingPackage?.name || ''}
+                onChange={(e) => setEditingPackage(editingPackage ? {...editingPackage, name: e.target.value} : null)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                placeholder="Describe what's included in this package..."
+                value={editingPackage?.description || ''}
+                onChange={(e) => setEditingPackage(editingPackage ? {...editingPackage, description: e.target.value} : null)}
+                rows={4}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-price">Price (₹)</Label>
+              <Input
+                id="edit-price"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={editingPackage?.price || 0}
+                onChange={(e) => setEditingPackage(editingPackage ? 
+                  {...editingPackage, price: parseFloat(e.target.value)} : null)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditPackage(false)}>Cancel</Button>
+            <Button onClick={handleUpdatePackage}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Edit Profile Dialog */}
       <Dialog open={showEditProfile} onOpenChange={setShowEditProfile}>
         <DialogContent className="max-w-md">
@@ -620,6 +716,7 @@ export default function GroomerDashboard() {
           <Tabs defaultValue="info">
             <TabsList className="w-full">
               <TabsTrigger value="info" className="flex-1">Profile Info</TabsTrigger>
+              <TabsTrigger value="services" className="flex-1">Service Settings</TabsTrigger>
               <TabsTrigger value="password" className="flex-1">Change Password</TabsTrigger>
             </TabsList>
             <TabsContent value="info" className="space-y-4 py-4">
@@ -665,6 +762,26 @@ export default function GroomerDashboard() {
                   onChange={(e) => setEditedProfile({...editedProfile, bio: e.target.value})}
                   rows={3}
                 />
+              </div>
+              <Button className="w-full" onClick={handleUpdateProfile}>Save Changes</Button>
+            </TabsContent>
+            <TabsContent value="services" className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="home_service_cost">Home Service Additional Cost (₹)</Label>
+                <div className="flex items-center space-x-2">
+                  <Home className="text-green-600 h-5 w-5" />
+                  <Input
+                    id="home_service_cost"
+                    type="number"
+                    min="0"
+                    value={editedProfile.home_service_cost}
+                    onChange={(e) => setEditedProfile({...editedProfile, home_service_cost: parseInt(e.target.value) || 0})}
+                    placeholder="e.g. 100"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  This amount will be added to the base price when customers choose home service
+                </p>
               </div>
               <Button className="w-full" onClick={handleUpdateProfile}>Save Changes</Button>
             </TabsContent>
