@@ -288,7 +288,7 @@ export default function GroomerDetail() {
       {/* Booking Dialog */}
       <BookingDialog 
         isOpen={isBookingOpen}
-        onClose={() => setIsBookingOpen(false)}
+        onClose={resetBookingForm}
         groomer={{
           id: groomer.id,
           name: groomer.salon_name,
@@ -318,7 +318,6 @@ export default function GroomerDetail() {
         onPetDetailsChange={setPetDetails}
         onHomeAddressChange={setHomeAddress}
         onConfirm={handleBookingConfirm}
-        onClose={resetBookingForm}
       />
     </div>
   );
