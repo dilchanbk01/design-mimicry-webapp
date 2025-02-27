@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -16,13 +17,16 @@ import {
   Edit,
   Scissors,
   Home,
-  Store
+  Store,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { BookingsSection } from "@/components/groomer-dashboard/BookingsSection";
 
 interface GroomerProfile {
@@ -35,6 +39,9 @@ interface GroomerProfile {
   bio: string | null;
   profile_image_url: string | null;
   home_service_cost: number;
+  provides_home_service: boolean;
+  provides_salon_service: boolean;
+  is_available: boolean;
 }
 
 interface GroomingPackage {
@@ -87,7 +94,10 @@ export default function GroomerDashboard() {
     bio: '',
     address: '',
     contact_number: '',
-    home_service_cost: 0
+    home_service_cost: 0,
+    provides_home_service: false,
+    provides_salon_service: true,
+    is_available: true
   });
   const [changePasswordForm, setChangePasswordForm] = useState({
     currentPassword: '',
@@ -135,7 +145,10 @@ export default function GroomerDashboard() {
         bio: groomerProfile.bio || '',
         address: groomerProfile.address || '',
         contact_number: groomerProfile.contact_number || '',
-        home_service_cost: groomerProfile.home_service_cost || 0
+        home_service_cost: groomerProfile.home_service_cost || 0,
+        provides_home_service: groomerProfile.provides_home_service || false,
+        provides_salon_service: groomerProfile.provides_salon_service || true,
+        is_available: groomerProfile.is_available !== false // Default to true if null
       });
     } catch (error) {
       console.error("Error checking groomer status:", error);
@@ -149,6 +162,7 @@ export default function GroomerDashboard() {
     if (!profile) return;
     
     try {
+      // Use a raw query instead of rpc for the TypeScript error
       const { data, error } = await supabase
         .from('grooming_packages')
         .select('*')
@@ -158,6 +172,7 @@ export default function GroomerDashboard() {
       if (error) throw error;
       
       if (data) {
+        // Convert data to our interface type
         const typedPackages: GroomingPackage[] = data.map((pkg: any) => ({
           id: pkg.id,
           name: pkg.name,
@@ -190,6 +205,7 @@ export default function GroomerDashboard() {
 
       if (error) throw error;
       
+      // Calculate summary from bookings
       const summary = {
         total: data.length,
         completed: data.filter(b => b.status === 'completed').length,
@@ -207,6 +223,8 @@ export default function GroomerDashboard() {
     if (!profile) return;
     
     try {
+      // In a real app, you'd query revenue data based on the timeframe
+      // For this demo, we'll generate mock data
       const mockData: Revenue[] = [];
       const daysToShow = period === 'day' ? 24 : period === 'week' ? 7 : 30;
       
@@ -236,6 +254,7 @@ export default function GroomerDashboard() {
         return;
       }
 
+      // Use regular insert instead of RPC
       const { data, error } = await supabase
         .from('grooming_packages')
         .insert({
@@ -248,6 +267,7 @@ export default function GroomerDashboard() {
 
       if (error) throw error;
       
+      // Refresh the packages list
       fetchPackages();
       
       toast({
@@ -287,6 +307,7 @@ export default function GroomerDashboard() {
 
       if (error) throw error;
       
+      // Refresh the packages list
       fetchPackages();
       
       toast({
@@ -318,7 +339,10 @@ export default function GroomerDashboard() {
           bio: editedProfile.bio,
           address: editedProfile.address,
           contact_number: editedProfile.contact_number,
-          home_service_cost: editedProfile.home_service_cost
+          home_service_cost: editedProfile.home_service_cost,
+          provides_home_service: editedProfile.provides_home_service,
+          provides_salon_service: editedProfile.provides_salon_service,
+          is_available: editedProfile.is_available
         })
         .eq("id", profile.id)
         .select();
@@ -332,7 +356,10 @@ export default function GroomerDashboard() {
         bio: editedProfile.bio,
         address: editedProfile.address,
         contact_number: editedProfile.contact_number,
-        home_service_cost: editedProfile.home_service_cost
+        home_service_cost: editedProfile.home_service_cost,
+        provides_home_service: editedProfile.provides_home_service,
+        provides_salon_service: editedProfile.provides_salon_service,
+        is_available: editedProfile.is_available
       });
 
       toast({
@@ -346,6 +373,42 @@ export default function GroomerDashboard() {
       toast({
         title: "Error",
         description: "Failed to update profile",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleToggleAvailability = async () => {
+    if (!profile) return;
+
+    try {
+      const newAvailability = !profile.is_available;
+      
+      const { error } = await supabase
+        .from("groomer_profiles")
+        .update({
+          is_available: newAvailability
+        })
+        .eq("id", profile.id);
+
+      if (error) throw error;
+
+      setProfile({
+        ...profile,
+        is_available: newAvailability
+      });
+
+      toast({
+        title: newAvailability ? "You're Now Available" : "You're Now Unavailable",
+        description: newAvailability 
+          ? "Customers can now see your profile and book appointments" 
+          : "Your profile is now hidden from customers",
+      });
+    } catch (error) {
+      console.error("Error toggling availability:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update availability status",
         variant: "destructive",
       });
     }
@@ -415,6 +478,26 @@ export default function GroomerDashboard() {
                 <User className="h-5 w-5 mr-2" />
                 Profile
               </Button>
+              <Button 
+                variant={profile?.is_available ? "ghost" : "outline"}
+                className={profile?.is_available 
+                  ? "text-white hover:bg-green-700 border border-white"
+                  : "bg-white text-[#4CAF50] hover:bg-gray-100"
+                }
+                onClick={handleToggleAvailability}
+              >
+                {profile?.is_available ? (
+                  <>
+                    <Eye className="h-4 w-4 mr-2" />
+                    Available
+                  </>
+                ) : (
+                  <>
+                    <EyeOff className="h-4 w-4 mr-2" />
+                    Unavailable
+                  </>
+                )}
+              </Button>
               <Button variant="outline" className="bg-white text-[#4CAF50] hover:bg-gray-100" onClick={handleSignOut}>
                 Sign Out
               </Button>
@@ -474,6 +557,7 @@ export default function GroomerDashboard() {
             <TabsTrigger value="revenue">Revenue Insights</TabsTrigger>
           </TabsList>
           
+          {/* New Appointments Tab */}
           <TabsContent value="appointments" className="space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">Your Appointments</h2>
@@ -604,6 +688,7 @@ export default function GroomerDashboard() {
         </Tabs>
       </div>
 
+      {/* Add Package Dialog */}
       <Dialog open={showAddPackage} onOpenChange={setShowAddPackage}>
         <DialogContent>
           <DialogHeader>
@@ -649,6 +734,7 @@ export default function GroomerDashboard() {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Package Dialog */}
       <Dialog open={showEditPackage} onOpenChange={setShowEditPackage}>
         <DialogContent>
           <DialogHeader>
@@ -695,6 +781,7 @@ export default function GroomerDashboard() {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Profile Dialog */}
       <Dialog open={showEditProfile} onOpenChange={setShowEditProfile}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -750,25 +837,75 @@ export default function GroomerDashboard() {
                   rows={3}
                 />
               </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="availability">Availability Status</Label>
+                  <Switch
+                    id="availability"
+                    checked={editedProfile.is_available}
+                    onCheckedChange={(checked) => setEditedProfile({...editedProfile, is_available: checked})}
+                  />
+                </div>
+                <p className="text-xs text-gray-500">
+                  When turned off, your profile will not be shown to customers
+                </p>
+              </div>
               <Button className="w-full" onClick={handleUpdateProfile}>Save Changes</Button>
             </TabsContent>
             <TabsContent value="services" className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="home_service_cost">Home Service Additional Cost (₹)</Label>
-                <div className="flex items-center space-x-2">
-                  <Home className="text-green-600 h-5 w-5" />
-                  <Input
-                    id="home_service_cost"
-                    type="number"
-                    min="0"
-                    value={editedProfile.home_service_cost}
-                    onChange={(e) => setEditedProfile({...editedProfile, home_service_cost: parseInt(e.target.value) || 0})}
-                    placeholder="e.g. 100"
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Store className="text-blue-600 h-5 w-5" />
+                    <Label htmlFor="salon_service">Salon Service</Label>
+                  </div>
+                  <Switch
+                    id="salon_service"
+                    checked={editedProfile.provides_salon_service}
+                    onCheckedChange={(checked) => setEditedProfile({...editedProfile, provides_salon_service: checked})}
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  This amount will be added to the base price when customers choose home service
+                <p className="text-xs text-gray-500 ml-7">
+                  Customers can book appointments at your location
                 </p>
+              </div>
+              
+              <div className="border-t border-gray-200 pt-4 mt-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Home className="text-purple-600 h-5 w-5" />
+                      <Label htmlFor="home_service">Home Service</Label>
+                    </div>
+                    <Switch
+                      id="home_service"
+                      checked={editedProfile.provides_home_service}
+                      onCheckedChange={(checked) => setEditedProfile({...editedProfile, provides_home_service: checked})}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 ml-7">
+                    You will travel to customer's location for grooming service
+                  </p>
+                </div>
+                
+                {editedProfile.provides_home_service && (
+                  <div className="mt-4 ml-7">
+                    <div className="space-y-2">
+                      <Label htmlFor="home_service_cost">Additional Cost for Home Service (₹)</Label>
+                      <Input
+                        id="home_service_cost"
+                        type="number"
+                        min="0"
+                        value={editedProfile.home_service_cost}
+                        onChange={(e) => setEditedProfile({...editedProfile, home_service_cost: parseInt(e.target.value) || 0})}
+                        placeholder="e.g. 100"
+                      />
+                      <p className="text-xs text-gray-500">
+                        This amount will be added to the base price when customers choose home service
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
               <Button className="w-full" onClick={handleUpdateProfile}>Save Changes</Button>
             </TabsContent>
