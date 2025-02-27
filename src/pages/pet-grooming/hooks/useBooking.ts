@@ -39,7 +39,7 @@ export function useBooking(groomer: GroomerProfile | null) {
           currency: 'INR',
           name: 'Petsu Grooming',
           description: 'Grooming Service Payment',
-          order_id: orderData.id,
+          image: "/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png",
           handler: function (response: RazorpayResponse) {
             resolve(response);
           },
@@ -125,14 +125,12 @@ export function useBooking(groomer: GroomerProfile | null) {
         groomer.home_service_cost
       );
 
+      // For free/testing purposes, skip payment and directly create booking
       try {
-        // Initialize Razorpay payment
-        const paymentResponse = await initializePayment(totalPrice, {
-          id: `order_${Date.now()}`,
-          email: user.email
-        });
+        // Create a dummy payment ID for testing purposes
+        const paymentId = `pay_test_${Date.now()}`;
 
-        // Create booking with payment information
+        // Create booking with the dummy payment information
         await createBooking({
           groomerId: groomer.id,
           userId: user.id,
@@ -143,7 +141,7 @@ export function useBooking(groomer: GroomerProfile | null) {
           serviceType: selectedServiceType,
           homeAddress,
           additionalCost: selectedServiceType === 'home' ? groomer.home_service_cost : 0,
-          payment_id: paymentResponse.razorpay_payment_id
+          payment_id: paymentId
         });
 
         // Send confirmation email if user has an email
@@ -176,11 +174,14 @@ export function useBooking(groomer: GroomerProfile | null) {
           title: "Booking Confirmed!",
           description: `Your grooming appointment with ${groomer.salon_name} has been booked.`,
         });
-      } catch (paymentError: any) {
-        console.error("Payment error:", paymentError);
+        
+        // Redirect to profile page after successful booking
+        navigate("/profile");
+      } catch (bookingError: any) {
+        console.error("Booking error:", bookingError);
         toast({
-          title: "Payment Failed",
-          description: paymentError.message || "There was an error processing your payment. Please try again.",
+          title: "Booking Failed",
+          description: bookingError.message || "There was an error processing your booking. Please try again.",
           variant: "destructive",
         });
       }
