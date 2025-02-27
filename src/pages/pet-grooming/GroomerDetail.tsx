@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { MapPin, Star, Scissors, Home, Store, ArrowLeft, Calendar, User, Info } from "lucide-react";
+import { MapPin, Star, Scissors, Home, Store, ArrowLeft, Calendar, User, Info, Share2 } from "lucide-react";
 import { useState } from "react";
 import { BookingDialog } from "./components/BookingDialog";
 import { useToast } from "@/components/ui/use-toast";
@@ -16,6 +16,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface GroomingPackage {
   id: string;
@@ -64,6 +69,33 @@ export default function GroomerDetail() {
     },
     enabled: !!id
   });
+
+  const handleShareGroomer = async () => {
+    const shareData = {
+      title: groomer ? `${groomer.salon_name} - Pet Grooming` : 'Pet Grooming Service',
+      text: groomer ? `Check out ${groomer.salon_name} for pet grooming services!` : 'Check out this pet grooming service!',
+      url: window.location.href
+    };
+
+    if (navigator.share && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        toast({
+          title: "Shared successfully!",
+          description: "The groomer details have been shared.",
+        });
+      } catch (error) {
+        console.error('Error sharing:', error);
+      }
+    } else {
+      // Fallback for browsers that don't support sharing
+      navigator.clipboard.writeText(window.location.href);
+      toast({
+        title: "Link copied to clipboard!",
+        description: "You can now share it with your friends.",
+      });
+    }
+  };
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,7 +168,7 @@ export default function GroomerDetail() {
         email: user.email,
       },
       theme: {
-        color: "#00D26A",
+        color: "#9b87f5",
       },
     };
 
@@ -144,6 +176,22 @@ export default function GroomerDetail() {
     const rzp = new (window as any).Razorpay(options);
     rzp.open();
   };
+
+  // Calculate GST and total amount
+  const calculatePriceDetails = (basePrice: number) => {
+    const gstRate = 0.18; // 18% GST
+    const gstAmount = basePrice * gstRate;
+    const totalAmount = basePrice + gstAmount;
+    
+    return {
+      basePrice,
+      gstAmount,
+      totalAmount
+    };
+  };
+
+  const selectedPrice = selectedPackage ? selectedPackage.price : groomer?.price || 0;
+  const priceDetails = calculatePriceDetails(selectedPrice);
 
   if (!groomer) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -178,19 +226,25 @@ export default function GroomerDetail() {
               />
             </div>
             
-            <button 
-              onClick={() => navigate('/profile')}
-              className="p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white"
-            >
-              <User className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={handleShareGroomer}
+                className="p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white"
+              >
+                <Share2 className="h-5 w-5" />
+              </button>
+              <button 
+                onClick={() => navigate('/profile')}
+                className="p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white"
+              >
+                <User className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="h-64 bg-gradient-to-b from-[#00D26A] to-[#00A050]"></div>
-
-      <div className="px-4 py-6 md:py-8 max-w-3xl mx-auto -mt-32">
+      <div className="px-4 py-6 md:py-8 max-w-3xl mx-auto mt-16">
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <div className="h-48 sm:h-64 relative">
             <img
@@ -208,13 +262,46 @@ export default function GroomerDetail() {
           <div className="p-4 sm:p-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
               <h1 className="text-2xl font-bold">{groomer.salon_name}</h1>
-              <Button 
-                onClick={() => setIsBookingOpen(true)}
-                className="md:w-auto w-full bg-[#00D26A] hover:bg-[#00b05a]"
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                Book Appointment
-              </Button>
+              <div className="flex flex-col md:items-end">
+                <div className="flex items-center mb-2">
+                  <p className="font-semibold text-lg text-[#9b87f5] mr-2">
+                    ₹{priceDetails.totalAmount.toFixed(0)}
+                  </p>
+                  <PopoverTrigger asChild>
+                    <button className="text-gray-400 hover:text-gray-600">
+                      <Info className="h-4 w-4" />
+                    </button>
+                  </PopoverTrigger>
+                  <Popover>
+                    <PopoverContent className="w-60" side="right">
+                      <div className="space-y-2">
+                        <h4 className="font-medium">Price Breakdown</h4>
+                        <div className="text-sm space-y-1">
+                          <div className="flex justify-between">
+                            <span>Base Price:</span>
+                            <span>₹{priceDetails.basePrice.toFixed(0)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>GST (18%):</span>
+                            <span>₹{priceDetails.gstAmount.toFixed(0)}</span>
+                          </div>
+                          <div className="border-t pt-1 mt-1 font-medium flex justify-between">
+                            <span>Total:</span>
+                            <span>₹{priceDetails.totalAmount.toFixed(0)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <Button 
+                  onClick={() => setIsBookingOpen(true)}
+                  className="md:w-auto w-full bg-[#9b87f5] hover:bg-[#7E69AB]"
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Book Appointment
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-6">
@@ -231,7 +318,7 @@ export default function GroomerDetail() {
 
               <div className="flex flex-wrap gap-3">
                 {groomer.provides_salon_service && (
-                  <div className="flex items-center text-green-600 bg-green-50 px-3 py-1 rounded-full">
+                  <div className="flex items-center text-[#7E69AB] bg-[#E5DEFF] px-3 py-1 rounded-full">
                     <Store className="h-4 w-4 mr-2 flex-shrink-0" />
                     <span className="text-sm">Salon Service Available</span>
                   </div>
@@ -254,30 +341,31 @@ export default function GroomerDetail() {
                     {packages.map((pkg) => (
                       <Card 
                         key={pkg.id} 
-                        className={`border ${selectedPackage?.id === pkg.id ? 'border-[#00D26A] bg-[#F2FCE2]' : 'border-gray-200'} hover:border-[#00D26A] transition-all`}
+                        className={`border ${selectedPackage?.id === pkg.id ? 'border-[#9b87f5] bg-[#E5DEFF]' : 'border-gray-200'} hover:border-[#9b87f5] transition-all`}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
                                 <h3 className="text-md font-medium">{pkg.name}</h3>
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger>
-                                      <Info className="h-4 w-4 text-gray-400" />
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p className="max-w-xs text-sm">{pkg.description}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
+                                <Popover>
+                                  <PopoverTrigger>
+                                    <Info className="h-4 w-4 text-gray-400 cursor-pointer" />
+                                  </PopoverTrigger>
+                                  <PopoverContent side="right" className="w-72">
+                                    <div className="space-y-2">
+                                      <h4 className="font-medium">{pkg.name}</h4>
+                                      <p className="text-sm text-gray-600">{pkg.description}</p>
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
                               </div>
-                              <p className="text-[#00D26A] font-semibold mt-1">₹{pkg.price}</p>
+                              <p className="text-[#9b87f5] font-semibold mt-1">₹{pkg.price}</p>
                             </div>
                             <Button 
                               variant={selectedPackage?.id === pkg.id ? "default" : "outline"} 
                               size="sm"
-                              className={selectedPackage?.id === pkg.id ? "bg-[#00D26A]" : ""}
+                              className={selectedPackage?.id === pkg.id ? "bg-[#9b87f5] hover:bg-[#7E69AB]" : ""}
                               onClick={() => setSelectedPackage(pkg)}
                             >
                               {selectedPackage?.id === pkg.id ? "Selected" : "Select"}
@@ -290,20 +378,33 @@ export default function GroomerDetail() {
                 )}
 
                 {/* Standard service card */}
-                <Card className={`mt-3 border ${!selectedPackage ? 'border-[#00D26A] bg-[#F2FCE2]' : 'border-gray-200'} hover:border-[#00D26A] transition-all`}>
+                <Card className={`mt-3 border ${!selectedPackage ? 'border-[#9b87f5] bg-[#E5DEFF]' : 'border-gray-200'} hover:border-[#9b87f5] transition-all`}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <h3 className="text-md font-medium">Standard Grooming</h3>
                           <Badge variant="outline" className="bg-gray-100 text-gray-600">Basic</Badge>
+                          <Popover>
+                            <PopoverTrigger>
+                              <Info className="h-4 w-4 text-gray-400 cursor-pointer" />
+                            </PopoverTrigger>
+                            <PopoverContent side="right" className="w-72">
+                              <div className="space-y-2">
+                                <h4 className="font-medium">Standard Grooming</h4>
+                                <p className="text-sm text-gray-600">
+                                  Basic grooming service includes bath, brushing, nail trimming, ear cleaning, and a basic haircut.
+                                </p>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
                         </div>
-                        <p className="text-[#00D26A] font-semibold mt-1">₹{groomer.price}</p>
+                        <p className="text-[#9b87f5] font-semibold mt-1">₹{groomer.price}</p>
                       </div>
                       <Button 
                         variant={!selectedPackage ? "default" : "outline"} 
                         size="sm"
-                        className={!selectedPackage ? "bg-[#00D26A]" : ""}
+                        className={!selectedPackage ? "bg-[#9b87f5] hover:bg-[#7E69AB]" : ""}
                         onClick={() => setSelectedPackage(null)}
                       >
                         {!selectedPackage ? "Selected" : "Select"}
@@ -319,7 +420,7 @@ export default function GroomerDetail() {
                   {groomer.specializations.map((specialization: string) => (
                     <span
                       key={specialization}
-                      className="px-3 py-1 bg-[#00D26A]/10 text-[#00D26A] rounded-full text-sm"
+                      className="px-3 py-1 bg-[#E5DEFF] text-[#7E69AB] rounded-full text-sm"
                     >
                       {specialization}
                     </span>
