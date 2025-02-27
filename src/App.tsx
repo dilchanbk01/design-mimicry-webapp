@@ -16,7 +16,6 @@ import EditProfile from "./pages/EditProfile";
 import NotFound from "./pages/NotFound";
 import VetOnboarding from "./pages/VetOnboarding";
 import VetAuth from "./pages/VetAuth";
-import VetDashboard from "./pages/VetDashboard";
 import FindVets from "./pages/FindVets";
 import ConsultationChat from "./pages/ConsultationChat";
 import GroomerAuth from "./pages/GroomerAuth";
@@ -59,7 +58,6 @@ function App() {
             <Route path="/profile/edit" element={<EditProfile />} />
             <Route path="/vet-onboarding" element={<VetOnboarding />} />
             <Route path="/vet-auth" element={<VetAuth />} />
-            <Route path="/vet-dashboard" element={<VetDashboard />} />
             <Route path="/find-vets" element={<FindVets />} />
             <Route path="/consultation/:id" element={<ConsultationChat />} />
             <Route path="/groomer-auth" element={<GroomerAuth />} />
