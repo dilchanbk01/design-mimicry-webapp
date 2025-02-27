@@ -1,3 +1,3 @@
 
-ALTER TABLE public.bookings
-ADD COLUMN payment_id text;
+ALTER TABLE public.grooming_bookings
+ADD COLUMN IF NOT EXISTS payment_id text;

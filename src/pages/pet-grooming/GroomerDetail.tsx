@@ -21,6 +21,37 @@ import { Instagram, Linkedin } from "lucide-react";
 import type { GroomingPackage } from "./types/packages";
 import type { GroomerProfile } from "./types";
 
+// Define the Razorpay interface
+interface RazorpayOptions {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  image?: string;
+  handler: (response: any) => void;
+  prefill?: {
+    name?: string;
+    email?: string;
+    contact?: string;
+  };
+  theme?: {
+    color: string;
+  };
+  modal?: {
+    ondismiss: () => void;
+    escape: boolean;
+    animation: boolean;
+  };
+}
+
+// Declare Razorpay for TypeScript
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
 export default function GroomerDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -140,20 +171,20 @@ export default function GroomerDetail() {
 
   // Load Razorpay script
   const loadRazorpayScript = () => {
-    return new Promise((resolve) => {
-      if (window.Razorpay) {
-        resolve(true);
-        return;
-      }
-      
+    return new Promise<boolean>((resolve) => {
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      
       script.onload = () => {
         resolve(true);
       };
+      
       script.onerror = () => {
+        console.error("Failed to load Razorpay script");
         resolve(false);
       };
+      
       document.body.appendChild(script);
     });
   };
@@ -209,8 +240,8 @@ export default function GroomerDetail() {
           return;
         }
 
-        // Create Razorpay order
-        const options = {
+        // Create Razorpay options
+        const options: RazorpayOptions = {
           key: "rzp_test_5wYJG4Y7jeVhsz",
           amount: totalPrice * 100, // Amount in paise
           currency: "INR",
@@ -272,11 +303,13 @@ export default function GroomerDetail() {
           modal: {
             ondismiss: function() {
               setIsProcessing(false);
-            }
+            },
+            escape: true,
+            animation: true
           }
         };
 
-        // Open Razorpay
+        // Create and open Razorpay checkout
         const razorpay = new window.Razorpay(options);
         razorpay.open();
       } else {
