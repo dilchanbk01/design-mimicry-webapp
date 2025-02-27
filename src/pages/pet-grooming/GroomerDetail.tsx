@@ -493,14 +493,17 @@ export default function GroomerDetail() {
           )}
           
           <div className="border-t border-green-100 pt-6">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <div className="flex items-center text-gray-600">
-                <MapPin className="h-5 w-5 mr-2 flex-shrink-0 text-green-600" />
-                <span className="text-sm">{groomer.address}</span>
-              </div>
+            <div className="flex flex-col gap-4">
               <div className="flex items-center text-gray-600">
                 <Scissors className="h-5 w-5 mr-2 flex-shrink-0 text-green-600" />
                 <span className="text-sm">{groomer.experience_years}+ years experience</span>
+              </div>
+              <div className="flex items-start text-gray-600">
+                <MapPin className="h-5 w-5 mr-2 flex-shrink-0 text-green-600 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700">Address</h3>
+                  <p className="text-sm">{groomer.address}</p>
+                </div>
               </div>
             </div>
           </div>

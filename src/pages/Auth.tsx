@@ -1,74 +1,70 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
+import { AuthButton } from "@/components/AuthButton";
+import { useToast } from "@/components/ui/use-toast";
+import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
+import { ArrowLeft } from "lucide-react";
 
 export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"sign-in" | "sign-up">("sign-in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleAuth = async (e: React.FormEvent) => {
+  useEffect(() => {
+    checkExistingSession();
+  }, []);
+
+  const checkExistingSession = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      navigateAfterAuth();
+    }
+  };
+
+  const navigateAfterAuth = () => {
+    const redirectPath = localStorage.getItem("redirectAfterAuth");
+    if (redirectPath) {
+      localStorage.removeItem("redirectAfterAuth");
+      navigate(redirectPath);
+    } else {
+      navigate("/");
+    }
+  };
+
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      if (isSignUp) {
-        if (password !== confirmPassword) {
-          throw new Error("Passwords do not match");
-        }
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: fullName,
-              phone_number: phoneNumber,
-            },
-            emailRedirectTo: window.location.origin,
-          }
-        });
+      if (error) throw error;
 
-        if (error) throw error;
-
-        if (data.user && data.user.identities?.length === 0) {
-          toast({
-            title: "Account exists",
-            description: "An account with this email already exists. Please sign in.",
-            variant: "destructive",
-          });
-          setIsSignUp(false);
-          return;
-        }
-
-        toast({
-          title: "Success!",
-          description: "Registration successful! You can now sign in.",
-        });
-        setIsSignUp(false);
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        navigate("/profile");
-      }
-    } catch (error) {
-      console.error("Auth error:", error);
       toast({
-        title: "Error",
+        title: "Welcome back!",
+        description: "You have successfully signed in.",
+      });
+
+      navigateAfterAuth();
+    } catch (error) {
+      console.error("Error signing in:", error);
+      toast({
+        title: "Sign in failed",
         description: error.message,
         variant: "destructive",
       });
@@ -77,141 +73,242 @@ export default function Auth() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin
-        }
-      });
-      
-      if (error) throw error;
-    } catch (error) {
-      console.error("Google auth error:", error);
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    if (password !== confirmPassword) {
       toast({
-        title: "Error",
-        description: "Failed to sign in with Google. Please try again.",
+        title: "Passwords do not match",
+        description: "Please ensure both passwords match.",
         variant: "destructive",
       });
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            phone_number: phoneNumber,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Registration successful!",
+        description: "Your account has been created.",
+      });
+
+      navigateAfterAuth();
+    } catch (error) {
+      console.error("Error signing up:", error);
+      toast({
+        title: "Registration failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-primary flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
-        <h1 className="text-3xl font-bold text-center mb-6">
-          {isSignUp ? "Sign Up" : "Sign In"}
-        </h1>
+    <div className="min-h-screen bg-green-50 flex flex-col">
+      {/* Back button */}
+      <div className="container p-4">
         <Button
-          onClick={handleGoogleSignIn}
-          type="button"
-          variant="outline"
-          className="w-full mb-6"
+          variant="ghost"
+          size="icon"
+          className="text-green-700 hover:bg-green-100 hover:text-green-800"
+          onClick={() => navigate(-1)}
         >
-          <img 
-            src="https://www.google.com/favicon.ico" 
-            alt="Google"
-            className="w-4 h-4 mr-2"
-          />
-          Continue with Google
+          <ArrowLeft className="h-5 w-5" />
         </Button>
-        
-        <div className="relative mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">
-              Or continue with email
-            </span>
-          </div>
+      </div>
+
+      <div className="flex-1 flex flex-col justify-center items-center p-4">
+        {/* Logo */}
+        <div className="mb-8 flex flex-col items-center">
+          <img 
+            src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
+            alt="Petsu Logo" 
+            className="h-16 mb-4"
+          />
+          <h1 className="text-2xl font-bold text-green-800">
+            {activeTab === "sign-in" ? "Welcome Back!" : "Create Account"}
+          </h1>
         </div>
 
-        <form onSubmit={handleAuth} className="space-y-4">
-          {isSignUp && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-                  id="fullName"
-                  placeholder="John Doe"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phoneNumber">Phone Number</Label>
-                <Input
-                  id="phoneNumber"
-                  type="tel"
-                  placeholder="+91 1234567890"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  required
-                />
-              </div>
-            </>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-            />
-          </div>
-          {isSignUp && (
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-            </div>
-          )}
-          <Button
-            type="submit"
+        <div className="w-full max-w-md bg-white rounded-xl shadow-sm p-6">
+          <Tabs
+            defaultValue="sign-in"
+            value={activeTab}
+            onValueChange={(v) => setActiveTab(v as "sign-in" | "sign-up")}
             className="w-full"
-            disabled={loading}
           >
-            {loading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
-          </Button>
-        </form>
-        <p className="mt-4 text-center text-sm text-gray-600">
-          {isSignUp ? "Already have an account? " : "Don't have an account? "}
-          <button
-            type="button"
-            onClick={() => {
-              setIsSignUp(!isSignUp);
-              setPassword("");
-              setConfirmPassword("");
-              setFullName("");
-              setPhoneNumber("");
-            }}
-            className="text-primary hover:underline"
-          >
-            {isSignUp ? "Sign In" : "Sign Up"}
-          </button>
-        </p>
+            <TabsList className="grid grid-cols-2 w-full mb-4">
+              <TabsTrigger value="sign-in">Sign In</TabsTrigger>
+              <TabsTrigger value="sign-up">Sign Up</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="sign-in">
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email-signin">Email</Label>
+                  <Input
+                    id="email-signin"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    placeholder="Enter your email"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <Label htmlFor="password-signin">Password</Label>
+                    <Button
+                      variant="link"
+                      className="text-xs text-green-600 p-0 h-auto"
+                      onClick={() => navigate("/forgot-password")}
+                    >
+                      Forgot password?
+                    </Button>
+                  </div>
+                  <Input
+                    id="password-signin"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    placeholder="Enter your password"
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  disabled={loading}
+                >
+                  {loading ? "Signing in..." : "Sign In"}
+                </Button>
+              </form>
+
+              <Separator className="my-6" />
+
+              <div className="space-y-4">
+                <AuthButton
+                  provider="google"
+                  onSuccess={navigateAfterAuth}
+                  onError={(error) =>
+                    toast({
+                      title: "Authentication failed",
+                      description: error,
+                      variant: "destructive",
+                    })
+                  }
+                />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="sign-up">
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="full-name">Full Name</Label>
+                  <Input
+                    id="full-name"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                    placeholder="Enter your full name"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email-signup">Email</Label>
+                  <Input
+                    id="email-signup"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    placeholder="Enter your email"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone-number">Phone Number</Label>
+                  <Input
+                    id="phone-number"
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="Enter your phone number (optional)"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password-signup">Password</Label>
+                  <Input
+                    id="password-signup"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    placeholder="Create a password"
+                    minLength={6}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirm Password</Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    placeholder="Confirm your password"
+                    minLength={6}
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  disabled={loading}
+                >
+                  {loading ? "Creating account..." : "Create Account"}
+                </Button>
+              </form>
+
+              <Separator className="my-6" />
+
+              <div className="space-y-4">
+                <AuthButton
+                  provider="google"
+                  onSuccess={navigateAfterAuth}
+                  onError={(error) =>
+                    toast({
+                      title: "Authentication failed",
+                      description: error,
+                      variant: "destructive",
+                    })
+                  }
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </div>
   );
