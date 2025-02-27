@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -158,14 +159,23 @@ export default function CreateEvent() {
   return (
     <div className="min-h-screen bg-[#00D26A] py-8 px-4">
       <div className="container mx-auto max-w-3xl">
-        <Button
-          onClick={() => navigate("/events")}
-          variant="ghost"
-          size="icon"
-          className="mb-6 bg-white rounded-full"
-        >
-          <ArrowLeft className="h-6 w-6" />
-        </Button>
+        <div className="flex justify-between items-center mb-6">
+          <Button
+            onClick={() => navigate("/events")}
+            variant="ghost"
+            size="icon"
+            className="bg-white rounded-full"
+          >
+            <ArrowLeft className="h-6 w-6" />
+          </Button>
+          
+          <img 
+            src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
+            alt="Petsu"
+            className="h-12 cursor-pointer"
+            onClick={() => navigate('/')}
+          />
+        </div>
 
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <ImageUploadSection
