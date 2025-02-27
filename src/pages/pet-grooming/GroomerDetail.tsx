@@ -1,35 +1,23 @@
 
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { MapPin, Star, Scissors, Home, Store, ArrowLeft, Calendar, User, Info, Share2, Check, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { BookingDialog } from "./components/BookingDialog";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Card, CardContent } from "@/components/ui/card";
-import type { GroomerProfile } from "./types";
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-
-interface GroomingPackage {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  groomer_id: string;
-  created_at: string;
-}
+import { useGroomer } from "./hooks/useGroomer";
+import { calculatePriceDetails } from "./utils/pricing";
+import { GroomerHeader } from "./components/GroomerHeader";
+import { GroomerImageBanner } from "./components/GroomerImageBanner";
+import { GroomerTitle } from "./components/GroomerTitle";
+import { GroomerSpecializations } from "./components/GroomerSpecializations";
+import { GroomerServices } from "./components/GroomerServices";
+import { PriceDisplay } from "./components/PriceDisplay";
+import { BookAppointmentButton } from "./components/BookAppointmentButton";
+import { GroomerPackages } from "./components/GroomerPackages";
+import { GroomerBio } from "./components/GroomerBio";
+import { GroomerInfo } from "./components/GroomerInfo";
+import { BookingDialog } from "./components/BookingDialog";
+import { BookingConfirmation } from "./components/BookingConfirmation";
+import type { GroomingPackage } from "./types/packages";
 
 declare global {
   interface Window {
@@ -48,6 +36,8 @@ export default function GroomerDetail() {
   const [selectedPackage, setSelectedPackage] = useState<GroomingPackage | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
+  
+  const { groomer, packages, isLoading } = useGroomer(id);
 
   useEffect(() => {
     // Load Razorpay script
@@ -57,65 +47,11 @@ export default function GroomerDetail() {
     document.body.appendChild(script);
 
     return () => {
-      document.body.removeChild(script);
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
     };
   }, []);
-
-  const { data: groomer } = useQuery<GroomerProfile>({
-    queryKey: ['groomer', id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('groomer_profiles')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: packages = [] } = useQuery<GroomingPackage[]>({
-    queryKey: ['groomer-packages', id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('grooming_packages')
-        .select('*')
-        .eq('groomer_id', id)
-        .order('price', { ascending: true });
-
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!id
-  });
-
-  const handleShareGroomer = async () => {
-    const shareData = {
-      title: groomer ? `${groomer.salon_name} - Pet Grooming` : 'Pet Grooming Service',
-      text: groomer ? `Check out ${groomer.salon_name} for pet grooming services!` : 'Check out this pet grooming service!',
-      url: window.location.href
-    };
-
-    if (navigator.share && navigator.canShare(shareData)) {
-      try {
-        await navigator.share(shareData);
-        toast({
-          title: "Shared successfully!",
-          description: "The groomer details have been shared.",
-        });
-      } catch (error) {
-        console.error('Error sharing:', error);
-      }
-    } else {
-      // Fallback for browsers that don't support sharing
-      navigator.clipboard.writeText(window.location.href);
-      toast({
-        title: "Link copied to clipboard!",
-        description: "You can now share it with your friends.",
-      });
-    }
-  };
 
   // Function to send confirmation email
   const sendConfirmationEmail = async (userEmail: string, bookingDetails: any) => {
@@ -274,23 +210,10 @@ export default function GroomerDetail() {
     }
   };
 
-  // Calculate GST and total amount
-  const calculatePriceDetails = (basePrice: number) => {
-    const gstRate = 0.18; // 18% GST
-    const gstAmount = basePrice * gstRate;
-    const totalAmount = basePrice + gstAmount;
-    
-    return {
-      basePrice,
-      gstAmount,
-      totalAmount
-    };
-  };
-
   const selectedPrice = selectedPackage ? selectedPackage.price : groomer?.price || 0;
   const priceDetails = calculatePriceDetails(selectedPrice);
 
-  if (!groomer) return (
+  if (isLoading || !groomer) return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <div className="animate-pulse flex flex-col items-center">
         <div className="h-32 w-32 bg-gray-200 rounded-full mb-4"></div>
@@ -304,252 +227,44 @@ export default function GroomerDetail() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Transparent header with back button, logo, and profile icon */}
-      <header className="absolute top-0 left-0 right-0 bg-transparent z-50">
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-white hover:bg-green-600/20"
-              onClick={() => navigate(-1)}
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-
-            <img 
-              src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
-              alt="Petsu"
-              className="h-8 sm:h-10 cursor-pointer"
-              onClick={() => navigate('/')}
-            />
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-white hover:bg-green-600/20"
-              onClick={() => navigate('/profile')}
-            >
-              <User className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Full-width image at the top */}
-      <div className="w-full h-72 md:h-96 relative">
-        <img
-          src={groomer.profile_image_url || defaultImage}
-          alt={groomer.salon_name}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-black/40 to-transparent"></div>
-      </div>
+      <GroomerHeader />
+      <GroomerImageBanner 
+        imageUrl={groomer.profile_image_url} 
+        altText={groomer.salon_name} 
+      />
 
       <div className="px-4 py-6">
-        <div className="flex justify-between items-start mb-6">
-          <h1 className="text-2xl font-bold text-green-800">{groomer.salon_name}</h1>
-          <Button
-            variant="outline"
-            size="icon"
-            className="rounded-full h-8 w-8 border-green-500 text-green-600 hover:bg-green-50 ml-auto"
-            onClick={handleShareGroomer}
-          >
-            <Share2 className="h-4 w-4" />
-          </Button>
-        </div>
+        <GroomerTitle title={groomer.salon_name} />
 
         <div className="space-y-6 bg-white rounded-xl p-4 shadow-sm">
-          {/* Specializations Section */}
-          <div>
-            <h2 className="text-lg font-semibold mb-3 text-green-800">Specializations</h2>
-            <div className="flex flex-wrap gap-2">
-              {groomer.specializations.map((specialization: string) => (
-                <span
-                  key={specialization}
-                  className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm"
-                >
-                  {specialization}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Services Available */}
-          <div className="flex flex-wrap gap-3">
-            {groomer.provides_salon_service && (
-              <div className="flex items-center text-green-700 bg-green-100 px-3 py-1 rounded-full">
-                <Store className="h-4 w-4 mr-2 flex-shrink-0" />
-                <span className="text-sm">Salon Service Available</span>
-              </div>
-            )}
-            {groomer.provides_home_service && (
-              <div className="flex items-center text-green-700 bg-green-100 px-3 py-1 rounded-full">
-                <Home className="h-4 w-4 mr-2 flex-shrink-0" />
-                <span className="text-sm">Home Service Available</span>
-              </div>
-            )}
-          </div>
+          <GroomerSpecializations specializations={groomer.specializations} />
+          <GroomerServices 
+            providesSalonService={groomer.provides_salon_service} 
+            providesHomeService={groomer.provides_home_service} 
+          />
           
-          {/* Booking Section - Moved here below the services */}
+          {/* Booking Section */}
           <div className="flex flex-col items-center">
-            <div className="flex items-center mb-2">
-              <p className="font-semibold text-lg text-green-600 mr-2">
-                ₹{priceDetails.totalAmount.toFixed(0)}
-              </p>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button className="text-gray-400 hover:text-green-600">
-                    <Info className="h-4 w-4" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent side="top" align="center" className="w-60 bg-white z-50">
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Price Breakdown</h4>
-                    <div className="text-sm space-y-1">
-                      <div className="flex justify-between">
-                        <span>Base Price:</span>
-                        <span>₹{priceDetails.basePrice.toFixed(0)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>GST (18%):</span>
-                        <span>₹{priceDetails.gstAmount.toFixed(0)}</span>
-                      </div>
-                      <div className="border-t pt-1 mt-1 font-medium flex justify-between">
-                        <span>Total:</span>
-                        <span>₹{priceDetails.totalAmount.toFixed(0)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-            <Button 
-              onClick={() => setIsBookingOpen(true)}
-              className="w-full md:w-64 bg-green-600 hover:bg-green-700"
-              disabled={paymentProcessing}
-            >
-              {paymentProcessing ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Book Appointment
-                </>
-              )}
-            </Button>
+            <PriceDisplay priceDetails={priceDetails} />
+            <BookAppointmentButton 
+              onClick={() => setIsBookingOpen(true)} 
+              isProcessing={paymentProcessing} 
+            />
           </div>
 
-          {/* Grooming Packages Section */}
-          <div>
-            <h2 className="text-lg font-semibold mb-3 text-green-800">Grooming Packages</h2>
-            {packages.length === 0 ? (
-              <p className="text-gray-500 italic">No packages available</p>
-            ) : (
-              <div className="space-y-3">
-                {packages.map((pkg) => (
-                  <Card 
-                    key={pkg.id} 
-                    className={`border rounded-xl ${selectedPackage?.id === pkg.id ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-md font-medium">{pkg.name}</h3>
-                            <Popover>
-                              <PopoverTrigger>
-                                <Info className="h-4 w-4 text-gray-400 cursor-pointer" />
-                              </PopoverTrigger>
-                              <PopoverContent side="top" align="start" className="w-[280px] bg-white z-50">
-                                <div className="space-y-2">
-                                  <h4 className="font-medium">{pkg.name}</h4>
-                                  <p className="text-sm text-gray-600">{pkg.description}</p>
-                                </div>
-                              </PopoverContent>
-                            </Popover>
-                          </div>
-                          <p className="text-green-600 font-semibold mt-1">₹{pkg.price}</p>
-                        </div>
-                        <Button 
-                          variant={selectedPackage?.id === pkg.id ? "default" : "outline"} 
-                          size="sm"
-                          className={selectedPackage?.id === pkg.id ? "bg-green-600 hover:bg-green-700" : "border-green-500 text-green-600 hover:bg-green-50"}
-                          onClick={() => setSelectedPackage(pkg)}
-                          disabled={paymentProcessing}
-                        >
-                          {selectedPackage?.id === pkg.id ? "Selected" : "Select"}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+          <GroomerPackages 
+            packages={packages} 
+            selectedPackage={selectedPackage} 
+            onSelectPackage={setSelectedPackage} 
+            groomerPrice={groomer.price}
+            isProcessing={paymentProcessing}
+          />
 
-            {/* Standard service card */}
-            <Card className={`mt-3 border rounded-xl ${!selectedPackage ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}>
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-md font-medium">Standard Grooming</h3>
-                      <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">Basic</Badge>
-                      <Popover>
-                        <PopoverTrigger>
-                          <Info className="h-4 w-4 text-gray-400 cursor-pointer" />
-                        </PopoverTrigger>
-                        <PopoverContent side="top" align="start" className="w-[280px] bg-white z-50">
-                          <div className="space-y-2">
-                            <h4 className="font-medium">Standard Grooming</h4>
-                            <p className="text-sm text-gray-600">
-                              Basic grooming service includes bath, brushing, nail trimming, ear cleaning, and a basic haircut.
-                            </p>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    <p className="text-green-600 font-semibold mt-1">₹{groomer.price}</p>
-                  </div>
-                  <Button 
-                    variant={!selectedPackage ? "default" : "outline"} 
-                    size="sm"
-                    className={!selectedPackage ? "bg-green-600 hover:bg-green-700" : "border-green-500 text-green-600 hover:bg-green-50"}
-                    onClick={() => setSelectedPackage(null)}
-                    disabled={paymentProcessing}
-                  >
-                    {!selectedPackage ? "Selected" : "Select"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {groomer.bio && (
-            <div>
-              <h2 className="text-lg font-semibold mb-3 text-green-800">About</h2>
-              <p className="text-gray-600 text-sm leading-relaxed">{groomer.bio}</p>
-            </div>
-          )}
-          
-          <div className="border-t border-green-100 pt-6">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center text-gray-600">
-                <Scissors className="h-5 w-5 mr-2 flex-shrink-0 text-green-600" />
-                <span className="text-sm">{groomer.experience_years}+ years experience</span>
-              </div>
-              <div className="flex items-start text-gray-600">
-                <MapPin className="h-5 w-5 mr-2 flex-shrink-0 text-green-600 mt-0.5" />
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700">Address</h3>
-                  <p className="text-sm">{groomer.address}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <GroomerBio bio={groomer.bio} />
+          <GroomerInfo 
+            experienceYears={groomer.experience_years} 
+            address={groomer.address} 
+          />
         </div>
       </div>
 
@@ -578,28 +293,12 @@ export default function GroomerDetail() {
         onSubmit={handleBookingSubmit}
       />
 
-      {/* Confirmation Animation */}
-      {showConfirmation && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-8 max-w-md mx-auto shadow-xl animate-scale-in">
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
-                <Check className="h-8 w-8 text-green-600" />
-              </div>
-              <h2 className="text-2xl font-bold">Booking Confirmed!</h2>
-              <p className="text-gray-600">
-                Your appointment with {groomer.salon_name} has been successfully booked for {new Date(bookingDate).toLocaleDateString()} at {bookingTime}.
-              </p>
-              <p className="text-sm text-gray-500">
-                You can view your appointment details in your profile.
-              </p>
-              <p className="text-sm text-green-600">
-                A confirmation email has been sent to your registered email address.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      <BookingConfirmation 
+        show={showConfirmation}
+        groomerName={groomer.salon_name}
+        bookingDate={bookingDate}
+        bookingTime={bookingTime}
+      />
     </div>
   );
 }
