@@ -67,7 +67,6 @@ export default function PetGrooming() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h2 className="text-white text-lg font-medium mb-3">Choose service type</h2>
           <div className="grid grid-cols-2 gap-4 items-center">
             <TooltipProvider>
               <Tooltip>
@@ -75,7 +74,9 @@ export default function PetGrooming() {
                   <Button
                     variant={serviceType === 'salon' ? "default" : "outline"}
                     onClick={() => setServiceType('salon')}
-                    className="bg-white text-primary hover:bg-white/90 w-full"
+                    className={`bg-white text-primary hover:bg-white/90 w-full ${
+                      serviceType === 'salon' ? 'border-4 border-[#8B5CF6] text-[#8B5CF6] font-bold' : ''
+                    }`}
                   >
                     <Store className="h-4 w-4 mr-2" />
                     At Salon
@@ -93,7 +94,9 @@ export default function PetGrooming() {
                   <Button
                     variant={serviceType === 'home' ? "default" : "outline"}
                     onClick={() => setServiceType('home')}
-                    className="bg-white text-primary hover:bg-white/90 w-full"
+                    className={`bg-white text-primary hover:bg-white/90 w-full ${
+                      serviceType === 'home' ? 'border-4 border-[#8B5CF6] text-[#8B5CF6] font-bold' : ''
+                    }`}
                   >
                     <Home className="h-4 w-4 mr-2" />
                     Home Visit

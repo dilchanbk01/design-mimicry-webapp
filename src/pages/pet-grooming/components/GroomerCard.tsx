@@ -1,8 +1,7 @@
 
+import { Star, MapPin, Scissors, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MapPin, Star, Scissors, Home, Store } from "lucide-react";
-import { GroomingPartner } from "../types";
-import { getOptimizedImageUrl } from "@/utils/imageCompression";
+import type { GroomingPartner } from "../types";
 
 interface GroomerCardProps {
   partner: GroomingPartner;
@@ -11,71 +10,56 @@ interface GroomerCardProps {
 
 export function GroomerCard({ partner, onViewDetails }: GroomerCardProps) {
   return (
-    <div 
-      className="bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-      onClick={onViewDetails}
-    >
-      <div className="flex flex-col md:flex-row">
-        <div className="md:w-1/3 h-48 md:h-auto relative">
-          <img
-            src={getOptimizedImageUrl(partner.image, 600)}
-            alt={partner.name}
-            className="w-full h-full object-cover"
-            loading="lazy"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = '/placeholder.svg';
-            }}
-          />
-          <div className="absolute top-2 right-2 bg-white/80 backdrop-blur-sm rounded-full px-2 py-0.5 flex items-center">
-            <Star className="h-3 w-3 text-yellow-400 fill-current" />
-            <span className="ml-1 text-xs font-medium">{partner.rating}</span>
+    <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
+      <div className="relative h-44">
+        <img
+          src={partner.image}
+          alt={partner.name}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-transparent to-black/50"></div>
+        <div className="absolute bottom-0 left-0 p-4 text-white">
+          <h3 className="text-xl font-bold">{partner.name}</h3>
+          <div className="flex items-center text-yellow-400 mt-1">
+            <Star className="w-4 h-4 fill-current" />
+            <span className="ml-1 text-sm">{partner.rating}</span>
+            <span className="ml-2 text-xs text-white/80">(120+ reviews)</span>
           </div>
         </div>
-        <div className="p-4 md:p-6 md:w-2/3 flex flex-col justify-between space-y-3">
-          <div className="space-y-2">
-            <div>
-              <h2 className="text-lg font-semibold">{partner.name}</h2>
-              <div className="flex items-center text-gray-500 mt-1">
-                <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
-                <span className="text-xs truncate">{partner.location}</span>
-              </div>
+      </div>
+      
+      <div className="p-4">
+        <div className="flex items-start mb-3">
+          <MapPin className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
+          <p className="ml-2 text-sm text-gray-600 line-clamp-1">{partner.location}</p>
+        </div>
+        
+        <div className="flex flex-wrap gap-2 mb-4">
+          {partner.providesSalonService && (
+            <div className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full flex items-center">
+              <Scissors className="w-3 h-3 mr-1" />
+              Salon Service
             </div>
-            <div className="flex flex-wrap gap-2 items-center">
-              <div className="flex items-center text-gray-600">
-                <Scissors className="h-3 w-3 mr-1 flex-shrink-0" />
-                <span className="text-xs">{partner.experience}</span>
-              </div>
-              <div className="flex gap-2">
-                {partner.providesSalonService && (
-                  <div className="flex items-center text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-                    <Store className="h-3 w-3 mr-1 flex-shrink-0" />
-                    <span className="text-xs">Salon</span>
-                  </div>
-                )}
-                {partner.providesHomeService && (
-                  <div className="flex items-center text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                    <Home className="h-3 w-3 mr-1 flex-shrink-0" />
-                    <span className="text-xs">Home</span>
-                  </div>
-                )}
-              </div>
-              <div className="text-xs font-medium text-primary">
-                {partner.price}
-              </div>
+          )}
+          {partner.providesHomeService && (
+            <div className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full flex items-center">
+              <Home className="w-3 h-3 mr-1" />
+              Home Visit
             </div>
+          )}
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-gray-600">{partner.experience}</p>
+            <p className="text-sm font-semibold text-green-700">{partner.price}</p>
           </div>
-          <div className="flex gap-2 mt-2">
-            <Button 
-              className="w-full py-1 px-2 h-auto text-xs"
-              onClick={(e) => {
-                e.stopPropagation();
-                onViewDetails();
-              }}
-            >
-              View Details
-            </Button>
-          </div>
+          <Button 
+            onClick={onViewDetails} 
+            className="bg-[#8B5CF6] hover:bg-[#7E69AB] text-white px-6 py-5 text-base"
+          >
+            View Details
+          </Button>
         </div>
       </div>
     </div>
