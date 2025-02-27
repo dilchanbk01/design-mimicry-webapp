@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -44,10 +43,31 @@ export default function EditProfile() {
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
-      if (data) {
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      if (!data) {
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert([
+            {
+              id: user.id,
+              full_name: user.user_metadata?.full_name || "",
+              phone_number: "",
+            }
+          ]);
+
+        if (insertError) throw insertError;
+
+        setProfile({
+          full_name: user.user_metadata?.full_name || "",
+          phone_number: "",
+          email: user.email || "",
+        });
+      } else {
         setProfile({
           full_name: data.full_name || "",
           phone_number: data.phone_number || "",
@@ -110,7 +130,6 @@ export default function EditProfile() {
     setPasswordLoading(true);
     
     try {
-      // First, verify the current password by signing in
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: profile.email,
         password: currentPassword,
@@ -120,7 +139,6 @@ export default function EditProfile() {
         throw new Error("Current password is incorrect");
       }
       
-      // Then change the password
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });
