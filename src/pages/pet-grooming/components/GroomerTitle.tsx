@@ -4,18 +4,16 @@ import { Share2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 interface GroomerTitleProps {
-  name: string;
-  years: number;
-  isAvailable: boolean;
+  title: string;
 }
 
-export function GroomerTitle({ name, years, isAvailable }: GroomerTitleProps) {
+export function GroomerTitle({ title }: GroomerTitleProps) {
   const { toast } = useToast();
 
   const handleShareGroomer = async () => {
     const shareData = {
-      title: `${name} - Pet Grooming`,
-      text: `Check out ${name} for pet grooming services!`,
+      title: `${title} - Pet Grooming`,
+      text: `Check out ${title} for pet grooming services!`,
       url: window.location.href
     };
 
@@ -41,14 +39,7 @@ export function GroomerTitle({ name, years, isAvailable }: GroomerTitleProps) {
 
   return (
     <div className="flex justify-between items-start mb-6">
-      <div>
-        <h1 className="text-2xl font-bold text-green-800">{name}</h1>
-        {!isAvailable && (
-          <span className="inline-block mt-1 px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
-            Currently Unavailable
-          </span>
-        )}
-      </div>
+      <h1 className="text-2xl font-bold text-green-800">{title}</h1>
       <Button
         variant="outline"
         size="icon"
