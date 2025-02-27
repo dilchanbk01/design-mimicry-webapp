@@ -329,7 +329,7 @@ export default function AdminDashboard() {
                           <div className="flex gap-2">
                             <Button
                               onClick={() => handleGroomerStatus(groomer.id, 'approved')}
-                              className="bg-green-600 hover:bg-green-700"
+                              className="bg-[#4CAF50] hover:bg-[#3e8e41]"
                             >
                               <Check className="h-4 w-4 mr-1" />
                               Approve
