@@ -27,6 +27,7 @@ import CancellationPolicy from "./pages/CancellationPolicy";
 import EditEvent from "./pages/EditEvent";
 import PetGrooming from "./pages/pet-grooming";
 import GroomerDetail from "./pages/pet-grooming/GroomerDetail";
+import GroomerBooking from "./pages/pet-grooming/GroomerBooking";
 import GroomerPending from "./pages/GroomerPending";
 
 const queryClient = new QueryClient({
@@ -67,7 +68,8 @@ function App() {
             <Route path="/terms" element={<Terms />} />
             <Route path="/cancellation-policy" element={<CancellationPolicy />} />
             <Route path="/pet-grooming" element={<PetGrooming />} />
-            <Route path="/groomer/:id" element={<GroomerDetail />} />
+            <Route path="/pet-grooming/groomer/:id" element={<GroomerDetail />} />
+            <Route path="/pet-grooming/booking/:id" element={<GroomerBooking />} />
             <Route path="/groomer-pending" element={<GroomerPending />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
