@@ -75,7 +75,7 @@ export default function PetGrooming() {
                     variant={serviceType === 'salon' ? "default" : "outline"}
                     onClick={() => setServiceType('salon')}
                     className={`bg-white text-primary hover:bg-white/90 w-full ${
-                      serviceType === 'salon' ? 'border-4 border-[#00D26A] text-[#00D26A] font-bold' : ''
+                      serviceType === 'salon' ? 'border-4 border-[#8B5CF6] text-[#8B5CF6] font-bold' : ''
                     }`}
                   >
                     <Store className="h-4 w-4 mr-2" />
@@ -95,7 +95,7 @@ export default function PetGrooming() {
                     variant={serviceType === 'home' ? "default" : "outline"}
                     onClick={() => setServiceType('home')}
                     className={`bg-white text-primary hover:bg-white/90 w-full ${
-                      serviceType === 'home' ? 'border-4 border-[#00D26A] text-[#00D26A] font-bold' : ''
+                      serviceType === 'home' ? 'border-4 border-[#8B5CF6] text-[#8B5CF6] font-bold' : ''
                     }`}
                   >
                     <Home className="h-4 w-4 mr-2" />
@@ -118,7 +118,7 @@ export default function PetGrooming() {
             ) : (
               <div className="flex items-start">
                 <Info className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
-                <p></p>
+                <p>The groomer will come to your home to provide grooming services for your pet</p>
               </div>
             )}
           </div>

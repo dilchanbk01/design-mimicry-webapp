@@ -47,8 +47,7 @@ export function ServiceTypeSelection({
       <div className="space-y-3">
         {groomerProvidesSalon && (
           <Card 
-            className={`border rounded-xl cursor-pointer ${options.salon.selected ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}
-            onClick={() => !isProcessing && onChange('salon')}
+            className={`border rounded-xl ${options.salon.selected ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}
           >
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
@@ -76,10 +75,7 @@ export function ServiceTypeSelection({
                   variant={options.salon.selected ? "default" : "outline"} 
                   size="sm"
                   className={options.salon.selected ? "bg-green-600 hover:bg-green-700" : "border-green-500 text-green-600 hover:bg-green-50"}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!isProcessing) onChange('salon');
-                  }}
+                  onClick={() => onChange('salon')}
                   disabled={isProcessing}
                 >
                   {options.salon.selected ? "Selected" : "Select"}
@@ -91,8 +87,7 @@ export function ServiceTypeSelection({
 
         {groomerProvidesHome && (
           <Card 
-            className={`border rounded-xl cursor-pointer ${options.home.selected ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}
-            onClick={() => !isProcessing && onChange('home')}
+            className={`border rounded-xl ${options.home.selected ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}
           >
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
@@ -132,10 +127,7 @@ export function ServiceTypeSelection({
                   variant={options.home.selected ? "default" : "outline"} 
                   size="sm"
                   className={options.home.selected ? "bg-green-600 hover:bg-green-700" : "border-green-500 text-green-600 hover:bg-green-50"}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!isProcessing) onChange('home');
-                  }}
+                  onClick={() => onChange('home')}
                   disabled={isProcessing}
                 >
                   {options.home.selected ? "Selected" : "Select"}
@@ -143,7 +135,7 @@ export function ServiceTypeSelection({
               </div>
 
               {options.home.selected && (
-                <div className="mt-4 pt-4 border-t border-gray-200" onClick={e => e.stopPropagation()}>
+                <div className="mt-4 pt-4 border-t border-gray-200">
                   <Label htmlFor="homeAddress" className="text-sm font-medium text-gray-700">Your Address</Label>
                   <Textarea
                     id="homeAddress"
