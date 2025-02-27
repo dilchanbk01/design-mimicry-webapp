@@ -217,6 +217,7 @@ export type Database = {
           contact_number: string
           created_at: string | null
           experience_years: number
+          home_service_cost: number | null
           id: string
           price: number | null
           profile_image_url: string | null
@@ -237,6 +238,7 @@ export type Database = {
           contact_number: string
           created_at?: string | null
           experience_years: number
+          home_service_cost?: number | null
           id?: string
           price?: number | null
           profile_image_url?: string | null
@@ -257,6 +259,7 @@ export type Database = {
           contact_number?: string
           created_at?: string | null
           experience_years?: number
+          home_service_cost?: number | null
           id?: string
           price?: number | null
           profile_image_url?: string | null
@@ -271,9 +274,11 @@ export type Database = {
       }
       grooming_bookings: {
         Row: {
+          additional_cost: number | null
           created_at: string | null
           date: string
           groomer_id: string | null
+          home_address: string | null
           id: string
           package_id: string | null
           payment_id: string | null
@@ -284,9 +289,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          additional_cost?: number | null
           created_at?: string | null
           date: string
           groomer_id?: string | null
+          home_address?: string | null
           id?: string
           package_id?: string | null
           payment_id?: string | null
@@ -297,9 +304,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          additional_cost?: number | null
           created_at?: string | null
           date?: string
           groomer_id?: string | null
+          home_address?: string | null
           id?: string
           package_id?: string | null
           payment_id?: string | null
