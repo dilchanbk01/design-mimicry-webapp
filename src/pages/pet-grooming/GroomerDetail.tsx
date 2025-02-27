@@ -90,11 +90,10 @@ export default function GroomerDetail() {
   };
 
   const calculateTotalPrice = () => {
-    if (!selectedPackage) return groomer.price;
-    
-    let totalPrice = selectedPackage.price;
+    const basePrice = selectedPackage ? selectedPackage.price : groomer.price;
     
     // Add home service cost if home service is selected
+    let totalPrice = basePrice;
     if (selectedServiceType === 'home' && groomer.home_service_cost) {
       totalPrice += groomer.home_service_cost;
     }
@@ -139,6 +138,26 @@ export default function GroomerDetail() {
     }
   };
 
+  // Load Razorpay script
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (window.Razorpay) {
+        resolve(true);
+        return;
+      }
+      
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => {
+        resolve(true);
+      };
+      script.onerror = () => {
+        resolve(false);
+      };
+      document.body.appendChild(script);
+    });
+  };
+
   const handleBookingConfirm = async () => {
     if (!selectedDate || !selectedTime) {
       toast({
@@ -174,37 +193,125 @@ export default function GroomerDetail() {
         return;
       }
 
-      // Create a booking
-      const { data, error } = await supabase
-        .from('grooming_bookings')
-        .insert({
-          groomer_id: groomer.id,
-          user_id: user.id,
-          date: format(selectedDate, 'yyyy-MM-dd'),
-          time: selectedTime,
-          package_id: selectedPackage?.id,
-          pet_details: petDetails,
-          service_type: selectedServiceType,
-          home_address: selectedServiceType === 'home' ? homeAddress : null,
-          additional_cost: selectedServiceType === 'home' ? groomer.home_service_cost : 0,
-          status: 'confirmed',
-          payment_id: `PAYMENT-${Math.random().toString(36).substring(2, 10).toUpperCase()}` // Simulate payment ID
-        })
-        .select()
-        .single();
+      const totalPrice = calculateTotalPrice();
 
-      if (error) throw error;
+      // Initialize payment if price > 0
+      if (totalPrice > 0) {
+        // Load Razorpay script
+        const scriptLoaded = await loadRazorpayScript();
+        if (!scriptLoaded) {
+          toast({
+            title: "Payment Error",
+            description: "Unable to load payment system. Please try again later.",
+            variant: "destructive",
+          });
+          setIsProcessing(false);
+          return;
+        }
 
-      // Send confirmation email if user has an email
-      if (user.email) {
-        await sendConfirmationEmail(user.email);
+        // Create Razorpay order
+        const options = {
+          key: "rzp_test_5wYJG4Y7jeVhsz",
+          amount: totalPrice * 100, // Amount in paise
+          currency: "INR",
+          name: groomer.salon_name,
+          description: `Grooming appointment: ${selectedPackage ? selectedPackage.name : 'Standard Grooming'}`,
+          image: "/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png",
+          handler: async function(response: any) {
+            try {
+              // Create booking record with payment ID
+              const { data, error } = await supabase
+                .from('grooming_bookings')
+                .insert({
+                  groomer_id: groomer.id,
+                  user_id: user.id,
+                  date: format(selectedDate, 'yyyy-MM-dd'),
+                  time: selectedTime,
+                  package_id: selectedPackage?.id,
+                  pet_details: petDetails,
+                  service_type: selectedServiceType,
+                  home_address: selectedServiceType === 'home' ? homeAddress : null,
+                  additional_cost: selectedServiceType === 'home' ? groomer.home_service_cost : 0,
+                  status: 'confirmed',
+                  payment_id: response.razorpay_payment_id
+                })
+                .select()
+                .single();
+
+              if (error) throw error;
+
+              // Send confirmation email if user has an email
+              if (user.email) {
+                await sendConfirmationEmail(user.email);
+              }
+
+              setIsBookingConfirmed(true);
+              toast({
+                title: "Booking Confirmed!",
+                description: `Your grooming appointment with ${groomer.salon_name} has been booked.`,
+              });
+            } catch (error) {
+              console.error("Payment processing error:", error);
+              toast({
+                title: "Booking Failed",
+                description: "There was an error processing your booking. Please try again.",
+                variant: "destructive",
+              });
+            } finally {
+              setIsProcessing(false);
+            }
+          },
+          prefill: {
+            name: user.user_metadata?.full_name || "",
+            email: user.email || "",
+            contact: ""
+          },
+          theme: {
+            color: "#00D26A"
+          },
+          modal: {
+            ondismiss: function() {
+              setIsProcessing(false);
+            }
+          }
+        };
+
+        // Open Razorpay
+        const razorpay = new window.Razorpay(options);
+        razorpay.open();
+      } else {
+        // Free service - no payment required
+        const { data, error } = await supabase
+          .from('grooming_bookings')
+          .insert({
+            groomer_id: groomer.id,
+            user_id: user.id,
+            date: format(selectedDate, 'yyyy-MM-dd'),
+            time: selectedTime,
+            package_id: selectedPackage?.id,
+            pet_details: petDetails,
+            service_type: selectedServiceType,
+            home_address: selectedServiceType === 'home' ? homeAddress : null,
+            additional_cost: selectedServiceType === 'home' ? groomer.home_service_cost : 0,
+            status: 'confirmed'
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Send confirmation email if user has an email
+        if (user.email) {
+          await sendConfirmationEmail(user.email);
+        }
+
+        setIsBookingConfirmed(true);
+        toast({
+          title: "Booking Confirmed!",
+          description: `Your grooming appointment with ${groomer.salon_name} has been booked.`,
+        });
+        setIsProcessing(false);
       }
-
-      setIsBookingConfirmed(true);
-      toast({
-        title: "Booking Confirmed!",
-        description: `Your grooming appointment with ${groomer.salon_name} has been booked.`,
-      });
     } catch (error) {
       console.error("Booking error:", error);
       toast({
@@ -212,7 +319,6 @@ export default function GroomerDetail() {
         description: "There was an error processing your booking. Please try again.",
         variant: "destructive",
       });
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -287,7 +393,7 @@ export default function GroomerDetail() {
                 {/* Display base price + any additional cost for home service */}
                 <div className="mb-6">
                   <PriceDisplay 
-                    basePrice={groomer.price} 
+                    basePrice={selectedPackage ? selectedPackage.price : groomer.price} 
                     homeServiceCost={groomer.home_service_cost} 
                     serviceType={selectedServiceType}
                   />
