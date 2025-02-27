@@ -110,7 +110,7 @@ export default function GroomerOnboarding() {
         formData.pincode
       ].filter(Boolean).join(", ");
 
-      const { error } = await supabase.from("groomer_profiles").insert({
+      console.log("Submitting groomer application with data:", {
         user_id: user.id,
         salon_name: formData.salonName,
         experience_years: parseInt(formData.experienceYears),
@@ -124,10 +124,26 @@ export default function GroomerOnboarding() {
         application_status: 'pending'
       });
 
+      const { error, data } = await supabase.from("groomer_profiles").insert({
+        user_id: user.id,
+        salon_name: formData.salonName,
+        experience_years: parseInt(formData.experienceYears),
+        specializations: formData.specializations,
+        address: fullAddress,
+        contact_number: formData.contactNumber,
+        bio: formData.bio,
+        profile_image_url: profileImageUrl,
+        provides_home_service: formData.providesHomeService,
+        provides_salon_service: formData.providesSalonService,
+        application_status: 'pending'
+      }).select();
+
       if (error) {
         console.error("Submission error:", error);
         throw error;
       }
+
+      console.log("Groomer application submitted successfully:", data);
 
       toast({
         title: "Application Submitted!",
