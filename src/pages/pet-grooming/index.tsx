@@ -9,7 +9,6 @@ import { GroomingHeroBanner } from "./components/GroomingHeroBanner";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin } from "lucide-react";
 import type { GroomingPartner, GroomerProfile } from "./types";
 
 export default function PetGrooming() {
@@ -17,7 +16,6 @@ export default function PetGrooming() {
   const { toast } = useToast();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [serviceType, setServiceType] = useState<'salon' | 'home'>('salon');
-  const [showNearby, setShowNearby] = useState(false);
 
   const { data: groomers = [] } = useQuery<GroomerProfile[]>({
     queryKey: ['groomers'],
@@ -41,10 +39,6 @@ export default function PetGrooming() {
       matches = matches && groomer.provides_home_service;
     }
 
-    if (showNearby) {
-      matches = matches && true;
-    }
-
     return matches;
   });
 
@@ -58,7 +52,7 @@ export default function PetGrooming() {
       />
 
       <main className="container mx-auto px-4 py-8">
-        <div className="flex flex-col gap-4 mb-8">
+        <div className="mb-8">
           <div className="grid grid-cols-2 gap-4 items-center">
             <Button
               variant={serviceType === 'salon' ? "default" : "outline"}
@@ -73,16 +67,6 @@ export default function PetGrooming() {
               className="bg-white text-primary hover:bg-white/90 w-full"
             >
               On Demand
-            </Button>
-          </div>
-          <div className="flex justify-end">
-            <Button
-              variant={showNearby ? "default" : "outline"}
-              onClick={() => setShowNearby(!showNearby)}
-              className="bg-white text-primary hover:bg-white/90 px-3 py-1 h-8 text-sm"
-            >
-              <MapPin className="h-3 w-3 mr-1" />
-              Near me
             </Button>
           </div>
         </div>
