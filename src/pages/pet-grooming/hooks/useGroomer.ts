@@ -17,7 +17,12 @@ export function useGroomer(id: string | undefined) {
         .single();
 
       if (error) throw error;
-      return data;
+      
+      // Ensure we have all expected properties with defaults if needed
+      return {
+        ...data,
+        is_available: data.is_available !== false // Ensure this property exists with default true
+      } as GroomerProfile;
     },
     enabled: !!id
   });

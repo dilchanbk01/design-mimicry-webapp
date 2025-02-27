@@ -24,7 +24,7 @@ export default function PetGrooming() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [serviceType, setServiceType] = useState<'salon' | 'home'>('salon');
 
-  const { data: groomers = [], isLoading } = useQuery<GroomerProfile[]>({
+  const { data, isLoading } = useQuery({
     queryKey: ['groomers'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -40,6 +40,9 @@ export default function PetGrooming() {
       return data || [];
     }
   });
+
+  // Ensure data is treated as an array
+  const groomers = Array.isArray(data) ? data : [];
 
   const filteredGroomers = groomers.filter(groomer => {
     let matches = true;

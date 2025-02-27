@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -162,7 +161,6 @@ export default function GroomerDashboard() {
     if (!profile) return;
     
     try {
-      // Use a raw query instead of rpc for the TypeScript error
       const { data, error } = await supabase
         .from('grooming_packages')
         .select('*')
@@ -172,7 +170,6 @@ export default function GroomerDashboard() {
       if (error) throw error;
       
       if (data) {
-        // Convert data to our interface type
         const typedPackages: GroomingPackage[] = data.map((pkg: any) => ({
           id: pkg.id,
           name: pkg.name,
@@ -205,7 +202,6 @@ export default function GroomerDashboard() {
 
       if (error) throw error;
       
-      // Calculate summary from bookings
       const summary = {
         total: data.length,
         completed: data.filter(b => b.status === 'completed').length,
@@ -223,8 +219,6 @@ export default function GroomerDashboard() {
     if (!profile) return;
     
     try {
-      // In a real app, you'd query revenue data based on the timeframe
-      // For this demo, we'll generate mock data
       const mockData: Revenue[] = [];
       const daysToShow = period === 'day' ? 24 : period === 'week' ? 7 : 30;
       
@@ -254,7 +248,6 @@ export default function GroomerDashboard() {
         return;
       }
 
-      // Use regular insert instead of RPC
       const { data, error } = await supabase
         .from('grooming_packages')
         .insert({
@@ -267,7 +260,6 @@ export default function GroomerDashboard() {
 
       if (error) throw error;
       
-      // Refresh the packages list
       fetchPackages();
       
       toast({
@@ -307,7 +299,6 @@ export default function GroomerDashboard() {
 
       if (error) throw error;
       
-      // Refresh the packages list
       fetchPackages();
       
       toast({
@@ -557,7 +548,6 @@ export default function GroomerDashboard() {
             <TabsTrigger value="revenue">Revenue Insights</TabsTrigger>
           </TabsList>
           
-          {/* New Appointments Tab */}
           <TabsContent value="appointments" className="space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">Your Appointments</h2>
@@ -688,7 +678,6 @@ export default function GroomerDashboard() {
         </Tabs>
       </div>
 
-      {/* Add Package Dialog */}
       <Dialog open={showAddPackage} onOpenChange={setShowAddPackage}>
         <DialogContent>
           <DialogHeader>
@@ -734,7 +723,6 @@ export default function GroomerDashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Package Dialog */}
       <Dialog open={showEditPackage} onOpenChange={setShowEditPackage}>
         <DialogContent>
           <DialogHeader>
@@ -781,7 +769,6 @@ export default function GroomerDashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Profile Dialog */}
       <Dialog open={showEditProfile} onOpenChange={setShowEditProfile}>
         <DialogContent className="max-w-md">
           <DialogHeader>

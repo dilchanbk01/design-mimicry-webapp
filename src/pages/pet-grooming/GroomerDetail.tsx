@@ -1,465 +1,318 @@
 
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { useGroomer } from "./hooks/useGroomer";
-import { calculatePriceDetails } from "./utils/pricing";
-import { GroomerHeader } from "./components/GroomerHeader";
-import { GroomerImageBanner } from "./components/GroomerImageBanner";
-import { GroomerTitle } from "./components/GroomerTitle";
-import { GroomerSpecializations } from "./components/GroomerSpecializations";
-import { GroomerServices } from "./components/GroomerServices";
-import { PriceDisplay } from "./components/PriceDisplay";
-import { BookAppointmentButton } from "./components/BookAppointmentButton";
-import { GroomerPackages } from "./components/GroomerPackages";
-import { GroomerBio } from "./components/GroomerBio";
-import { GroomerInfo } from "./components/GroomerInfo";
+import { format, addDays } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
+import { GroomingHeader } from "./components/GroomingHeader";
 import { BookingDialog } from "./components/BookingDialog";
-import { BookingConfirmation } from "./components/BookingConfirmation";
+import { GroomerTitle } from "./components/GroomerTitle";
+import { GroomerBio } from "./components/GroomerBio";
+import { GroomerServices } from "./components/GroomerServices";
+import { GroomerInfo } from "./components/GroomerInfo";
+import { GroomerPackages } from "./components/GroomerPackages";
+import { GroomerSpecializations } from "./components/GroomerSpecializations";
+import { GroomerImageBanner } from "./components/GroomerImageBanner";
 import { ServiceTypeSelection } from "./components/ServiceTypeSelection";
-import type { GroomingPackage, ServiceOption } from "./types/packages";
-
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
-}
+import { PriceDisplay } from "./components/PriceDisplay";
+import { supabase } from "@/integrations/supabase/client";
+import { useGroomer } from "./hooks/useGroomer";
+import type { GroomingPackage } from "./types/packages";
+import type { GroomerProfile } from "./types";
 
 export default function GroomerDetail() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isBookingOpen, setIsBookingOpen] = useState(false);
-  const [bookingDate, setBookingDate] = useState("");
-  const [bookingTime, setBookingTime] = useState("");
-  const [petDetails, setPetDetails] = useState("");
-  const [homeAddress, setHomeAddress] = useState("");
-  const [selectedPackage, setSelectedPackage] = useState<GroomingPackage | null>(null);
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  const [paymentProcessing, setPaymentProcessing] = useState(false);
-  const [serviceOptions, setServiceOptions] = useState<{
-    salon: ServiceOption;
-    home: ServiceOption;
-  }>({
-    salon: { type: 'salon', additionalCost: 0, selected: true },
-    home: { type: 'home', additionalCost: 0, selected: false }
-  });
   
   const { groomer, packages, isLoading } = useGroomer(id);
+  
+  const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(addDays(new Date(), 1));
+  const [selectedTime, setSelectedTime] = useState<string>("");
+  const [selectedServiceType, setSelectedServiceType] = useState<'salon' | 'home'>('salon');
+  const [selectedPackage, setSelectedPackage] = useState<GroomingPackage | null>(null);
+  const [petDetails, setPetDetails] = useState<string>("");
+  const [homeAddress, setHomeAddress] = useState<string>("");
+  const [isBookingConfirmed, setIsBookingConfirmed] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Handle loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <GroomingHeader />
+        <div className="container mx-auto px-4 py-10">
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-lg text-gray-600">Loading groomer details...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Handle case when groomer doesn't exist or is no longer available
+  if (!groomer) {
+    return (
+      <div className="min-h-screen bg-white">
+        <GroomingHeader />
+        <div className="container mx-auto px-4 py-10">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Groomer Not Found</h2>
+            <p className="text-gray-600 mb-6">The groomer you're looking for doesn't exist or is no longer available.</p>
+            <Button onClick={() => navigate("/pet-grooming")}>
+              Back to Pet Grooming
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  useEffect(() => {
-    // Load Razorpay script
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    document.body.appendChild(script);
-
-    return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
-    };
-  }, []);
-
-  // Initialize service options when groomer data is loaded
-  useEffect(() => {
-    if (groomer) {
-      // Get home service cost from groomer profile
-      const homeServiceCost = groomer.home_service_cost || 100; // Default to 100 if not set
-
-      // If groomer doesn't provide salon service but provides home service,
-      // default to home service
-      if (!groomer.provides_salon_service && groomer.provides_home_service) {
-        setServiceOptions({
-          salon: { type: 'salon', additionalCost: 0, selected: false },
-          home: { type: 'home', additionalCost: homeServiceCost, selected: true }
-        });
-      } else {
-        setServiceOptions({
-          salon: { type: 'salon', additionalCost: 0, selected: true },
-          home: { type: 'home', additionalCost: homeServiceCost, selected: false }
-        });
-      }
-    }
-  }, [groomer]);
-
-  const handleSelectServiceType = (type: 'salon' | 'home') => {
-    setServiceOptions({
-      salon: { 
-        ...serviceOptions.salon,
-        selected: type === 'salon'
-      },
-      home: { 
-        ...serviceOptions.home,
-        selected: type === 'home'
-      }
-    });
-
-    // Clear home address if salon is selected
-    if (type === 'salon') {
-      setHomeAddress("");
-    }
+  const handleServiceTypeChange = (type: 'salon' | 'home') => {
+    setSelectedServiceType(type);
+    // Reset the selected package when changing service type
+    setSelectedPackage(null);
   };
 
-  // Function to send confirmation email to the customer
-  const sendConfirmationEmail = async (userEmail: string, bookingDetails: any) => {
-    try {
-      // Call the send_booking_confirmation function which is available in the database
-      const { data, error } = await supabase.rpc('send_booking_confirmation');
-
-      // We still use our Edge Function for the actual email sending
-      await supabase.functions.invoke('send-confirmation-email', {
-        body: {
-          to: userEmail,
-          subject: "Your Grooming Appointment is Confirmed!",
-          htmlContent: "",
-          bookingType: "grooming",
-          bookingDetails: {
-            groomerName: groomer?.salon_name,
-            date: bookingDate,
-            time: bookingTime,
-            serviceName: selectedPackage ? selectedPackage.name : "Standard Grooming",
-            serviceType: serviceOptions.home.selected ? "Home Visit" : "At Salon",
-            address: serviceOptions.home.selected ? homeAddress : groomer?.address,
-            petDetails: petDetails
-          }
-        }
-      });
-
-      if (error) {
-        console.error("Error in booking confirmation process:", error);
-      } else {
-        console.log("Confirmation email process initiated successfully");
-      }
-    } catch (err) {
-      console.error("Exception when sending confirmation email:", err);
-    }
+  const handlePackageSelect = (pkg: GroomingPackage) => {
+    setSelectedPackage(pkg);
   };
 
-  // Function to send notification email to the groomer
-  const sendGroomerNotification = async (userData: any, bookingDetails: any) => {
-    try {
-      // Get groomer email - we'd need a data structure to store this or fetch it from the database
-      const { data: groomerData, error: groomerError } = await supabase
-        .from("groomer_profiles")
-        .select("user_id")
-        .eq("id", groomer?.id)
-        .single();
-
-      if (groomerError || !groomerData) {
-        console.error("Error fetching groomer user ID:", groomerError);
-        return;
-      }
-
-      // Get groomer's email from auth
-      const { data: groomerAuth, error: groomerAuthError } = await supabase.auth
-        .admin.getUserById(groomerData.user_id);
-
-      if (groomerAuthError || !groomerAuth || !groomerAuth.user || !groomerAuth.user.email) {
-        console.error("Error fetching groomer email:", groomerAuthError);
-        return;
-      }
-
-      const groomerEmail = groomerAuth.user.email;
-
-      // Send notification to groomer using edge function
-      await supabase.functions.invoke('send-groomer-notification', {
-        body: {
-          groomerEmail: groomerEmail,
-          groomerName: groomer?.salon_name || "Groomer",
-          customerName: userData.name || "Customer",
-          customerEmail: userData.email || "",
-          customerPhone: userData.phone || null,
-          date: bookingDate,
-          time: bookingTime,
-          serviceName: selectedPackage ? selectedPackage.name : "Standard Grooming",
-          serviceType: serviceOptions.home.selected ? "Home Visit" : "At Salon",
-          address: serviceOptions.home.selected ? homeAddress : groomer?.address || "",
-          petDetails: petDetails
-        }
-      });
-
-      console.log("Groomer notification sent successfully");
-    } catch (err) {
-      console.error("Exception when sending groomer notification:", err);
+  const handleBookingDialogOpen = () => {
+    // Set default package if none selected
+    if (!selectedPackage && packages.length > 0) {
+      setSelectedPackage(packages[0]);
     }
+    setIsBookingOpen(true);
   };
 
-  const handleBookingSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const calculateTotalPrice = () => {
+    if (!selectedPackage) return 0;
     
-    const { data: { user } } = await supabase.auth.getUser();
+    let totalPrice = selectedPackage.price;
     
-    if (!user) {
-      localStorage.setItem('redirectAfterAuth', location.pathname);
+    // Add home service cost if home service is selected
+    if (selectedServiceType === 'home' && groomer.home_service_cost) {
+      totalPrice += groomer.home_service_cost;
+    }
+    
+    return totalPrice;
+  };
+
+  const handleBookingConfirm = async () => {
+    if (!selectedPackage || !selectedDate || !selectedTime) {
       toast({
-        title: "Authentication Required",
-        description: "Please sign in to book this appointment.",
+        title: "Incomplete information",
+        description: "Please select a package, date, and time.",
+        variant: "destructive",
       });
-      navigate("/auth");
       return;
     }
 
-    if (!groomer) return;
-
-    // Validate home address for home service
-    if (serviceOptions.home.selected && !homeAddress.trim()) {
+    if (selectedServiceType === 'home' && !homeAddress) {
       toast({
         title: "Address Required",
-        description: "Please provide your address for the home service.",
+        description: "Please provide your home address for home service.",
         variant: "destructive",
       });
       return;
     }
 
-    setPaymentProcessing(true);
-
     try {
-      // Check if Razorpay is loaded
-      if (typeof window.Razorpay === 'undefined') {
-        throw new Error("Razorpay SDK failed to load");
+      setIsProcessing(true);
+
+      // Check if user is logged in
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to book a grooming appointment.",
+          variant: "destructive",
+        });
+        navigate("/auth");
+        return;
       }
 
-      // Use selected package price or default groomer price
-      const basePrice = selectedPackage ? selectedPackage.price : groomer.price;
-      
-      // Add additional cost for home service if selected
-      const additionalCost = serviceOptions.home.selected ? serviceOptions.home.additionalCost : 0;
-      
-      // Calculate total price with GST
-      const { totalAmount } = calculatePriceDetails(basePrice, additionalCost);
-      
-      // Convert to paise for Razorpay
-      const priceInPaise = totalAmount * 100;
-
-      // Get user profile data for notification
-      const { data: userData, error: userError } = await supabase
-        .from("profiles")
-        .select("full_name, phone_number")
-        .eq("id", user.id)
+      // Create a booking
+      const { data, error } = await supabase
+        .from('grooming_bookings')
+        .insert({
+          groomer_id: groomer.id,
+          user_id: user.id,
+          date: format(selectedDate, 'yyyy-MM-dd'),
+          time: selectedTime,
+          package_id: selectedPackage.id,
+          pet_details: petDetails,
+          service_type: selectedServiceType,
+          home_address: selectedServiceType === 'home' ? homeAddress : null,
+          additional_cost: selectedServiceType === 'home' ? groomer.home_service_cost : 0,
+          status: 'confirmed',
+          payment_id: `PAYMENT-${Math.random().toString(36).substring(2, 10).toUpperCase()}` // Simulate payment ID
+        })
+        .select()
         .single();
 
-      if (userError) {
-        console.error("Error fetching user profile:", userError);
-      }
+      if (error) throw error;
 
-      const options = {
-        key: "rzp_test_5wYJG4Y7jeVhsz", 
-        amount: priceInPaise,
-        currency: "INR",
-        name: "Petsu",
-        description: `Grooming appointment with ${groomer.salon_name}${selectedPackage ? ` - ${selectedPackage.name}` : ''}`,
-        image: "/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png",
-        handler: async function (response: any) {
-          try {
-            const booking = {
-              groomer_id: groomer.id,
-              user_id: user.id,
-              date: bookingDate,
-              time: bookingTime,
-              pet_details: petDetails,
-              payment_id: response.razorpay_payment_id,
-              status: 'confirmed',
-              service_type: serviceOptions.home.selected ? 'home' : 'salon',
-              package_id: selectedPackage?.id || null,
-              home_address: serviceOptions.home.selected ? homeAddress : null,
-              additional_cost: serviceOptions.home.selected ? serviceOptions.home.additionalCost : 0
-            };
-
-            const { error } = await supabase
-              .from("grooming_bookings")
-              .insert(booking);
-
-            if (error) throw error;
-
-            // Send confirmation email to customer
-            if (user.email) {
-              await sendConfirmationEmail(user.email, {
-                groomerName: groomer.salon_name,
-                date: bookingDate,
-                time: bookingTime,
-                serviceName: selectedPackage ? selectedPackage.name : "Standard Grooming",
-                serviceType: serviceOptions.home.selected ? "Home Visit" : "At Salon"
-              });
-            }
-
-            // Send notification to groomer
-            await sendGroomerNotification({
-              email: user.email,
-              name: userData?.full_name || user.email,
-              phone: userData?.phone_number
-            }, {
-              groomerName: groomer.salon_name,
-              date: bookingDate,
-              time: bookingTime,
-              serviceName: selectedPackage ? selectedPackage.name : "Standard Grooming",
-              serviceType: serviceOptions.home.selected ? "Home Visit" : "At Salon"
-            });
-
-            // Show success animation
-            setShowConfirmation(true);
-            
-            // Hide dialog and reset form
-            setIsBookingOpen(false);
-            
-            // Hide confirmation after 3 seconds
-            setTimeout(() => {
-              setShowConfirmation(false);
-              setBookingDate("");
-              setBookingTime("");
-              setPetDetails("");
-              setHomeAddress("");
-              setSelectedPackage(null);
-              
-              toast({
-                title: "Booking Confirmed!",
-                description: `Your grooming appointment has been booked with ${groomer.salon_name}`,
-              });
-            }, 3000);
-          } catch (error) {
-            console.error('Error saving booking:', error);
-            toast({
-              title: "Booking Failed",
-              description: "Unable to complete your booking. Please try again.",
-              variant: "destructive",
-            });
-          } finally {
-            setPaymentProcessing(false);
-          }
-        },
-        prefill: {
-          email: user.email,
-        },
-        theme: {
-          color: "#00C853",
-        },
-        modal: {
-          ondismiss: function() {
-            setPaymentProcessing(false);
-          }
-        }
-      };
-
-      const paymentObject = new window.Razorpay(options);
-      paymentObject.open();
-    } catch (error) {
-      console.error('Razorpay error:', error);
+      setIsBookingConfirmed(true);
       toast({
-        title: "Payment Error",
-        description: "Unable to initialize payment. Please try again later.",
+        title: "Booking Confirmed!",
+        description: `Your grooming appointment with ${groomer.salon_name} has been booked.`,
+      });
+    } catch (error) {
+      console.error("Booking error:", error);
+      toast({
+        title: "Booking Failed",
+        description: "There was an error processing your booking. Please try again.",
         variant: "destructive",
       });
-      setPaymentProcessing(false);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  // Calculate price with home service additional cost if applicable
-  const selectedPrice = selectedPackage ? selectedPackage.price : groomer?.price || 0;
-  const additionalCost = serviceOptions.home.selected ? serviceOptions.home.additionalCost : 0;
-  const priceDetails = calculatePriceDetails(selectedPrice, additionalCost);
-
-  if (isLoading || !groomer) return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4">
-      <div className="animate-pulse flex flex-col items-center">
-        <div className="h-32 w-32 bg-gray-200 rounded-full mb-4"></div>
-        <div className="h-6 w-40 bg-gray-200 rounded mb-4"></div>
-        <div className="h-4 w-60 bg-gray-200 rounded"></div>
-      </div>
-    </div>
-  );
-
-  const defaultImage = 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?w=800&auto=format&fit=crop&q=60';
+  const resetBookingForm = () => {
+    setSelectedDate(addDays(new Date(), 1));
+    setSelectedTime("");
+    setSelectedPackage(null);
+    setPetDetails("");
+    setHomeAddress("");
+    setIsBookingConfirmed(false);
+    setIsBookingOpen(false);
+  };
 
   return (
     <div className="min-h-screen bg-white">
-      <GroomerHeader />
+      <GroomingHeader />
+      
       <GroomerImageBanner 
         imageUrl={groomer.profile_image_url} 
         altText={groomer.salon_name} 
       />
+      
+      <div className="container mx-auto px-4 py-6">
+        <div className="mb-4">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/pet-grooming')}
+            className="mb-4"
+          >
+            &larr; Back to Groomers
+          </Button>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <GroomerTitle name={groomer.salon_name} />
+            
+            <div className="mt-4">
+              <GroomerSpecializations specializations={groomer.specializations} />
+            </div>
+            
+            <div className="mt-6">
+              <GroomerServices 
+                providesSalonService={groomer.provides_salon_service} 
+                providesHomeService={groomer.provides_home_service} 
+              />
+            </div>
+            
+            {(groomer.provides_salon_service || groomer.provides_home_service) && (
+              <div className="mt-8 bg-gray-50 p-6 rounded-lg">
+                <h2 className="text-lg font-semibold mb-4 text-green-800">Book an Appointment</h2>
+                
+                {/* Service Type Selection */}
+                {groomer.provides_salon_service && groomer.provides_home_service && (
+                  <div className="mb-6">
+                    <ServiceTypeSelection
+                      selectedType={selectedServiceType}
+                      onChange={handleServiceTypeChange}
+                    />
+                  </div>
+                )}
 
-      <div className="px-4 py-6">
-        <GroomerTitle title={groomer.salon_name} />
+                {/* Display base price + any additional cost for home service */}
+                <div className="mb-6">
+                  <PriceDisplay 
+                    basePrice={groomer.price} 
+                    homeServiceCost={groomer.home_service_cost} 
+                    serviceType={selectedServiceType}
+                  />
+                </div>
 
-        <div className="space-y-6 bg-white rounded-xl p-4 shadow-sm">
-          <GroomerSpecializations specializations={groomer.specializations} />
-          <GroomerServices 
-            providesSalonService={groomer.provides_salon_service} 
-            providesHomeService={groomer.provides_home_service} 
-          />
+                <Button 
+                  size="lg" 
+                  className="w-full"
+                  onClick={handleBookingDialogOpen}
+                >
+                  Book Now
+                </Button>
+              </div>
+            )}
+            
+            <div className="mt-8">
+              <GroomerBio bio={groomer.bio} />
+            </div>
+            
+            <div className="mt-8">
+              <GroomerInfo 
+                experienceYears={groomer.experience_years} 
+                address={groomer.address} 
+              />
+            </div>
+          </div>
           
-          {/* Booking Section */}
-          <div className="flex flex-col items-center">
-            <PriceDisplay priceDetails={priceDetails} />
-            <BookAppointmentButton 
-              onClick={() => setIsBookingOpen(true)} 
-              isProcessing={paymentProcessing} 
+          <div className="lg:col-span-1">
+            <GroomerPackages 
+              packages={packages} 
+              selectedPackage={selectedPackage}
+              onSelectPackage={handlePackageSelect}
             />
           </div>
-
-          {/* Service Type Selection */}
-          <ServiceTypeSelection
-            groomerProvidesSalon={groomer.provides_salon_service}
-            groomerProvidesHome={groomer.provides_home_service}
-            serviceOptions={serviceOptions}
-            onSelectServiceType={handleSelectServiceType}
-            homeAddress={homeAddress}
-            onHomeAddressChange={setHomeAddress}
-            isProcessing={paymentProcessing}
-          />
-
-          <GroomerPackages 
-            packages={packages} 
-            selectedPackage={selectedPackage} 
-            onSelectPackage={setSelectedPackage} 
-            groomerPrice={groomer.price}
-            isProcessing={paymentProcessing}
-          />
-
-          <GroomerBio bio={groomer.bio} />
-          <GroomerInfo 
-            experienceYears={groomer.experience_years} 
-            address={groomer.address} 
-          />
         </div>
       </div>
-
-      <BookingDialog
-        open={isBookingOpen}
-        onOpenChange={setIsBookingOpen}
-        selectedPartner={{
+      
+      {/* Booking Dialog */}
+      <BookingDialog 
+        isOpen={isBookingOpen}
+        onClose={() => setIsBookingOpen(false)}
+        groomer={{
           id: groomer.id,
           name: groomer.salon_name,
-          rating: 4.5,
-          location: groomer.address,
-          experience: `${groomer.experience_years}+ years experience`,
-          price: selectedPackage 
-            ? `₹${selectedPackage.price} - ${selectedPackage.name}` 
-            : `₹${groomer.price} - Standard Grooming`,
-          image: groomer.profile_image_url || defaultImage,
+          address: groomer.address,
+          experienceYears: groomer.experience_years,
+          specializations: groomer.specializations,
+          price: groomer.price,
+          profileImageUrl: groomer.profile_image_url,
           providesHomeService: groomer.provides_home_service,
           providesSalonService: groomer.provides_salon_service
         }}
-        bookingDate={bookingDate}
-        bookingTime={bookingTime}
+        packages={packages}
+        selectedDate={selectedDate}
+        selectedTime={selectedTime}
+        selectedPackage={selectedPackage}
+        selectedServiceType={selectedServiceType}
         petDetails={petDetails}
         homeAddress={homeAddress}
-        isHomeService={serviceOptions.home.selected}
-        priceDetails={priceDetails}
-        onDateChange={setBookingDate}
-        onTimeChange={setBookingTime}
+        isBookingConfirmed={isBookingConfirmed}
+        totalPrice={calculateTotalPrice()}
+        isProcessing={isProcessing}
+        
+        onDateChange={setSelectedDate}
+        onTimeChange={setTimeChange}
+        onPackageChange={setSelectedPackage}
+        onServiceTypeChange={handleServiceTypeChange}
         onPetDetailsChange={setPetDetails}
         onHomeAddressChange={setHomeAddress}
-        onSubmit={handleBookingSubmit}
-      />
-
-      <BookingConfirmation 
-        show={showConfirmation}
-        groomerName={groomer.salon_name}
-        bookingDate={bookingDate}
-        bookingTime={bookingTime}
+        onConfirm={handleBookingConfirm}
+        onClose={resetBookingForm}
       />
     </div>
   );
+
+  function setTimeChange(time: string) {
+    setSelectedTime(time);
+  }
 }

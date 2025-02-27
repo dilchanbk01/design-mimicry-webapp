@@ -219,6 +219,7 @@ export type Database = {
           experience_years: number
           home_service_cost: number | null
           id: string
+          is_available: boolean | null
           price: number | null
           profile_image_url: string | null
           provides_home_service: boolean | null
@@ -240,6 +241,7 @@ export type Database = {
           experience_years: number
           home_service_cost?: number | null
           id?: string
+          is_available?: boolean | null
           price?: number | null
           profile_image_url?: string | null
           provides_home_service?: boolean | null
@@ -261,6 +263,7 @@ export type Database = {
           experience_years?: number
           home_service_cost?: number | null
           id?: string
+          is_available?: boolean | null
           price?: number | null
           profile_image_url?: string | null
           provides_home_service?: boolean | null
