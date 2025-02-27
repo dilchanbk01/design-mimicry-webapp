@@ -271,8 +271,6 @@ export default function GroomerDetail() {
                     <ServiceTypeSelection
                       selectedType={selectedServiceType}
                       onChange={handleServiceTypeChange}
-                      homeAddress={homeAddress}
-                      onHomeAddressChange={setHomeAddress}
                       isProcessing={isProcessing}
                       groomerProvidesSalon={groomer.provides_salon_service}
                       groomerProvidesHome={groomer.provides_home_service}

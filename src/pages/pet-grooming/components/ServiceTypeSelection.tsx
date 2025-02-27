@@ -3,15 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Home, Store, Info } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import type { ServiceOption } from "../types/packages";
 
 interface ServiceTypeSelectionProps {
   selectedType: 'salon' | 'home';
   onChange: (type: 'salon' | 'home') => void;
-  homeAddress?: string;
-  onHomeAddressChange?: (address: string) => void;
   isProcessing?: boolean;
   groomerProvidesSalon?: boolean; 
   groomerProvidesHome?: boolean;
@@ -24,8 +21,6 @@ interface ServiceTypeSelectionProps {
 export function ServiceTypeSelection({
   selectedType,
   onChange,
-  homeAddress = '',
-  onHomeAddressChange = () => {},
   isProcessing = false,
   groomerProvidesSalon = true,
   groomerProvidesHome = true,
@@ -47,7 +42,8 @@ export function ServiceTypeSelection({
       <div className="space-y-3">
         {groomerProvidesSalon && (
           <Card 
-            className={`border rounded-xl ${options.salon.selected ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}
+            className={`border rounded-xl cursor-pointer ${options.salon.selected ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}
+            onClick={() => !isProcessing && onChange('salon')}
           >
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
@@ -75,7 +71,10 @@ export function ServiceTypeSelection({
                   variant={options.salon.selected ? "default" : "outline"} 
                   size="sm"
                   className={options.salon.selected ? "bg-green-600 hover:bg-green-700" : "border-green-500 text-green-600 hover:bg-green-50"}
-                  onClick={() => onChange('salon')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!isProcessing) onChange('salon');
+                  }}
                   disabled={isProcessing}
                 >
                   {options.salon.selected ? "Selected" : "Select"}
@@ -87,7 +86,8 @@ export function ServiceTypeSelection({
 
         {groomerProvidesHome && (
           <Card 
-            className={`border rounded-xl ${options.home.selected ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}
+            className={`border rounded-xl cursor-pointer ${options.home.selected ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}
+            onClick={() => !isProcessing && onChange('home')}
           >
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
@@ -127,27 +127,15 @@ export function ServiceTypeSelection({
                   variant={options.home.selected ? "default" : "outline"} 
                   size="sm"
                   className={options.home.selected ? "bg-green-600 hover:bg-green-700" : "border-green-500 text-green-600 hover:bg-green-50"}
-                  onClick={() => onChange('home')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!isProcessing) onChange('home');
+                  }}
                   disabled={isProcessing}
                 >
                   {options.home.selected ? "Selected" : "Select"}
                 </Button>
               </div>
-
-              {options.home.selected && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <Label htmlFor="homeAddress" className="text-sm font-medium text-gray-700">Your Address</Label>
-                  <Textarea
-                    id="homeAddress"
-                    placeholder="Enter your complete address for the home service"
-                    value={homeAddress}
-                    onChange={(e) => onHomeAddressChange(e.target.value)}
-                    className="mt-1"
-                    disabled={isProcessing}
-                    required
-                  />
-                </div>
-              )}
             </CardContent>
           </Card>
         )}

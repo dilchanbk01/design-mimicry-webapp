@@ -42,7 +42,7 @@ export function GroomerCard({ partner, onViewDetails }: GroomerCardProps) {
             </div>
           )}
           {partner.providesHomeService && (
-            <div className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full flex items-center">
+            <div className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full flex items-center">
               <Home className="w-3 h-3 mr-1" />
               Home Visit
             </div>
@@ -56,7 +56,7 @@ export function GroomerCard({ partner, onViewDetails }: GroomerCardProps) {
           </div>
           <Button 
             onClick={onViewDetails} 
-            className="bg-[#8B5CF6] hover:bg-[#7E69AB] text-white px-6 py-5 text-base"
+            className="bg-[#00D26A] hover:bg-[#00B05A] text-white px-6 py-6 text-base"
           >
             View Details
           </Button>
