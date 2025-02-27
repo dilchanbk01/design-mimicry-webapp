@@ -28,7 +28,16 @@ export function Card({ title, icon, className, titleClassName, onClick }: CardPr
         {title}
       </h3>
       <div className="flex-1 flex items-center justify-center w-full pt-6">
-        <img src={icon} alt={title} className="w-32 h-32 object-contain" />
+        <img 
+          src={icon} 
+          alt={title} 
+          className="w-32 h-32 object-contain"
+          loading="lazy"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = '/placeholder.svg';
+          }}
+        />
       </div>
     </button>
   );
