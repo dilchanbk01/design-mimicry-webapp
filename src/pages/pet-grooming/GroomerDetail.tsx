@@ -101,6 +101,43 @@ export default function GroomerDetail() {
     return totalPrice;
   };
 
+  // Function to send confirmation email
+  const sendConfirmationEmail = async (userEmail: string) => {
+    if (!groomer) return;
+    
+    try {
+      const totalPrice = calculateTotalPrice();
+      const serviceName = selectedPackage ? selectedPackage.name : 'Standard Grooming';
+      
+      const response = await supabase.functions.invoke('send-confirmation-email', {
+        body: {
+          to: userEmail,
+          subject: `Your Grooming Appointment with ${groomer.salon_name} is Confirmed`,
+          bookingType: "grooming",
+          bookingDetails: {
+            groomerName: groomer.salon_name,
+            date: format(selectedDate, 'yyyy-MM-dd'),
+            time: selectedTime,
+            serviceName: serviceName,
+            serviceType: selectedServiceType,
+            address: selectedServiceType === 'home' ? homeAddress : groomer.address,
+            price: totalPrice
+          }
+        }
+      });
+
+      console.log("Email confirmation response:", response);
+    } catch (err) {
+      console.error("Error sending confirmation email:", err);
+      // We don't want to interrupt the booking flow if email fails
+      toast({
+        title: "Email Notification",
+        description: "We couldn't send you a confirmation email, but your booking is confirmed.",
+        variant: "default",
+      });
+    }
+  };
+
   const handleBookingConfirm = async () => {
     if (!selectedDate || !selectedTime) {
       toast({
@@ -156,6 +193,11 @@ export default function GroomerDetail() {
         .single();
 
       if (error) throw error;
+
+      // Send confirmation email if user has an email
+      if (user.email) {
+        await sendConfirmationEmail(user.email);
+      }
 
       setIsBookingConfirmed(true);
       toast({
