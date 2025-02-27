@@ -1,11 +1,12 @@
 
-export function calculatePriceDetails(basePrice: number) {
+export function calculatePriceDetails(basePrice: number, additionalCosts: number = 0) {
+  const totalBasePrice = basePrice + additionalCosts;
   const gstRate = 0.18; // 18% GST
-  const gstAmount = basePrice * gstRate;
-  const totalAmount = basePrice + gstAmount;
+  const gstAmount = totalBasePrice * gstRate;
+  const totalAmount = totalBasePrice + gstAmount;
   
   return {
-    basePrice,
+    basePrice: totalBasePrice,
     gstAmount,
     totalAmount
   };

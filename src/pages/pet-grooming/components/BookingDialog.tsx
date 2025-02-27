@@ -25,9 +25,17 @@ interface BookingDialogProps {
   bookingDate: string;
   bookingTime: string;
   petDetails: string;
+  homeAddress: string;
+  isHomeService: boolean;
+  priceDetails: {
+    basePrice: number;
+    gstAmount: number;
+    totalAmount: number;
+  };
   onDateChange: (date: string) => void;
   onTimeChange: (time: string) => void;
   onPetDetailsChange: (details: string) => void;
+  onHomeAddressChange: (address: string) => void;
   onSubmit: (e: React.FormEvent) => void;
 }
 
@@ -38,30 +46,15 @@ export function BookingDialog({
   bookingDate,
   bookingTime,
   petDetails,
+  homeAddress,
+  isHomeService,
+  priceDetails,
   onDateChange,
   onTimeChange,
   onPetDetailsChange,
+  onHomeAddressChange,
   onSubmit,
 }: BookingDialogProps) {
-  // Calculate GST and total amount
-  const calculatePriceDetails = () => {
-    if (!selectedPartner) return { basePrice: 0, gstAmount: 0, totalAmount: 0 };
-    
-    const priceString = selectedPartner.price.split(' ')[0].replace('₹', '');
-    const basePrice = parseInt(priceString, 10);
-    const gstRate = 0.18; // 18% GST
-    const gstAmount = basePrice * gstRate;
-    const totalAmount = basePrice + gstAmount;
-    
-    return {
-      basePrice,
-      gstAmount,
-      totalAmount
-    };
-  };
-
-  const priceDetails = calculatePriceDetails();
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -137,6 +130,20 @@ export function BookingDialog({
               required
             />
           </div>
+
+          {isHomeService && (
+            <div className="space-y-2">
+              <Label htmlFor="homeAddress">Your Address</Label>
+              <Textarea
+                id="homeAddress"
+                placeholder="Enter your complete address for the home service"
+                value={homeAddress}
+                onChange={(e) => onHomeAddressChange(e.target.value)}
+                required
+              />
+            </div>
+          )}
+
           <Button type="submit" className="w-full bg-[#9b87f5] hover:bg-[#7E69AB]">
             Confirm Booking (₹{priceDetails.totalAmount.toFixed(0)})
           </Button>

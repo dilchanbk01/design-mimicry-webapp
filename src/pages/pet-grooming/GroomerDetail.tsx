@@ -17,7 +17,11 @@ import { GroomerBio } from "./components/GroomerBio";
 import { GroomerInfo } from "./components/GroomerInfo";
 import { BookingDialog } from "./components/BookingDialog";
 import { BookingConfirmation } from "./components/BookingConfirmation";
-import type { GroomingPackage } from "./types/packages";
+import { ServiceTypeSelection } from "./components/ServiceTypeSelection";
+import type { GroomingPackage, ServiceOption } from "./types/packages";
+
+// Define the additional cost for home service - this could be fetched from the groomer profile in the future
+const HOME_SERVICE_ADDITIONAL_COST = 100; // Example: ₹100 additional for home service
 
 declare global {
   interface Window {
@@ -33,9 +37,17 @@ export default function GroomerDetail() {
   const [bookingDate, setBookingDate] = useState("");
   const [bookingTime, setBookingTime] = useState("");
   const [petDetails, setPetDetails] = useState("");
+  const [homeAddress, setHomeAddress] = useState("");
   const [selectedPackage, setSelectedPackage] = useState<GroomingPackage | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [serviceOptions, setServiceOptions] = useState<{
+    salon: ServiceOption;
+    home: ServiceOption;
+  }>({
+    salon: { type: 'salon', additionalCost: 0, selected: true },
+    home: { type: 'home', additionalCost: HOME_SERVICE_ADDITIONAL_COST, selected: false }
+  });
   
   const { groomer, packages, isLoading } = useGroomer(id);
 
@@ -52,6 +64,43 @@ export default function GroomerDetail() {
       }
     };
   }, []);
+
+  // Initialize service options when groomer data is loaded
+  useEffect(() => {
+    if (groomer) {
+      // If groomer doesn't provide salon service but provides home service,
+      // default to home service
+      if (!groomer.provides_salon_service && groomer.provides_home_service) {
+        setServiceOptions({
+          salon: { type: 'salon', additionalCost: 0, selected: false },
+          home: { type: 'home', additionalCost: HOME_SERVICE_ADDITIONAL_COST, selected: true }
+        });
+      } else {
+        setServiceOptions({
+          salon: { type: 'salon', additionalCost: 0, selected: true },
+          home: { type: 'home', additionalCost: HOME_SERVICE_ADDITIONAL_COST, selected: false }
+        });
+      }
+    }
+  }, [groomer]);
+
+  const handleSelectServiceType = (type: 'salon' | 'home') => {
+    setServiceOptions({
+      salon: { 
+        ...serviceOptions.salon,
+        selected: type === 'salon'
+      },
+      home: { 
+        ...serviceOptions.home,
+        selected: type === 'home'
+      }
+    });
+
+    // Clear home address if salon is selected
+    if (type === 'salon') {
+      setHomeAddress("");
+    }
+  };
 
   // Function to send confirmation email
   const sendConfirmationEmail = async (userEmail: string, bookingDetails: any) => {
@@ -71,6 +120,8 @@ export default function GroomerDetail() {
             date: bookingDate,
             time: bookingTime,
             serviceName: selectedPackage ? selectedPackage.name : "Standard Grooming",
+            serviceType: serviceOptions.home.selected ? "Home Visit" : "At Salon",
+            address: serviceOptions.home.selected ? homeAddress : groomer?.address,
             petDetails: petDetails
           }
         }
@@ -103,6 +154,16 @@ export default function GroomerDetail() {
 
     if (!groomer) return;
 
+    // Validate home address for home service
+    if (serviceOptions.home.selected && !homeAddress.trim()) {
+      toast({
+        title: "Address Required",
+        description: "Please provide your address for the home service.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setPaymentProcessing(true);
 
     try {
@@ -112,10 +173,16 @@ export default function GroomerDetail() {
       }
 
       // Use selected package price or default groomer price
-      const priceToCharge = selectedPackage ? selectedPackage.price : groomer.price;
+      const basePrice = selectedPackage ? selectedPackage.price : groomer.price;
       
-      // Extract numeric price value and convert to paise for Razorpay
-      const priceInPaise = priceToCharge * 100;
+      // Add additional cost for home service if selected
+      const additionalCost = serviceOptions.home.selected ? serviceOptions.home.additionalCost : 0;
+      
+      // Calculate total price with GST
+      const { totalAmount } = calculatePriceDetails(basePrice, additionalCost);
+      
+      // Convert to paise for Razorpay
+      const priceInPaise = totalAmount * 100;
 
       const options = {
         key: "rzp_test_5wYJG4Y7jeVhsz", 
@@ -134,8 +201,10 @@ export default function GroomerDetail() {
               pet_details: petDetails,
               payment_id: response.razorpay_payment_id,
               status: 'confirmed',
-              service_type: groomer.provides_home_service ? 'home' : 'salon',
-              package_id: selectedPackage?.id || null
+              service_type: serviceOptions.home.selected ? 'home' : 'salon',
+              package_id: selectedPackage?.id || null,
+              home_address: serviceOptions.home.selected ? homeAddress : null,
+              additional_cost: additionalCost
             };
 
             const { error } = await supabase
@@ -150,7 +219,8 @@ export default function GroomerDetail() {
                 groomerName: groomer.salon_name,
                 date: bookingDate,
                 time: bookingTime,
-                serviceName: selectedPackage ? selectedPackage.name : "Standard Grooming"
+                serviceName: selectedPackage ? selectedPackage.name : "Standard Grooming",
+                serviceType: serviceOptions.home.selected ? "Home Visit" : "At Salon"
               });
             }
 
@@ -166,6 +236,7 @@ export default function GroomerDetail() {
               setBookingDate("");
               setBookingTime("");
               setPetDetails("");
+              setHomeAddress("");
               setSelectedPackage(null);
               
               toast({
@@ -210,8 +281,10 @@ export default function GroomerDetail() {
     }
   };
 
+  // Calculate price with home service additional cost if applicable
   const selectedPrice = selectedPackage ? selectedPackage.price : groomer?.price || 0;
-  const priceDetails = calculatePriceDetails(selectedPrice);
+  const additionalCost = serviceOptions.home.selected ? serviceOptions.home.additionalCost : 0;
+  const priceDetails = calculatePriceDetails(selectedPrice, additionalCost);
 
   if (isLoading || !groomer) return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
@@ -252,6 +325,17 @@ export default function GroomerDetail() {
             />
           </div>
 
+          {/* Service Type Selection */}
+          <ServiceTypeSelection
+            groomerProvidesSalon={groomer.provides_salon_service}
+            groomerProvidesHome={groomer.provides_home_service}
+            serviceOptions={serviceOptions}
+            onSelectServiceType={handleSelectServiceType}
+            homeAddress={homeAddress}
+            onHomeAddressChange={setHomeAddress}
+            isProcessing={paymentProcessing}
+          />
+
           <GroomerPackages 
             packages={packages} 
             selectedPackage={selectedPackage} 
@@ -287,9 +371,13 @@ export default function GroomerDetail() {
         bookingDate={bookingDate}
         bookingTime={bookingTime}
         petDetails={petDetails}
+        homeAddress={homeAddress}
+        isHomeService={serviceOptions.home.selected}
+        priceDetails={priceDetails}
         onDateChange={setBookingDate}
         onTimeChange={setBookingTime}
         onPetDetailsChange={setPetDetails}
+        onHomeAddressChange={setHomeAddress}
         onSubmit={handleBookingSubmit}
       />
 

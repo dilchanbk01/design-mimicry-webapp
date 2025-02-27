@@ -7,3 +7,9 @@ export interface GroomingPackage {
   groomer_id: string;
   created_at: string;
 }
+
+export interface ServiceOption {
+  type: 'salon' | 'home';
+  additionalCost: number;
+  selected: boolean;
+}
