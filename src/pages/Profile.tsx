@@ -10,6 +10,7 @@ import { TicketsSection } from "@/components/profile/TicketsSection";
 import { EventsSection } from "@/components/profile/EventsSection";
 import { HelpSupportSection } from "@/components/profile/HelpSupportSection";
 import { AboutSection } from "@/components/profile/AboutSection";
+import { GroomingBookingsSection } from "@/components/profile/GroomingBookingsSection";
 
 interface UserProfile {
   email: string;
@@ -71,7 +72,7 @@ export default function Profile() {
       case "events":
         return <EventsSection />;
       case "grooming":
-        return <div>Placeholder for Grooming Bookings</div>;
+        return <GroomingBookingsSection />;
       case "help":
         return <HelpSupportSection />;
       case "about":
