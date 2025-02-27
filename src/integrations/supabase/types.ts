@@ -556,6 +556,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      send_booking_confirmation: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
