@@ -261,42 +261,47 @@ export default function GroomerDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header with transparent background and larger logo */}
-      <div className="bg-transparent absolute top-0 left-0 right-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-3">
+      {/* Transparent header with back button, logo, and profile icon */}
+      <header className="absolute top-0 left-0 right-0 bg-transparent z-50">
+        <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <button 
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-white/20"
               onClick={() => navigate(-1)}
-              className="p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white"
             >
               <ArrowLeft className="h-5 w-5" />
-            </button>
-            
-            <div className="flex items-center">
-              <img 
-                src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
-                alt="Petsu" 
-                className="h-12 md:h-16"
-              />
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <button 
+            </Button>
+
+            <img 
+              src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
+              alt="Petsu"
+              className="h-8 sm:h-10 cursor-pointer"
+              onClick={() => navigate('/')}
+            />
+
+            <div className="flex items-center gap-2 sm:gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white hover:bg-white/20"
                 onClick={handleShareGroomer}
-                className="p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white"
               >
                 <Share2 className="h-5 w-5" />
-              </button>
-              <button 
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white hover:bg-white/20"
                 onClick={() => navigate('/profile')}
-                className="p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white"
               >
                 <User className="h-5 w-5" />
-              </button>
+              </Button>
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
       <div className="px-4 py-6 md:py-8 max-w-full mx-auto mt-16">
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden max-w-4xl mx-auto">
