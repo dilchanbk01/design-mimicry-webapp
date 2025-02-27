@@ -275,6 +275,35 @@ export type Database = {
         }
         Relationships: []
       }
+      groomer_time_slots: {
+        Row: {
+          created_at: string | null
+          date: string
+          groomer_id: string
+          times: string[]
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          groomer_id: string
+          times?: string[]
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          groomer_id?: string
+          times?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "groomer_time_slots_groomer_id_fkey"
+            columns: ["groomer_id"]
+            isOneToOne: false
+            referencedRelation: "groomer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       grooming_bookings: {
         Row: {
           additional_cost: number | null

@@ -56,17 +56,23 @@ export default function GroomerBooking() {
   const fetchAvailableTimeSlots = async () => {
     try {
       setIsLoadingTimeSlots(true);
+      // Fix the type error by explicitly providing the response type
       const { data, error } = await supabase
         .from('groomer_time_slots')
         .select('*')
-        .eq('groomer_id', id);
+        .eq('groomer_id', id || '');
 
       if (error) {
         console.error("Error fetching available time slots:", error);
         // If there's an error, fall back to default time slots
         setAvailableTimes(generateTimeSlots());
       } else if (data && data.length > 0) {
-        setAvailableTimeSlots(data);
+        // Cast the data to the correct TimeSlot type
+        const timeSlots: TimeSlot[] = data.map(slot => ({
+          date: slot.date,
+          times: slot.times
+        }));
+        setAvailableTimeSlots(timeSlots);
         // Initialize available times based on the selected date
         updateAvailableTimes(selectedDate);
       } else {

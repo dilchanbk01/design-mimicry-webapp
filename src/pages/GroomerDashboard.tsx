@@ -68,9 +68,11 @@ interface Revenue {
   amount: number;
 }
 
-interface AvailableSlot {
+interface TimeSlot {
+  groomer_id: string;
   date: string;
   times: string[];
+  created_at?: string;
 }
 
 export default function GroomerDashboard() {
@@ -113,7 +115,7 @@ export default function GroomerDashboard() {
     newPassword: '',
     confirmPassword: ''
   });
-  const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [availableTimes, setAvailableTimes] = useState<{[key: string]: boolean}>({
     "09:00 AM": true,
@@ -273,6 +275,7 @@ export default function GroomerDashboard() {
     if (!profile) return;
     
     try {
+      // Fix the type error by using a different approach
       const { data, error } = await supabase
         .from('groomer_time_slots')
         .select('*')
@@ -284,7 +287,14 @@ export default function GroomerDashboard() {
       }
       
       if (data && data.length > 0) {
-        setAvailableSlots(data);
+        // Cast the data to the correct type
+        const timeSlots: TimeSlot[] = data.map(slot => ({
+          groomer_id: slot.groomer_id,
+          date: slot.date,
+          times: slot.times,
+          created_at: slot.created_at
+        }));
+        setAvailableSlots(timeSlots);
       } else {
         // Initialize with default slots for the next 7 days if no slots exist
         const nextWeek = eachDayOfInterval({
@@ -292,7 +302,8 @@ export default function GroomerDashboard() {
           end: addDays(startOfDay(new Date()), 6)
         });
         
-        const defaultSlots = nextWeek.map(day => ({
+        const defaultSlots: TimeSlot[] = nextWeek.map(day => ({
+          groomer_id: profile.id,
           date: format(day, 'yyyy-MM-dd'),
           times: [
             "09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", 
@@ -581,21 +592,20 @@ export default function GroomerDashboard() {
       } else {
         // Add new slot
         updatedSlots.push({
+          groomer_id: profile.id,
           date: selectedDate,
           times: selectedTimes
         });
       }
       
-      // Save to the database
+      // Save to the database - Fix the type error by using the correct structure
       const { error } = await supabase
         .from('groomer_time_slots')
-        .upsert([
-          {
-            groomer_id: profile.id,
-            date: selectedDate,
-            times: selectedTimes
-          }
-        ], { onConflict: 'groomer_id,date' });
+        .upsert({
+          groomer_id: profile.id,
+          date: selectedDate,
+          times: selectedTimes
+        }, { onConflict: 'groomer_id,date' });
 
       if (error) throw error;
       
