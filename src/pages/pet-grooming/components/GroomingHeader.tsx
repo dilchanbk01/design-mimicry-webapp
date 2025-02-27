@@ -58,7 +58,7 @@ export function GroomingHeader() {
             <img 
               src="/lovable-uploads/8f3aed90-73d6-4c1e-ab8b-639261a42d22.png" 
               alt="Petsu Logo" 
-              className="h-12 w-auto"
+              className="h-14 w-auto"
             />
             <span className="ml-2 text-2xl font-bold text-green-600 hidden sm:inline-block">Petsu</span>
           </div>
@@ -78,12 +78,12 @@ export function GroomingHeader() {
           <Button asChild variant="ghost">
             <Link to="/events">Events</Link>
           </Button>
-          <AuthButton />
+          <AuthButton provider="google" />
         </nav>
 
         {/* Auth Button Only (Mobile) */}
         <div className="sm:hidden absolute right-4">
-          <AuthButton />
+          <AuthButton provider="google" />
         </div>
       </div>
     </header>
