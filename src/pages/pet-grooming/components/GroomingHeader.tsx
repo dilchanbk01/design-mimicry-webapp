@@ -22,7 +22,7 @@ export function GroomingHeader() {
         {/* Logo - Centered */}
         <Link to="/" className="absolute left-1/2 transform -translate-x-1/2 flex items-center justify-center">
           <img 
-            src="/lovable-uploads/8f3aed90-73d6-4c1e-ab8b-639261a42d22.png" 
+            src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
             alt="Petsu Logo" 
             className="h-14 w-auto"
           />
