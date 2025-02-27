@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,8 @@ import {
   Home,
   Store,
   Eye,
-  EyeOff
+  EyeOff,
+  Clock
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -27,6 +29,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { BookingsSection } from "@/components/groomer-dashboard/BookingsSection";
+import { format, addDays, eachDayOfInterval, startOfDay, parseISO } from "date-fns";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface GroomerProfile {
   id: string;
@@ -64,6 +68,11 @@ interface Revenue {
   amount: number;
 }
 
+interface AvailableSlot {
+  date: string;
+  times: string[];
+}
+
 export default function GroomerDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -87,6 +96,7 @@ export default function GroomerDashboard() {
   const [showAddPackage, setShowAddPackage] = useState(false);
   const [showEditPackage, setShowEditPackage] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showTimeSlotSettings, setShowTimeSlotSettings] = useState(false);
   const [editedProfile, setEditedProfile] = useState({
     salon_name: '',
     experience_years: 0,
@@ -103,6 +113,29 @@ export default function GroomerDashboard() {
     newPassword: '',
     confirmPassword: ''
   });
+  const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+  const [availableTimes, setAvailableTimes] = useState<{[key: string]: boolean}>({
+    "09:00 AM": true,
+    "09:30 AM": true,
+    "10:00 AM": true,
+    "10:30 AM": true,
+    "11:00 AM": true,
+    "11:30 AM": true,
+    "12:00 PM": true,
+    "12:30 PM": true,
+    "01:00 PM": true,
+    "01:30 PM": true,
+    "02:00 PM": true,
+    "02:30 PM": true,
+    "03:00 PM": true,
+    "03:30 PM": true,
+    "04:00 PM": true,
+    "04:30 PM": true,
+    "05:00 PM": true,
+    "05:30 PM": true,
+    "06:00 PM": true,
+  });
 
   useEffect(() => {
     checkGroomerStatus();
@@ -113,6 +146,7 @@ export default function GroomerDashboard() {
       fetchPackages();
       fetchBookingSummary();
       fetchRevenueData(timeframe);
+      fetchAvailableSlots();
     }
   }, [profile, timeframe]);
 
@@ -232,6 +266,47 @@ export default function GroomerDashboard() {
       setRevenue(mockData);
     } catch (error) {
       console.error("Error fetching revenue data:", error);
+    }
+  };
+
+  const fetchAvailableSlots = async () => {
+    if (!profile) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('groomer_time_slots')
+        .select('*')
+        .eq('groomer_id', profile.id);
+
+      if (error) {
+        console.error("Error fetching slots:", error);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        setAvailableSlots(data);
+      } else {
+        // Initialize with default slots for the next 7 days if no slots exist
+        const nextWeek = eachDayOfInterval({
+          start: startOfDay(new Date()),
+          end: addDays(startOfDay(new Date()), 6)
+        });
+        
+        const defaultSlots = nextWeek.map(day => ({
+          date: format(day, 'yyyy-MM-dd'),
+          times: [
+            "09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", 
+            "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM",
+            "01:00 PM", "01:30 PM", "02:00 PM", "02:30 PM",
+            "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM",
+            "05:00 PM", "05:30 PM", "06:00 PM"
+          ]
+        }));
+        
+        setAvailableSlots(defaultSlots);
+      }
+    } catch (error) {
+      console.error("Error fetching available slots:", error);
     }
   };
 
@@ -447,6 +522,99 @@ export default function GroomerDashboard() {
     navigate("/");
   };
 
+  const handleTimeSlotChange = (time: string) => {
+    setAvailableTimes(prev => ({
+      ...prev, 
+      [time]: !prev[time]
+    }));
+  };
+
+  const handleDateChange = (date: string) => {
+    setSelectedDate(date);
+    
+    // Find if we already have settings for this date
+    const existingSlot = availableSlots.find(slot => slot.date === date);
+    
+    if (existingSlot) {
+      // Create a times object with all times set to false by default
+      const timesObj: {[key: string]: boolean} = {};
+      Object.keys(availableTimes).forEach(time => {
+        timesObj[time] = false;
+      });
+      
+      // Set the available times to true
+      existingSlot.times.forEach(time => {
+        timesObj[time] = true;
+      });
+      
+      setAvailableTimes(timesObj);
+    } else {
+      // Reset to all available if no settings for this date
+      const timesObj: {[key: string]: boolean} = {};
+      Object.keys(availableTimes).forEach(time => {
+        timesObj[time] = true;
+      });
+      setAvailableTimes(timesObj);
+    }
+  };
+
+  const handleSaveTimeSlots = async () => {
+    if (!profile) return;
+    
+    try {
+      // Get the available times for the selected date
+      const selectedTimes = Object.entries(availableTimes)
+        .filter(([_, isAvailable]) => isAvailable)
+        .map(([time]) => time);
+      
+      // Check if we already have a slot for this date
+      const existingSlotIndex = availableSlots.findIndex(slot => slot.date === selectedDate);
+      
+      let updatedSlots = [...availableSlots];
+      
+      if (existingSlotIndex >= 0) {
+        // Update existing slot
+        updatedSlots[existingSlotIndex] = {
+          ...updatedSlots[existingSlotIndex],
+          times: selectedTimes
+        };
+      } else {
+        // Add new slot
+        updatedSlots.push({
+          date: selectedDate,
+          times: selectedTimes
+        });
+      }
+      
+      // Save to the database
+      const { error } = await supabase
+        .from('groomer_time_slots')
+        .upsert([
+          {
+            groomer_id: profile.id,
+            date: selectedDate,
+            times: selectedTimes
+          }
+        ], { onConflict: 'groomer_id,date' });
+
+      if (error) throw error;
+      
+      setAvailableSlots(updatedSlots);
+      
+      toast({
+        title: "Time Slots Updated",
+        description: `Availability for ${format(parseISO(selectedDate), 'MMMM d, yyyy')} has been updated`,
+      });
+    } catch (error) {
+      console.error("Error saving time slots:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save availability settings",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -546,6 +714,7 @@ export default function GroomerDashboard() {
             <TabsTrigger value="appointments">Appointments</TabsTrigger>
             <TabsTrigger value="packages">Grooming Packages</TabsTrigger>
             <TabsTrigger value="revenue">Revenue Insights</TabsTrigger>
+            <TabsTrigger value="availability">Manage Availability</TabsTrigger>
           </TabsList>
           
           <TabsContent value="appointments" className="space-y-4">
@@ -674,6 +843,100 @@ export default function GroomerDashboard() {
                 </Card>
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="availability" className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Manage Your Availability</h2>
+            </div>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-blue-500" />
+                  Available Time Slots
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="space-y-3">
+                    <Label htmlFor="date-select">Select Date</Label>
+                    <div className="flex gap-4 flex-wrap">
+                      {eachDayOfInterval({
+                        start: startOfDay(new Date()),
+                        end: addDays(startOfDay(new Date()), 13)
+                      }).map((date) => {
+                        const dateStr = format(date, 'yyyy-MM-dd');
+                        const isSelected = dateStr === selectedDate;
+                        const dayStr = format(date, 'E');
+                        const dateNum = format(date, 'd');
+                        
+                        return (
+                          <button
+                            key={dateStr}
+                            onClick={() => handleDateChange(dateStr)}
+                            className={`flex flex-col items-center justify-center h-16 w-16 rounded-lg border transition-colors ${
+                              isSelected 
+                                ? 'bg-green-100 border-green-500 text-green-800' 
+                                : 'border-gray-200 hover:border-green-300'
+                            }`}
+                          >
+                            <span className="text-xs font-medium">{dayStr}</span>
+                            <span className="text-lg font-bold">{dateNum}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <Label>Available Times for {format(parseISO(selectedDate), 'MMMM d, yyyy')}</Label>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          // Toggle all times to be the same
+                          const allTimes = Object.keys(availableTimes);
+                          const areAllAvailable = allTimes.every(time => availableTimes[time]);
+                          
+                          const newAvailableTimes = {...availableTimes};
+                          allTimes.forEach(time => {
+                            newAvailableTimes[time] = !areAllAvailable;
+                          });
+                          
+                          setAvailableTimes(newAvailableTimes);
+                        }}
+                      >
+                        {Object.values(availableTimes).every(Boolean) ? 'Clear All' : 'Select All'}
+                      </Button>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                      {Object.entries(availableTimes).map(([time, isAvailable]) => (
+                        <div key={time} className="flex items-center space-x-2">
+                          <Checkbox 
+                            id={`time-${time}`} 
+                            checked={isAvailable}
+                            onCheckedChange={() => handleTimeSlotChange(time)}
+                          />
+                          <Label 
+                            htmlFor={`time-${time}`}
+                            className="text-sm cursor-pointer"
+                          >
+                            {time}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <Button onClick={handleSaveTimeSlots} className="w-full">
+                    Save Availability
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
