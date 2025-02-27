@@ -30,6 +30,7 @@ export default function GroomerBooking() {
   const [selectedPackage, setSelectedPackage] = useState<GroomingPackage | null>(null);
   const [petDetails, setPetDetails] = useState("");
   const [homeAddress, setHomeAddress] = useState("");
+  const [showAllTimeSlots, setShowAllTimeSlots] = useState(false);
 
   // Handle loading state
   if (isLoading || !groomer) {
@@ -70,43 +71,65 @@ export default function GroomerBooking() {
   };
 
   const timeSlots = generateTimeSlots();
+  const displayTimeSlots = showAllTimeSlots ? timeSlots : timeSlots.slice(0, 8);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-green-500" style={{ backgroundColor: "#0dcf6a" }}>
       <GroomingHeader />
       
       <div className="container mx-auto px-4 py-8">
         <Button
           variant="ghost"
-          className="mb-6"
+          className="mb-6 text-white hover:bg-white/20"
           onClick={handleCancel}
         >
-          ← Back to Groomer
+          ← 
         </Button>
 
         <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm overflow-hidden">
           <BookingHeader groomerName={groomer.salon_name} />
 
           <div className="p-6 space-y-6">
+            {/* Service Type - Moved to the top */}
+            <ServiceTypeButtons 
+              groomer={groomer}
+              selectedServiceType={selectedServiceType}
+              onServiceTypeChange={setSelectedServiceType}
+            />
+
             {/* Date Selection */}
             <DateSelection 
               selectedDate={selectedDate}
               onDateChange={setSelectedDate}
             />
 
-            {/* Time Slots */}
-            <TimeSlotGrid 
-              timeSlots={timeSlots}
-              selectedTime={selectedTime}
-              onTimeSelect={setSelectedTime}
-            />
-
-            {/* Service Type */}
-            <ServiceTypeButtons 
-              groomer={groomer}
-              selectedServiceType={selectedServiceType}
-              onServiceTypeChange={setSelectedServiceType}
-            />
+            {/* Time Slots with See More functionality */}
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Select Time</h3>
+              <div className="grid grid-cols-4 gap-3">
+                {displayTimeSlots.map((time) => (
+                  <button
+                    key={time}
+                    onClick={() => setSelectedTime(time)}
+                    className={`p-3 text-center rounded-md transition-colors ${
+                      selectedTime === time
+                        ? 'bg-green-100 text-green-800 font-medium'
+                        : 'bg-gray-50 hover:bg-gray-100'
+                    }`}
+                  >
+                    {time}
+                  </button>
+                ))}
+              </div>
+              {!showAllTimeSlots && timeSlots.length > 8 && (
+                <button
+                  onClick={() => setShowAllTimeSlots(true)}
+                  className="w-full mt-3 text-center py-2 text-sm text-green-600 hover:text-green-800"
+                >
+                  See More Time Slots ↓
+                </button>
+              )}
+            </div>
 
             {/* Pet Details */}
             <PetDetailsInput 

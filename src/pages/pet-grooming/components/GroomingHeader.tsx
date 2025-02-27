@@ -9,7 +9,7 @@ export function GroomingHeader() {
   return (
     <header className="bg-transparent absolute top-0 left-0 right-0 z-10">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        {/* Back Button */}
+        {/* Back Button - Text removed, only icon */}
         <Button 
           variant="ghost" 
           size="icon" 
