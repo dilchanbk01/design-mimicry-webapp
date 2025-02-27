@@ -6,13 +6,15 @@ import { getOptimizedImageUrl } from "@/utils/imageCompression";
 
 interface GroomerCardProps {
   partner: GroomingPartner;
-  onBooking: (partner: GroomingPartner) => void;
   onViewDetails: () => void;
 }
 
-export function GroomerCard({ partner, onBooking, onViewDetails }: GroomerCardProps) {
+export function GroomerCard({ partner, onViewDetails }: GroomerCardProps) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+    <div 
+      className="bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+      onClick={onViewDetails}
+    >
       <div className="flex flex-col md:flex-row">
         <div className="md:w-1/3 h-48 md:h-auto relative">
           <img
@@ -65,15 +67,11 @@ export function GroomerCard({ partner, onBooking, onViewDetails }: GroomerCardPr
           </div>
           <div className="flex gap-2 mt-2">
             <Button 
-              className="flex-1 py-1 px-2 h-auto text-xs"
-              onClick={() => onBooking(partner)}
-            >
-              Book Now
-            </Button>
-            <Button 
-              variant="outline"
-              className="flex-1 py-1 px-2 h-auto text-xs"
-              onClick={onViewDetails}
+              className="w-full py-1 px-2 h-auto text-xs"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewDetails();
+              }}
             >
               View Details
             </Button>

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { MapPin, Star, Scissors, Home, Store, ArrowLeft, Calendar } from "lucide-react";
+import { MapPin, Star, Scissors, Home, Store, ArrowLeft, Calendar, User } from "lucide-react";
 import { useState } from "react";
 import { BookingDialog } from "./components/BookingDialog";
 import { useToast } from "@/components/ui/use-toast";
@@ -33,16 +33,79 @@ export default function GroomerDetail() {
     }
   });
 
-  const handleBookingSubmit = (e: React.FormEvent) => {
+  const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Booking Confirmed!",
-      description: `Your grooming appointment has been booked with ${groomer?.salon_name}`,
-    });
-    setIsBookingOpen(false);
-    setBookingDate("");
-    setBookingTime("");
-    setPetDetails("");
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      localStorage.setItem('redirectAfterAuth', location.pathname);
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to book this appointment.",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    if (!groomer) return;
+
+    // Extract numeric price value and convert to paise
+    const priceInPaise = groomer.price * 100;
+
+    const options = {
+      key: "rzp_test_5wYJG4Y7jeVhsz",
+      amount: priceInPaise,
+      currency: "INR",
+      name: "Petsu",
+      description: `Grooming appointment with ${groomer.salon_name}`,
+      image: "/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png",
+      handler: async function (response: any) {
+        const booking = {
+          groomer_id: groomer.id,
+          user_id: user.id,
+          date: bookingDate,
+          time: bookingTime,
+          pet_details: petDetails,
+          payment_id: response.razorpay_payment_id,
+          status: 'confirmed',
+          service_type: groomer.provides_home_service ? 'home' : 'salon'
+        };
+
+        const { error } = await supabase
+          .from("grooming_bookings")
+          .insert(booking);
+
+        if (error) {
+          toast({
+            title: "Booking Failed",
+            description: "Unable to complete your booking. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        toast({
+          title: "Booking Confirmed!",
+          description: `Your grooming appointment has been booked with ${groomer.salon_name}`,
+        });
+        
+        setIsBookingOpen(false);
+        setBookingDate("");
+        setBookingTime("");
+        setPetDetails("");
+      },
+      prefill: {
+        email: user.email,
+      },
+      theme: {
+        color: "#00D26A",
+      },
+    };
+
+    // @ts-ignore - Razorpay is loaded from CDN
+    const rzp = new (window as any).Razorpay(options);
+    rzp.open();
   };
 
   if (!groomer) return (
@@ -59,17 +122,34 @@ export default function GroomerDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="px-4 py-6 md:py-8 max-w-3xl mx-auto">
-        <Button
-          variant="ghost"
-          onClick={() => navigate(-1)}
-          className="mb-4"
-          size="sm"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
+      {/* Header with back button, logo and profile */}
+      <div className="bg-white shadow-sm py-3 px-4 sticky top-0 z-10">
+        <div className="flex items-center justify-between">
+          <button 
+            onClick={() => navigate(-1)}
+            className="p-1 rounded-full hover:bg-gray-100"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          
+          <div className="flex items-center">
+            <img 
+              src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
+              alt="Petsu" 
+              className="h-8"
+            />
+          </div>
+          
+          <button 
+            onClick={() => navigate('/profile')}
+            className="p-1 rounded-full hover:bg-gray-100"
+          >
+            <User className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
 
+      <div className="px-4 py-6 md:py-8 max-w-3xl mx-auto">
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <div className="h-48 sm:h-64 relative">
             <img
@@ -89,7 +169,7 @@ export default function GroomerDetail() {
               <h1 className="text-2xl font-bold">{groomer.salon_name}</h1>
               <Button 
                 onClick={() => setIsBookingOpen(true)}
-                className="md:w-auto w-full"
+                className="md:w-auto w-full bg-[#00D26A] hover:bg-[#00b05a]"
               >
                 <Calendar className="h-4 w-4 mr-2" />
                 Book Appointment
@@ -123,10 +203,10 @@ export default function GroomerDetail() {
                 )}
               </div>
 
-              <Card className="border-primary/20">
+              <Card className="border-[#00D26A]/20">
                 <CardContent className="p-4">
                   <h2 className="text-lg font-semibold mb-2">Price</h2>
-                  <p className="text-xl text-primary font-medium">Starting from ₹{groomer.price}</p>
+                  <p className="text-xl text-[#00D26A] font-medium">Starting from ₹{groomer.price}</p>
                 </CardContent>
               </Card>
 
@@ -136,7 +216,7 @@ export default function GroomerDetail() {
                   {groomer.specializations.map((specialization: string) => (
                     <span
                       key={specialization}
-                      className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm"
+                      className="px-3 py-1 bg-[#00D26A]/10 text-[#00D26A] rounded-full text-sm"
                     >
                       {specialization}
                     </span>
