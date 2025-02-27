@@ -275,6 +275,7 @@ export type Database = {
           date: string
           groomer_id: string | null
           id: string
+          package_id: string | null
           payment_id: string | null
           pet_details: string | null
           service_type: string
@@ -287,6 +288,7 @@ export type Database = {
           date: string
           groomer_id?: string | null
           id?: string
+          package_id?: string | null
           payment_id?: string | null
           pet_details?: string | null
           service_type: string
@@ -299,6 +301,7 @@ export type Database = {
           date?: string
           groomer_id?: string | null
           id?: string
+          package_id?: string | null
           payment_id?: string | null
           pet_details?: string | null
           service_type?: string
@@ -312,6 +315,13 @@ export type Database = {
             columns: ["groomer_id"]
             isOneToOne: false
             referencedRelation: "groomer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grooming_bookings_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "grooming_packages"
             referencedColumns: ["id"]
           },
         ]

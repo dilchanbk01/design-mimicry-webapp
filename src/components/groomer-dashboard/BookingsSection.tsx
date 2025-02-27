@@ -60,6 +60,8 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
 
             // Get package details if available
             let packageName = "Standard Grooming";
+            
+            // Check if package_id exists in the booking data
             if (booking.package_id) {
               const { data: packageData } = await supabase
                 .from("grooming_packages")
@@ -72,20 +74,46 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
               }
             }
 
+            // Return a properly typed Booking object with all required fields
             return {
               ...booking,
               user_name: userData?.full_name || "Unknown",
               user_email: userAuth?.user?.email || "Unknown",
-              package_name: packageName
-            };
+              package_name: packageName,
+              // Make sure all required fields are present
+              id: booking.id,
+              date: booking.date,
+              time: booking.time,
+              user_id: booking.user_id,
+              pet_details: booking.pet_details || "",
+              status: booking.status || "pending",
+              service_type: booking.service_type,
+              created_at: booking.created_at,
+              payment_id: booking.payment_id || "",
+              package_id: booking.package_id || null,
+              groomer_id: booking.groomer_id
+            } as Booking;
           } catch (err) {
             console.error("Error fetching user details:", err);
+            // Return a properly typed Booking object for error case
             return {
               ...booking,
               user_name: "Unknown",
               user_email: "Unknown",
-              package_name: "Standard Grooming"
-            };
+              package_name: "Standard Grooming",
+              // Make sure all required fields are present even in error case
+              id: booking.id,
+              date: booking.date,
+              time: booking.time,
+              user_id: booking.user_id,
+              pet_details: booking.pet_details || "",
+              status: booking.status || "pending",
+              service_type: booking.service_type,
+              created_at: booking.created_at,
+              payment_id: booking.payment_id || "",
+              package_id: booking.package_id || null,
+              groomer_id: booking.groomer_id
+            } as Booking;
           }
         })
       );
