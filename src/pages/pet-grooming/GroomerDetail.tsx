@@ -47,7 +47,10 @@ export default function GroomerDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <GroomerImageBanner profileImageUrl={groomer.profile_image_url} />
+      <GroomerImageBanner 
+        profileImageUrl={groomer.profile_image_url} 
+        altText={`${groomer.salon_name} profile`}
+      />
       
       <div className="container mx-auto px-4 py-6 -mt-12 relative">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -62,6 +65,7 @@ export default function GroomerDetail() {
               <GroomerInfo 
                 address={groomer.address}
                 contactNumber={groomer.contact_number}
+                experienceYears={groomer.experience_years}
               />
               
               <GroomerSpecializations 
