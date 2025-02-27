@@ -12,6 +12,8 @@ export default function GroomerOnboarding() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<GroomerFormData>(initialFormData);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
     checkAuth();
@@ -19,30 +21,53 @@ export default function GroomerOnboarding() {
 
   const checkAuth = async () => {
     try {
+      setCheckingAuth(true);
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
+        // User is not authenticated, redirect to auth page
         navigate("/groomer-auth");
         return;
       }
+
+      setIsAuthenticated(true);
 
       // Check if user already has a profile
       const { data: existingProfile } = await supabase
         .from("groomer_profiles")
         .select("*")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       if (existingProfile) {
-        toast({
-          title: "Application Already Submitted",
-          description: "You have already submitted an application.",
-        });
-        navigate("/groomer-pending");
-        return;
+        // Profile exists, redirect based on status
+        switch (existingProfile.application_status) {
+          case 'pending':
+            toast({
+              title: "Application Already Submitted",
+              description: "You have already submitted an application.",
+            });
+            navigate("/groomer-pending");
+            break;
+          case 'approved':
+            navigate("/groomer-dashboard");
+            break;
+          case 'rejected':
+            toast({
+              title: "Application Rejected",
+              description: "Your previous application was rejected. Please contact support.",
+              variant: "destructive"
+            });
+            break;
+          default:
+            // Allow them to stay on onboarding page
+            break;
+        }
       }
     } catch (error) {
       console.error("Auth check error:", error);
+    } finally {
+      setCheckingAuth(false);
     }
   };
 
@@ -162,6 +187,18 @@ export default function GroomerOnboarding() {
       setLoading(false);
     }
   };
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-green-500 rounded-full border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null; // This will be redirected in the checkAuth function
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">

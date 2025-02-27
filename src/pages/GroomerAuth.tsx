@@ -19,12 +19,13 @@ export default function GroomerAuth() {
     checkExistingSession();
   }, []);
 
+  // Check if user is already authenticated and redirect appropriately
   const checkExistingSession = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return; // No user session exists, stay on auth page
 
-      // User is authenticated, check if they have a groomer profile
+      // User is already authenticated, check if they have a groomer profile
       const { data: profile, error } = await supabase
         .from("groomer_profiles")
         .select("*")
@@ -40,12 +41,8 @@ export default function GroomerAuth() {
         // Profile exists, check status and redirect accordingly
         handleProfileStatus(profile.application_status);
       } else {
-        // If no profile exists and they're specifically trying to access auth or dashboard,
-        // then redirect to onboarding
-        const path = window.location.pathname;
-        if (path === '/groomer-auth' || path === '/groomer-dashboard') {
-          navigate("/groomer-onboarding");
-        }
+        // No profile exists, redirect to onboarding
+        navigate("/groomer-onboarding");
       }
     } catch (error) {
       console.error("Error checking session:", error);
@@ -97,6 +94,7 @@ export default function GroomerAuth() {
           });
         }
       } else {
+        // Sign in
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -105,10 +103,11 @@ export default function GroomerAuth() {
         if (error) throw error;
 
         // After successful login, check profile status
+        const { data: { user } } = await supabase.auth.getUser();
         const { data: profile, error: profileError } = await supabase
           .from("groomer_profiles")
           .select("*")
-          .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
+          .eq("user_id", user.id)
           .maybeSingle();
 
         if (profileError && profileError.code !== 'PGRST116') {
@@ -117,8 +116,10 @@ export default function GroomerAuth() {
         }
 
         if (profile) {
+          // Profile exists, check status and redirect accordingly
           handleProfileStatus(profile.application_status);
         } else {
+          // No profile exists, redirect to onboarding
           navigate("/groomer-onboarding");
         }
       }
