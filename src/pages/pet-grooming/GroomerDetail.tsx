@@ -3,12 +3,28 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { MapPin, Star, Scissors, Home, Store, ArrowLeft, Calendar, User } from "lucide-react";
+import { MapPin, Star, Scissors, Home, Store, ArrowLeft, Calendar, User, Info } from "lucide-react";
 import { useState } from "react";
 import { BookingDialog } from "./components/BookingDialog";
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import type { GroomerProfile } from "./types";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
+
+interface GroomingPackage {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  groomer_id: string;
+  created_at: string;
+}
 
 export default function GroomerDetail() {
   const { id } = useParams();
@@ -18,6 +34,7 @@ export default function GroomerDetail() {
   const [bookingDate, setBookingDate] = useState("");
   const [bookingTime, setBookingTime] = useState("");
   const [petDetails, setPetDetails] = useState("");
+  const [selectedPackage, setSelectedPackage] = useState<GroomingPackage | null>(null);
 
   const { data: groomer } = useQuery<GroomerProfile>({
     queryKey: ['groomer', id],
@@ -31,6 +48,21 @@ export default function GroomerDetail() {
       if (error) throw error;
       return data;
     }
+  });
+
+  const { data: packages = [] } = useQuery<GroomingPackage[]>({
+    queryKey: ['groomer-packages', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('grooming_packages')
+        .select('*')
+        .eq('groomer_id', id)
+        .order('price', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!id
   });
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
@@ -50,15 +82,18 @@ export default function GroomerDetail() {
 
     if (!groomer) return;
 
-    // Extract numeric price value and convert to paise
-    const priceInPaise = groomer.price * 100;
+    // Use selected package price or default groomer price
+    const priceToCharge = selectedPackage ? selectedPackage.price : groomer.price;
+    
+    // Extract numeric price value and convert to paise for Razorpay
+    const priceInPaise = priceToCharge * 100;
 
     const options = {
-      key: "rzp_test_5wYJG4Y7jeVhsz",
+      key: "rzp_test_5wYJG4Y7jeVhsz", 
       amount: priceInPaise,
       currency: "INR",
       name: "Petsu",
-      description: `Grooming appointment with ${groomer.salon_name}`,
+      description: `Grooming appointment with ${groomer.salon_name}${selectedPackage ? ` - ${selectedPackage.name}` : ''}`,
       image: "/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png",
       handler: async function (response: any) {
         const booking = {
@@ -69,7 +104,8 @@ export default function GroomerDetail() {
           pet_details: petDetails,
           payment_id: response.razorpay_payment_id,
           status: 'confirmed',
-          service_type: groomer.provides_home_service ? 'home' : 'salon'
+          service_type: groomer.provides_home_service ? 'home' : 'salon',
+          package_id: selectedPackage?.id || null
         };
 
         const { error } = await supabase
@@ -94,6 +130,7 @@ export default function GroomerDetail() {
         setBookingDate("");
         setBookingTime("");
         setPetDetails("");
+        setSelectedPackage(null);
       },
       prefill: {
         email: user.email,
@@ -122,34 +159,38 @@ export default function GroomerDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header with back button, logo and profile */}
-      <div className="bg-white shadow-sm py-3 px-4 sticky top-0 z-10">
-        <div className="flex items-center justify-between">
-          <button 
-            onClick={() => navigate(-1)}
-            className="p-1 rounded-full hover:bg-gray-100"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          
-          <div className="flex items-center">
-            <img 
-              src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
-              alt="Petsu" 
-              className="h-8"
-            />
+      {/* Header with transparent background and larger logo */}
+      <div className="bg-transparent absolute top-0 left-0 right-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <button 
+              onClick={() => navigate(-1)}
+              className="p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            
+            <div className="flex items-center">
+              <img 
+                src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
+                alt="Petsu" 
+                className="h-12 md:h-16"
+              />
+            </div>
+            
+            <button 
+              onClick={() => navigate('/profile')}
+              className="p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white"
+            >
+              <User className="h-5 w-5" />
+            </button>
           </div>
-          
-          <button 
-            onClick={() => navigate('/profile')}
-            className="p-1 rounded-full hover:bg-gray-100"
-          >
-            <User className="h-5 w-5" />
-          </button>
         </div>
       </div>
 
-      <div className="px-4 py-6 md:py-8 max-w-3xl mx-auto">
+      <div className="h-64 bg-gradient-to-b from-[#00D26A] to-[#00A050]"></div>
+
+      <div className="px-4 py-6 md:py-8 max-w-3xl mx-auto -mt-32">
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <div className="h-48 sm:h-64 relative">
             <img
@@ -203,12 +244,74 @@ export default function GroomerDetail() {
                 )}
               </div>
 
-              <Card className="border-[#00D26A]/20">
-                <CardContent className="p-4">
-                  <h2 className="text-lg font-semibold mb-2">Price</h2>
-                  <p className="text-xl text-[#00D26A] font-medium">Starting from ₹{groomer.price}</p>
-                </CardContent>
-              </Card>
+              {/* Grooming Packages Section */}
+              <div>
+                <h2 className="text-lg font-semibold mb-3">Grooming Packages</h2>
+                {packages.length === 0 ? (
+                  <p className="text-gray-500 italic">No packages available</p>
+                ) : (
+                  <div className="space-y-3">
+                    {packages.map((pkg) => (
+                      <Card 
+                        key={pkg.id} 
+                        className={`border ${selectedPackage?.id === pkg.id ? 'border-[#00D26A] bg-[#F2FCE2]' : 'border-gray-200'} hover:border-[#00D26A] transition-all`}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-md font-medium">{pkg.name}</h3>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <Info className="h-4 w-4 text-gray-400" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p className="max-w-xs text-sm">{pkg.description}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </div>
+                              <p className="text-[#00D26A] font-semibold mt-1">₹{pkg.price}</p>
+                            </div>
+                            <Button 
+                              variant={selectedPackage?.id === pkg.id ? "default" : "outline"} 
+                              size="sm"
+                              className={selectedPackage?.id === pkg.id ? "bg-[#00D26A]" : ""}
+                              onClick={() => setSelectedPackage(pkg)}
+                            >
+                              {selectedPackage?.id === pkg.id ? "Selected" : "Select"}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                {/* Standard service card */}
+                <Card className={`mt-3 border ${!selectedPackage ? 'border-[#00D26A] bg-[#F2FCE2]' : 'border-gray-200'} hover:border-[#00D26A] transition-all`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-md font-medium">Standard Grooming</h3>
+                          <Badge variant="outline" className="bg-gray-100 text-gray-600">Basic</Badge>
+                        </div>
+                        <p className="text-[#00D26A] font-semibold mt-1">₹{groomer.price}</p>
+                      </div>
+                      <Button 
+                        variant={!selectedPackage ? "default" : "outline"} 
+                        size="sm"
+                        className={!selectedPackage ? "bg-[#00D26A]" : ""}
+                        onClick={() => setSelectedPackage(null)}
+                      >
+                        {!selectedPackage ? "Selected" : "Select"}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
 
               <div>
                 <h2 className="text-lg font-semibold mb-3">Specializations</h2>
@@ -243,7 +346,9 @@ export default function GroomerDetail() {
             rating: 4.5,
             location: groomer.address,
             experience: `${groomer.experience_years}+ years experience`,
-            price: `Starting from ₹${groomer.price}`,
+            price: selectedPackage 
+              ? `₹${selectedPackage.price} - ${selectedPackage.name}` 
+              : `₹${groomer.price} - Standard Grooming`,
             image: groomer.profile_image_url || defaultImage,
             providesHomeService: groomer.provides_home_service,
             providesSalonService: groomer.provides_salon_service

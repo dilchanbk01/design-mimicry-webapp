@@ -47,6 +47,12 @@ export function BookingDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
+          {selectedPartner && (
+            <div className="p-3 bg-gray-50 rounded-md mb-4">
+              <p className="text-sm font-medium">Selected Package</p>
+              <p className="text-[#00D26A] font-semibold">{selectedPartner.price}</p>
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="date">Date</Label>
             <Input
@@ -78,8 +84,8 @@ export function BookingDialog({
               required
             />
           </div>
-          <Button type="submit" className="w-full">
-            Confirm Booking
+          <Button type="submit" className="w-full bg-[#00D26A] hover:bg-[#00b05a]">
+            Confirm Booking (₹{selectedPartner?.price.split(' ')[0].replace('₹', '')})
           </Button>
         </form>
       </DialogContent>
