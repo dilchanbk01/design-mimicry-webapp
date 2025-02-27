@@ -1,10 +1,8 @@
 
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { addDays } from "date-fns";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { GroomingHeader } from "./components/GroomingHeader";
-import { BookingDialog } from "./components/BookingDialog";
 import { GroomerTitle } from "./components/GroomerTitle";
 import { GroomerBio } from "./components/GroomerBio";
 import { GroomerServices } from "./components/GroomerServices";
@@ -13,9 +11,7 @@ import { GroomerPackages } from "./components/GroomerPackages";
 import { GroomerSpecializations } from "./components/GroomerSpecializations";
 import { GroomerImageBanner } from "./components/GroomerImageBanner";
 import { BookingSection } from "./components/BookingSection";
-import { calculateTotalPrice } from "./utils/booking";
 import { useGroomer } from "./hooks/useGroomer";
-import { useBooking } from "./hooks/useBooking";
 import { Instagram } from "lucide-react";
 import type { GroomingPackage } from "./types/packages";
 
@@ -25,15 +21,10 @@ export default function GroomerDetail() {
   const { toast } = useToast();
   
   const { groomer, packages, isLoading } = useGroomer(id);
-  const { handleBookingConfirm, isProcessing, isBookingConfirmed, setIsBookingConfirmed } = useBooking(groomer);
   
-  const [isBookingOpen, setIsBookingOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date>(addDays(new Date(), 1));
-  const [selectedTime, setSelectedTime] = useState<string>("");
   const [selectedServiceType, setSelectedServiceType] = useState<'salon' | 'home'>('salon');
   const [selectedPackage, setSelectedPackage] = useState<GroomingPackage | null>(null);
-  const [petDetails, setPetDetails] = useState<string>("");
-  const [homeAddress, setHomeAddress] = useState<string>("");
+  const [isProcessing, setIsProcessing] = useState(false);
   
   // Handle loading state
   if (isLoading) {
@@ -81,35 +72,10 @@ export default function GroomerDetail() {
     setSelectedPackage(pkg);
   };
 
-  const handleBookingDialogOpen = (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent any default navigation
-    
-    // Set default package if none selected
-    if (!selectedPackage && packages.length > 0) {
-      setSelectedPackage(packages[0]);
-    }
-    setIsBookingOpen(true);
-  };
-
-  const onConfirmBooking = async () => {
-    await handleBookingConfirm({
-      selectedDate,
-      selectedTime,
-      selectedServiceType,
-      selectedPackage,
-      petDetails,
-      homeAddress
-    });
-  };
-
-  const resetBookingForm = () => {
-    setSelectedDate(addDays(new Date(), 1));
-    setSelectedTime("");
-    setSelectedPackage(null);
-    setPetDetails("");
-    setHomeAddress("");
-    setIsBookingConfirmed(false);
-    setIsBookingOpen(false);
+  // Now redirects to the booking page instead of opening a dialog
+  const handleBookNowClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate(`/pet-grooming/booking/${id}`);
   };
 
   return (
@@ -154,7 +120,7 @@ export default function GroomerDetail() {
                 selectedPackage={selectedPackage}
                 selectedServiceType={selectedServiceType}
                 packages={packages}
-                onBookNowClick={handleBookingDialogOpen}
+                onBookNowClick={handleBookNowClick}
                 onServiceTypeChange={handleServiceTypeChange}
                 isProcessing={isProcessing}
               />
@@ -200,45 +166,6 @@ export default function GroomerDetail() {
           </div>
         </div>
       </footer>
-      
-      {/* Booking Dialog */}
-      <BookingDialog 
-        isOpen={isBookingOpen}
-        onClose={resetBookingForm}
-        groomer={{
-          id: groomer.id,
-          name: groomer.salon_name,
-          address: groomer.address,
-          experienceYears: groomer.experience_years,
-          specializations: groomer.specializations,
-          price: groomer.price,
-          profileImageUrl: groomer.profile_image_url,
-          providesHomeService: groomer.provides_home_service,
-          providesSalonService: groomer.provides_salon_service
-        }}
-        packages={packages}
-        selectedDate={selectedDate}
-        selectedTime={selectedTime}
-        selectedPackage={selectedPackage}
-        selectedServiceType={selectedServiceType}
-        petDetails={petDetails}
-        homeAddress={homeAddress}
-        isBookingConfirmed={isBookingConfirmed}
-        totalPrice={calculateTotalPrice(
-          selectedPackage ? selectedPackage.price : groomer.price,
-          selectedServiceType, 
-          groomer.home_service_cost
-        )}
-        isProcessing={isProcessing}
-        
-        onDateChange={setSelectedDate}
-        onTimeChange={setSelectedTime}
-        onPackageChange={setSelectedPackage}
-        onServiceTypeChange={handleServiceTypeChange}
-        onPetDetailsChange={setPetDetails}
-        onHomeAddressChange={setHomeAddress}
-        onConfirm={onConfirmBooking}
-      />
     </div>
   );
 }
