@@ -174,7 +174,7 @@ export default function AdminDashboard() {
       }
       
       console.log("Groomer data:", data);
-      setGroomers(data);
+      setGroomers(data || []);
     } catch (error) {
       console.error("Error fetching groomers:", error);
       toast({
