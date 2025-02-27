@@ -19,7 +19,7 @@ export function ServicesGrid({ onEssentialsClick }: ServicesGridProps) {
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card
           title="Events"
           icon="/lovable-uploads/3ff4430d-913b-49ff-9efc-06a1dda0fa4c.png"
