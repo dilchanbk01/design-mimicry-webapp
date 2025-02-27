@@ -244,9 +244,9 @@ export default function GroomerDetail() {
         </div>
       </div>
 
-      <div className="px-4 py-6 md:py-8 max-w-3xl mx-auto mt-16">
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <div className="h-48 sm:h-64 relative">
+      <div className="px-4 py-6 md:py-8 max-w-full mx-auto mt-16">
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden max-w-4xl mx-auto">
+          <div className="h-52 sm:h-72 md:h-96 relative">
             <img
               src={groomer.profile_image_url || defaultImage}
               alt={groomer.salon_name}
@@ -260,10 +260,17 @@ export default function GroomerDetail() {
           </div>
 
           <div className="p-4 sm:p-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
               <h1 className="text-2xl font-bold">{groomer.salon_name}</h1>
-              <div className="flex flex-col md:items-end">
-                <div className="flex items-center mb-2">
+              <div className="flex flex-col items-start md:items-end">
+                <Button 
+                  onClick={() => setIsBookingOpen(true)}
+                  className="md:w-auto w-full bg-[#9b87f5] hover:bg-[#7E69AB] mb-2"
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Book Appointment
+                </Button>
+                <div className="flex items-center">
                   <p className="font-semibold text-lg text-[#9b87f5] mr-2">
                     ₹{priceDetails.totalAmount.toFixed(0)}
                   </p>
@@ -273,7 +280,7 @@ export default function GroomerDetail() {
                         <Info className="h-4 w-4" />
                       </button>
                     </PopoverTrigger>
-                    <PopoverContent side="top" align="end" className="w-60">
+                    <PopoverContent side="top" align="end" className="w-60 bg-white">
                       <div className="space-y-2">
                         <h4 className="font-medium">Price Breakdown</h4>
                         <div className="text-sm space-y-1">
@@ -294,43 +301,10 @@ export default function GroomerDetail() {
                     </PopoverContent>
                   </Popover>
                 </div>
-                <Button 
-                  onClick={() => setIsBookingOpen(true)}
-                  className="md:w-auto w-full bg-[#9b87f5] hover:bg-[#7E69AB]"
-                >
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Book Appointment
-                </Button>
               </div>
             </div>
 
             <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                <div className="flex items-center text-gray-600">
-                  <MapPin className="h-5 w-5 mr-2 flex-shrink-0" />
-                  <span className="text-sm">{groomer.address}</span>
-                </div>
-                <div className="flex items-center text-gray-600">
-                  <Scissors className="h-5 w-5 mr-2 flex-shrink-0" />
-                  <span className="text-sm">{groomer.experience_years}+ years experience</span>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                {groomer.provides_salon_service && (
-                  <div className="flex items-center text-[#7E69AB] bg-[#E5DEFF] px-3 py-1 rounded-full">
-                    <Store className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <span className="text-sm">Salon Service Available</span>
-                  </div>
-                )}
-                {groomer.provides_home_service && (
-                  <div className="flex items-center text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-                    <Home className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <span className="text-sm">Home Service Available</span>
-                  </div>
-                )}
-              </div>
-
               {/* Grooming Packages Section */}
               <div>
                 <h2 className="text-lg font-semibold mb-3">Grooming Packages</h2>
@@ -352,7 +326,7 @@ export default function GroomerDetail() {
                                   <PopoverTrigger>
                                     <Info className="h-4 w-4 text-gray-400 cursor-pointer" />
                                   </PopoverTrigger>
-                                  <PopoverContent side="right" className="w-72">
+                                  <PopoverContent side="right" className="w-72 bg-white">
                                     <div className="space-y-2">
                                       <h4 className="font-medium">{pkg.name}</h4>
                                       <p className="text-sm text-gray-600">{pkg.description}</p>
@@ -389,7 +363,7 @@ export default function GroomerDetail() {
                             <PopoverTrigger>
                               <Info className="h-4 w-4 text-gray-400 cursor-pointer" />
                             </PopoverTrigger>
-                            <PopoverContent side="right" className="w-72">
+                            <PopoverContent side="right" className="w-72 bg-white">
                               <div className="space-y-2">
                                 <h4 className="font-medium">Standard Grooming</h4>
                                 <p className="text-sm text-gray-600">
@@ -434,6 +408,34 @@ export default function GroomerDetail() {
                   <p className="text-gray-600 text-sm leading-relaxed">{groomer.bio}</p>
                 </div>
               )}
+              
+              <div className="border-t pt-6">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="flex items-center text-gray-600">
+                    <MapPin className="h-5 w-5 mr-2 flex-shrink-0" />
+                    <span className="text-sm">{groomer.address}</span>
+                  </div>
+                  <div className="flex items-center text-gray-600">
+                    <Scissors className="h-5 w-5 mr-2 flex-shrink-0" />
+                    <span className="text-sm">{groomer.experience_years}+ years experience</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-3 mt-4">
+                  {groomer.provides_salon_service && (
+                    <div className="flex items-center text-[#7E69AB] bg-[#E5DEFF] px-3 py-1 rounded-full">
+                      <Store className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span className="text-sm">Salon Service Available</span>
+                    </div>
+                  )}
+                  {groomer.provides_home_service && (
+                    <div className="flex items-center text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                      <Home className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span className="text-sm">Home Service Available</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>

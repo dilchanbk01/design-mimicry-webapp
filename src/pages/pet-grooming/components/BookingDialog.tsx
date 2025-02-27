@@ -82,7 +82,7 @@ export function BookingDialog({
                     <PopoverTrigger>
                       <Info className="h-4 w-4 text-gray-400 ml-1 cursor-pointer" />
                     </PopoverTrigger>
-                    <PopoverContent side="top" align="end" className="w-60">
+                    <PopoverContent side="top" align="end" className="w-60 bg-white">
                       <div className="space-y-2">
                         <h4 className="font-medium">Price Breakdown</h4>
                         <div className="text-sm space-y-1">
