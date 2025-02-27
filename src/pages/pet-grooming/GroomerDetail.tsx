@@ -3,8 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { MapPin, Star, Scissors, Home, Store, ArrowLeft, Calendar, User, Info, Share2 } from "lucide-react";
-import { useState } from "react";
+import { MapPin, Star, Scissors, Home, Store, ArrowLeft, Calendar, User, Info, Share2, Check, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { BookingDialog } from "./components/BookingDialog";
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,6 +31,12 @@ interface GroomingPackage {
   created_at: string;
 }
 
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
 export default function GroomerDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -40,6 +46,20 @@ export default function GroomerDetail() {
   const [bookingTime, setBookingTime] = useState("");
   const [petDetails, setPetDetails] = useState("");
   const [selectedPackage, setSelectedPackage] = useState<GroomingPackage | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+
+  useEffect(() => {
+    // Load Razorpay script
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   const { data: groomer } = useQuery<GroomerProfile>({
     queryKey: ['groomer', id],
@@ -114,67 +134,101 @@ export default function GroomerDetail() {
 
     if (!groomer) return;
 
-    // Use selected package price or default groomer price
-    const priceToCharge = selectedPackage ? selectedPackage.price : groomer.price;
-    
-    // Extract numeric price value and convert to paise for Razorpay
-    const priceInPaise = priceToCharge * 100;
+    setPaymentProcessing(true);
 
-    const options = {
-      key: "rzp_test_5wYJG4Y7jeVhsz", 
-      amount: priceInPaise,
-      currency: "INR",
-      name: "Petsu",
-      description: `Grooming appointment with ${groomer.salon_name}${selectedPackage ? ` - ${selectedPackage.name}` : ''}`,
-      image: "/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png",
-      handler: async function (response: any) {
-        const booking = {
-          groomer_id: groomer.id,
-          user_id: user.id,
-          date: bookingDate,
-          time: bookingTime,
-          pet_details: petDetails,
-          payment_id: response.razorpay_payment_id,
-          status: 'confirmed',
-          service_type: groomer.provides_home_service ? 'home' : 'salon',
-          package_id: selectedPackage?.id || null
-        };
+    try {
+      // Check if Razorpay is loaded
+      if (typeof window.Razorpay === 'undefined') {
+        throw new Error("Razorpay SDK failed to load");
+      }
 
-        const { error } = await supabase
-          .from("grooming_bookings")
-          .insert(booking);
+      // Use selected package price or default groomer price
+      const priceToCharge = selectedPackage ? selectedPackage.price : groomer.price;
+      
+      // Extract numeric price value and convert to paise for Razorpay
+      const priceInPaise = priceToCharge * 100;
 
-        if (error) {
-          toast({
-            title: "Booking Failed",
-            description: "Unable to complete your booking. Please try again.",
-            variant: "destructive",
-          });
-          return;
+      const options = {
+        key: "rzp_test_5wYJG4Y7jeVhsz", 
+        amount: priceInPaise,
+        currency: "INR",
+        name: "Petsu",
+        description: `Grooming appointment with ${groomer.salon_name}${selectedPackage ? ` - ${selectedPackage.name}` : ''}`,
+        image: "/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png",
+        handler: async function (response: any) {
+          try {
+            const booking = {
+              groomer_id: groomer.id,
+              user_id: user.id,
+              date: bookingDate,
+              time: bookingTime,
+              pet_details: petDetails,
+              payment_id: response.razorpay_payment_id,
+              status: 'confirmed',
+              service_type: groomer.provides_home_service ? 'home' : 'salon',
+              package_id: selectedPackage?.id || null
+            };
+
+            const { error } = await supabase
+              .from("grooming_bookings")
+              .insert(booking);
+
+            if (error) throw error;
+
+            // Show success animation
+            setShowConfirmation(true);
+            
+            // Hide dialog and reset form
+            setIsBookingOpen(false);
+            
+            // Hide confirmation after 3 seconds
+            setTimeout(() => {
+              setShowConfirmation(false);
+              setBookingDate("");
+              setBookingTime("");
+              setPetDetails("");
+              setSelectedPackage(null);
+              
+              toast({
+                title: "Booking Confirmed!",
+                description: `Your grooming appointment has been booked with ${groomer.salon_name}`,
+              });
+            }, 3000);
+          } catch (error) {
+            console.error('Error saving booking:', error);
+            toast({
+              title: "Booking Failed",
+              description: "Unable to complete your booking. Please try again.",
+              variant: "destructive",
+            });
+          } finally {
+            setPaymentProcessing(false);
+          }
+        },
+        prefill: {
+          email: user.email,
+        },
+        theme: {
+          color: "#9b87f5",
+        },
+        modal: {
+          ondismiss: function() {
+            setPaymentProcessing(false);
+          }
         }
+      };
 
-        toast({
-          title: "Booking Confirmed!",
-          description: `Your grooming appointment has been booked with ${groomer.salon_name}`,
-        });
-        
-        setIsBookingOpen(false);
-        setBookingDate("");
-        setBookingTime("");
-        setPetDetails("");
-        setSelectedPackage(null);
-      },
-      prefill: {
-        email: user.email,
-      },
-      theme: {
-        color: "#9b87f5",
-      },
-    };
-
-    // @ts-ignore - Razorpay is loaded from CDN
-    const rzp = new (window as any).Razorpay(options);
-    rzp.open();
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+    } catch (error) {
+      console.error('Razorpay error:', error);
+      toast({
+        title: "Payment Error",
+        description: "Unable to initialize payment. Please try again later.",
+        variant: "destructive",
+      });
+      setPaymentProcessing(false);
+    }
   };
 
   // Calculate GST and total amount
@@ -266,9 +320,19 @@ export default function GroomerDetail() {
                 <Button 
                   onClick={() => setIsBookingOpen(true)}
                   className="md:w-auto w-full bg-[#9b87f5] hover:bg-[#7E69AB] mb-2"
+                  disabled={paymentProcessing}
                 >
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Book Appointment
+                  {paymentProcessing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Book Appointment
+                    </>
+                  )}
                 </Button>
                 <div className="flex items-center">
                   <p className="font-semibold text-lg text-[#9b87f5] mr-2">
@@ -372,6 +436,7 @@ export default function GroomerDetail() {
                               size="sm"
                               className={selectedPackage?.id === pkg.id ? "bg-[#9b87f5] hover:bg-[#7E69AB]" : ""}
                               onClick={() => setSelectedPackage(pkg)}
+                              disabled={paymentProcessing}
                             >
                               {selectedPackage?.id === pkg.id ? "Selected" : "Select"}
                             </Button>
@@ -411,6 +476,7 @@ export default function GroomerDetail() {
                         size="sm"
                         className={!selectedPackage ? "bg-[#9b87f5] hover:bg-[#7E69AB]" : ""}
                         onClick={() => setSelectedPackage(null)}
+                        disabled={paymentProcessing}
                       >
                         {!selectedPackage ? "Selected" : "Select"}
                       </Button>
@@ -466,6 +532,26 @@ export default function GroomerDetail() {
           onPetDetailsChange={setPetDetails}
           onSubmit={handleBookingSubmit}
         />
+
+        {/* Confirmation Animation */}
+        {showConfirmation && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-8 max-w-md mx-auto shadow-xl animate-scale-in">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
+                  <Check className="h-8 w-8 text-green-600" />
+                </div>
+                <h2 className="text-2xl font-bold">Booking Confirmed!</h2>
+                <p className="text-gray-600">
+                  Your appointment with {groomer.salon_name} has been successfully booked for {new Date(bookingDate).toLocaleDateString()} at {bookingTime}.
+                </p>
+                <p className="text-sm text-gray-500">
+                  You can view your appointment details in your profile.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

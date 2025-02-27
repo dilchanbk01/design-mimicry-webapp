@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { BookingsSection } from "@/components/groomer-dashboard/BookingsSection";
 
 interface GroomerProfile {
   id: string;
@@ -189,7 +190,7 @@ export default function GroomerDashboard() {
       const summary = {
         total: data.length,
         completed: data.filter(b => b.status === 'completed').length,
-        pending: data.filter(b => b.status === 'pending').length,
+        pending: data.filter(b => b.status === 'confirmed').length,
         cancelled: data.filter(b => b.status === 'cancelled').length
       };
       
@@ -426,11 +427,21 @@ export default function GroomerDashboard() {
           </Card>
         </div>
 
-        <Tabs defaultValue="packages" className="space-y-6">
+        <Tabs defaultValue="appointments" className="space-y-6">
           <TabsList className="mb-4">
+            <TabsTrigger value="appointments">Appointments</TabsTrigger>
             <TabsTrigger value="packages">Grooming Packages</TabsTrigger>
             <TabsTrigger value="revenue">Revenue Insights</TabsTrigger>
           </TabsList>
+          
+          {/* New Appointments Tab */}
+          <TabsContent value="appointments" className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Your Appointments</h2>
+            </div>
+            
+            {profile && <BookingsSection groomerId={profile.id} />}
+          </TabsContent>
           
           <TabsContent value="packages" className="space-y-4">
             <div className="flex justify-between items-center">
@@ -458,7 +469,7 @@ export default function GroomerDashboard() {
                       <h3 className="font-semibold text-lg mb-2">{pkg.name}</h3>
                       <p className="text-gray-600 text-sm mb-4 line-clamp-3">{pkg.description}</p>
                       <div className="flex justify-between items-center">
-                        <span className="text-2xl font-bold text-[#4CAF50]">${pkg.price}</span>
+                        <span className="text-2xl font-bold text-[#4CAF50]">₹{pkg.price}</span>
                         <Button variant="outline" size="sm">
                           <Edit className="h-4 w-4 mr-2" />
                           Edit
@@ -516,7 +527,7 @@ export default function GroomerDashboard() {
                   <CardContent>
                     <div className="flex items-center">
                       <DollarSign className="h-5 w-5 text-green-500 mr-2" />
-                      <span className="text-2xl font-bold">${revenue.reduce((sum, item) => sum + item.amount, 0)}</span>
+                      <span className="text-2xl font-bold">₹{revenue.reduce((sum, item) => sum + item.amount, 0)}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -529,7 +540,7 @@ export default function GroomerDashboard() {
                     <div className="flex items-center">
                       <DollarSign className="h-5 w-5 text-blue-500 mr-2" />
                       <span className="text-2xl font-bold">
-                        ${bookings.completed > 0 
+                        ₹{bookings.completed > 0 
                           ? Math.round(revenue.reduce((sum, item) => sum + item.amount, 0) / bookings.completed) 
                           : 0}
                       </span>
@@ -581,7 +592,7 @@ export default function GroomerDashboard() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="price">Price ($)</Label>
+              <Label htmlFor="price">Price (₹)</Label>
               <Input
                 id="price"
                 type="number"
