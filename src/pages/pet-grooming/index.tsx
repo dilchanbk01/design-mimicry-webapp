@@ -109,19 +109,7 @@ export default function PetGrooming() {
             </TooltipProvider>
           </div>
           
-          <div className="mt-2 bg-white/10 rounded-lg p-3 text-white text-sm">
-            {serviceType === 'salon' ? (
-              <div className="flex items-start">
-                <Info className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
-                <p>Visit the groomer's salon for professional grooming services</p>
-              </div>
-            ) : (
-              <div className="flex items-start">
-                <Info className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
-                <p></p>
-              </div>
-            )}
-          </div>
+          {/* Removed informational section */}
         </div>
 
         {isLoading ? (
