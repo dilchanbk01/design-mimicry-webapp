@@ -21,36 +21,24 @@ export function DashboardStats() {
         const today = new Date();
         const formattedToday = today.toISOString().split('T')[0];
 
-        // Get today's appointments count
-        let todayCount = 0;
+        // Get today's appointments count - using a simpler approach without count option
         const appointmentsResult = await supabase
           .from('consultations')
-          .select('id', { count: 'exact' })
+          .select('id')
           .eq('vet_id', user.id)
           .eq('date', formattedToday)
           .neq('status', 'cancelled');
 
-        if (appointmentsResult.count !== null) {
-          todayCount = appointmentsResult.count;
-        } else if (appointmentsResult.data) {
-          todayCount = appointmentsResult.data.length;
-        }
-        setTodayAppointments(todayCount);
+        setTodayAppointments(appointmentsResult.data?.length || 0);
 
-        // Get active chats count
-        let chatsCount = 0;
+        // Get active chats count - using a simpler approach without count option
         const chatsResult = await supabase
           .from('consultations')
-          .select('id', { count: 'exact' })
+          .select('id')
           .eq('vet_id', user.id)
           .eq('status', 'active');
 
-        if (chatsResult.count !== null) {
-          chatsCount = chatsResult.count;
-        } else if (chatsResult.data) {
-          chatsCount = chatsResult.data.length;
-        }
-        setActiveChats(chatsCount);
+        setActiveChats(chatsResult.data?.length || 0);
 
         // Get total patients
         const patientsResult = await supabase
