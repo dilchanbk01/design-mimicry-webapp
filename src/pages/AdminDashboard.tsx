@@ -5,6 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { EventsTable } from "@/components/admin/EventsTable";
 import { AnalyticsOverview } from "@/components/admin/AnalyticsOverview";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card } from "@/components/ui/card";
+import { Check, X } from "lucide-react";
 
 interface Event {
   id: string;
@@ -31,6 +34,15 @@ interface Analytics {
   total_revenue: number;
 }
 
+interface GroomerProfile {
+  id: string;
+  salon_name: string;
+  experience_years: number;
+  application_status: string;
+  created_at: string;
+  admin_notes: string | null;
+}
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -42,10 +54,12 @@ export default function AdminDashboard() {
     total_tickets: 0,
     total_revenue: 0
   });
+  const [groomers, setGroomers] = useState<GroomerProfile[]>([]);
 
   useEffect(() => {
     checkAdminStatus();
     fetchDashboardData();
+    fetchGroomers();
   }, []);
 
   const checkAdminStatus = async () => {
@@ -145,6 +159,50 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchGroomers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("groomer_profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setGroomers(data);
+    } catch (error) {
+      console.error("Error fetching groomers:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch groomer applications",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleGroomerStatus = async (groomerId: string, status: 'approved' | 'rejected') => {
+    try {
+      const { error } = await supabase
+        .from("groomer_profiles")
+        .update({ application_status: status })
+        .eq("id", groomerId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Groomer application ${status}`,
+      });
+
+      fetchGroomers();
+    } catch (error) {
+      console.error("Error updating groomer status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update groomer status",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -166,12 +224,65 @@ export default function AdminDashboard() {
             </Button>
           </div>
 
-          <AnalyticsOverview analytics={analytics} />
-          <EventsTable 
-            events={events} 
-            onEventDeleted={fetchDashboardData}
-            onStatusChange={handleEventStatus}
-          />
+          <Tabs defaultValue="events">
+            <TabsList className="mb-4">
+              <TabsTrigger value="events">Events</TabsTrigger>
+              <TabsTrigger value="groomers">Groomers</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="events">
+              <AnalyticsOverview analytics={analytics} />
+              <EventsTable 
+                events={events} 
+                onEventDeleted={fetchDashboardData}
+                onStatusChange={handleEventStatus}
+              />
+            </TabsContent>
+
+            <TabsContent value="groomers">
+              <div className="space-y-4">
+                {groomers.map((groomer) => (
+                  <Card key={groomer.id} className="p-4">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className="font-semibold">{groomer.salon_name}</h3>
+                        <p className="text-sm text-gray-500">
+                          Experience: {groomer.experience_years} years
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Status: <span className={`font-medium ${
+                            groomer.application_status === 'approved' ? 'text-green-600' :
+                            groomer.application_status === 'rejected' ? 'text-red-600' :
+                            'text-yellow-600'
+                          }`}>
+                            {groomer.application_status}
+                          </span>
+                        </p>
+                      </div>
+                      {groomer.application_status === 'pending' && (
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => handleGroomerStatus(groomer.id, 'approved')}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <Check className="h-4 w-4 mr-1" />
+                            Approve
+                          </Button>
+                          <Button
+                            onClick={() => handleGroomerStatus(groomer.id, 'rejected')}
+                            variant="destructive"
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            Reject
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>

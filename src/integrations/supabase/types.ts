@@ -209,6 +209,7 @@ export type Database = {
       groomer_profiles: {
         Row: {
           address: string
+          admin_notes: string | null
           application_status:
             | Database["public"]["Enums"]["groomer_status"]
             | null
@@ -228,6 +229,7 @@ export type Database = {
         }
         Insert: {
           address: string
+          admin_notes?: string | null
           application_status?:
             | Database["public"]["Enums"]["groomer_status"]
             | null
@@ -247,6 +249,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          admin_notes?: string | null
           application_status?:
             | Database["public"]["Enums"]["groomer_status"]
             | null
@@ -478,6 +481,17 @@ export type Database = {
       }
     }
     Functions: {
+      cleanup_orphaned_images: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      get_orphaned_images: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          bucket_name: string
+          file_name: string
+        }[]
+      }
       has_role: {
         Args: {
           user_id: string

@@ -1,9 +1,8 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Events from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
@@ -27,6 +26,7 @@ import CancellationPolicy from "./pages/CancellationPolicy";
 import EditEvent from "./pages/EditEvent";
 import PetGrooming from "./pages/pet-grooming";
 import GroomerDetail from "./pages/pet-grooming/GroomerDetail";
+import GroomerPending from "./pages/GroomerPending";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,40 +37,43 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter basename="/">
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/events" element={<Events />} />
-          <Route path="/events/create" element={<CreateEvent />} />
-          <Route path="/events/:id" element={<EventDetail />} />
-          <Route path="/events/:id/edit" element={<EditEvent />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/admin/auth" element={<AdminAuth />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/vet-onboarding" element={<VetOnboarding />} />
-          <Route path="/vet-auth" element={<VetAuth />} />
-          <Route path="/vet-dashboard" element={<VetDashboard />} />
-          <Route path="/find-vets" element={<FindVets />} />
-          <Route path="/consultation/:id" element={<ConsultationChat />} />
-          <Route path="/groomer-auth" element={<GroomerAuth />} />
-          <Route path="/groomer-onboarding" element={<GroomerOnboarding />} />
-          <Route path="/groomer-dashboard" element={<GroomerDashboard />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/cancellation-policy" element={<CancellationPolicy />} />
-          <Route path="/pet-grooming" element={<PetGrooming />} />
-          <Route path="/groomer/:id" element={<GroomerDetail />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <Router basename="/">
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/events" element={<Events />} />
+            <Route path="/events/create" element={<CreateEvent />} />
+            <Route path="/events/:id" element={<EventDetail />} />
+            <Route path="/events/:id/edit" element={<EditEvent />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/admin/auth" element={<AdminAuth />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/vet-onboarding" element={<VetOnboarding />} />
+            <Route path="/vet-auth" element={<VetAuth />} />
+            <Route path="/vet-dashboard" element={<VetDashboard />} />
+            <Route path="/find-vets" element={<FindVets />} />
+            <Route path="/consultation/:id" element={<ConsultationChat />} />
+            <Route path="/groomer-auth" element={<GroomerAuth />} />
+            <Route path="/groomer-onboarding" element={<GroomerOnboarding />} />
+            <Route path="/groomer-dashboard" element={<GroomerDashboard />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/cancellation-policy" element={<CancellationPolicy />} />
+            <Route path="/pet-grooming" element={<PetGrooming />} />
+            <Route path="/groomer/:id" element={<GroomerDetail />} />
+            <Route path="/groomer-pending" element={<GroomerPending />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Router>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;

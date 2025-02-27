@@ -29,10 +29,30 @@ export default function GroomerAuth() {
         .single();
 
       if (profile) {
-        navigate("/");
+        handleProfileStatus(profile.application_status);
       } else {
         navigate("/groomer-onboarding");
       }
+    }
+  };
+
+  const handleProfileStatus = (status: string) => {
+    switch (status) {
+      case 'pending':
+        navigate("/groomer-pending");
+        break;
+      case 'approved':
+        navigate("/groomer-dashboard");
+        break;
+      case 'rejected':
+        toast({
+          title: "Application Rejected",
+          description: "Your application has been rejected. Please contact support for more information.",
+          variant: "destructive"
+        });
+        break;
+      default:
+        navigate("/groomer-onboarding");
     }
   };
 
@@ -49,36 +69,26 @@ export default function GroomerAuth() {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/groomer-onboarding`,
-          }
         });
 
         if (error) throw error;
 
-        if (data.user && data.user.identities?.length === 0) {
+        if (data.user) {
+          navigate("/groomer-onboarding");
           toast({
-            title: "Account exists",
-            description: "An account with this email already exists. Please sign in.",
-            variant: "destructive",
+            title: "Success",
+            description: "Account created successfully. Please complete your profile.",
           });
-          setIsSignUp(false);
-          return;
         }
-
-        toast({
-          title: "Success!",
-          description: "Registration successful! You can now sign in.",
-        });
-        setIsSignUp(false);
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
-        if (error) throw error;
         
-        // After successful sign in, check if they have a profile
+        if (error) throw error;
+
+        // After successful login, check profile status
         const { data: profile } = await supabase
           .from("groomer_profiles")
           .select("*")
@@ -86,11 +96,7 @@ export default function GroomerAuth() {
           .single();
 
         if (profile) {
-          navigate("/");
-          toast({
-            title: "Welcome back!",
-            description: "You have already submitted an application.",
-          });
+          handleProfileStatus(profile.application_status);
         } else {
           navigate("/groomer-onboarding");
         }
