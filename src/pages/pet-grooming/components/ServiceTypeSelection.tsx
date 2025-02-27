@@ -3,12 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Home, Store, Info } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import type { ServiceOption } from "../types/packages";
 
 interface ServiceTypeSelectionProps {
   selectedType: 'salon' | 'home';
   onChange: (type: 'salon' | 'home') => void;
+  homeAddress?: string;
+  onHomeAddressChange?: (address: string) => void;
   isProcessing?: boolean;
   groomerProvidesSalon?: boolean; 
   groomerProvidesHome?: boolean;
@@ -21,6 +24,8 @@ interface ServiceTypeSelectionProps {
 export function ServiceTypeSelection({
   selectedType,
   onChange,
+  homeAddress = '',
+  onHomeAddressChange = () => {},
   isProcessing = false,
   groomerProvidesSalon = true,
   groomerProvidesHome = true,
@@ -136,6 +141,21 @@ export function ServiceTypeSelection({
                   {options.home.selected ? "Selected" : "Select"}
                 </Button>
               </div>
+
+              {options.home.selected && (
+                <div className="mt-4 pt-4 border-t border-gray-200" onClick={e => e.stopPropagation()}>
+                  <Label htmlFor="homeAddress" className="text-sm font-medium text-gray-700">Your Address</Label>
+                  <Textarea
+                    id="homeAddress"
+                    placeholder="Enter your complete address for the home service"
+                    value={homeAddress}
+                    onChange={(e) => onHomeAddressChange(e.target.value)}
+                    className="mt-1"
+                    disabled={isProcessing}
+                    required
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

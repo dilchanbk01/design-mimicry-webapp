@@ -77,26 +77,12 @@ export function BookingDialog({
   onConfirm
 }: BookingDialogProps) {
   const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
-  const [streetAddress, setStreetAddress] = useState('');
-  const [city, setCity] = useState('');
-  const [pincode, setPincode] = useState('');
   
   // Handle date input change and convert string to Date
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const dateString = e.target.value;
     const newDate = new Date(dateString);
     onDateChange(newDate);
-  };
-
-  // Handle address fields changes
-  const updateAddress = () => {
-    const fullAddress = [
-      streetAddress,
-      city,
-      pincode ? pincode : ""
-    ].filter(Boolean).join(", ");
-    
-    onHomeAddressChange(fullAddress);
   };
 
   return (
@@ -169,56 +155,16 @@ export function BookingDialog({
             </div>
             
             {selectedServiceType === 'home' && (
-              <div className="space-y-3">
-                <Label>Your Address</Label>
-                <div className="space-y-2">
-                  <div>
-                    <Label htmlFor="streetAddress" className="text-xs text-gray-500">Street Address</Label>
-                    <Input
-                      id="streetAddress"
-                      placeholder="House/Flat No., Building Name, Street"
-                      value={streetAddress}
-                      onChange={(e) => {
-                        setStreetAddress(e.target.value);
-                        updateAddress();
-                      }}
-                      disabled={isProcessing}
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label htmlFor="city" className="text-xs text-gray-500">City</Label>
-                      <Input
-                        id="city"
-                        placeholder="City"
-                        value={city}
-                        onChange={(e) => {
-                          setCity(e.target.value);
-                          updateAddress();
-                        }}
-                        disabled={isProcessing}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="pincode" className="text-xs text-gray-500">Pincode</Label>
-                      <Input
-                        id="pincode"
-                        placeholder="Pincode"
-                        value={pincode}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                          setPincode(value);
-                          updateAddress();
-                        }}
-                        maxLength={6}
-                        disabled={isProcessing}
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="homeAddress">Your Address</Label>
+                <Textarea
+                  id="homeAddress"
+                  placeholder="Enter your complete address for the home service"
+                  value={homeAddress}
+                  onChange={(e) => onHomeAddressChange(e.target.value)}
+                  disabled={isProcessing}
+                  required
+                />
               </div>
             )}
             
