@@ -142,13 +142,27 @@ export default function GroomerDashboard() {
     if (!profile) return;
     
     try {
+      // Using the raw query method to work with the new table
       const { data, error } = await supabase
-        .from("grooming_packages")
-        .select("*")
-        .eq("groomer_id", profile.id);
+        .from('grooming_packages')
+        .select('*')
+        .eq('groomer_id', profile.id);
 
       if (error) throw error;
-      setPackages(data || []);
+      
+      if (data) {
+        // Ensure proper typing of the data
+        const typedPackages: GroomingPackage[] = data.map(pkg => ({
+          id: pkg.id,
+          name: pkg.name,
+          description: pkg.description,
+          price: pkg.price,
+          groomer_id: pkg.groomer_id,
+          created_at: pkg.created_at
+        }));
+        
+        setPackages(typedPackages);
+      }
     } catch (error) {
       console.error("Error fetching packages:", error);
       toast({
@@ -219,26 +233,40 @@ export default function GroomerDashboard() {
         return;
       }
 
+      const newPackageData = {
+        name: newPackage.name,
+        description: newPackage.description,
+        price: newPackage.price,
+        groomer_id: profile.id
+      };
+
       const { data, error } = await supabase
-        .from("grooming_packages")
-        .insert({
-          name: newPackage.name,
-          description: newPackage.description,
-          price: newPackage.price,
-          groomer_id: profile.id
-        })
+        .from('grooming_packages')
+        .insert(newPackageData)
         .select();
 
       if (error) throw error;
 
-      toast({
-        title: "Package Added",
-        description: "Your grooming package has been added successfully",
-      });
-
-      setPackages([...(data || []), ...packages]);
-      setNewPackage({ name: '', description: '', price: 0 });
-      setShowAddPackage(false);
+      if (data) {
+        // Ensure proper typing for the new packages
+        const typedNewPackages: GroomingPackage[] = data.map(pkg => ({
+          id: pkg.id,
+          name: pkg.name,
+          description: pkg.description,
+          price: pkg.price,
+          groomer_id: pkg.groomer_id,
+          created_at: pkg.created_at
+        }));
+        
+        setPackages(prevPackages => [...typedNewPackages, ...prevPackages]);
+        toast({
+          title: "Package Added",
+          description: "Your grooming package has been added successfully",
+        });
+        
+        setNewPackage({ name: '', description: '', price: 0 });
+        setShowAddPackage(false);
+      }
     } catch (error) {
       console.error("Error adding package:", error);
       toast({

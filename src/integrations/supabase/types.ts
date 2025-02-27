@@ -316,6 +316,41 @@ export type Database = {
           },
         ]
       }
+      grooming_packages: {
+        Row: {
+          created_at: string
+          description: string
+          groomer_id: string
+          id: string
+          name: string
+          price: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          groomer_id: string
+          id?: string
+          name: string
+          price?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          groomer_id?: string
+          id?: string
+          name?: string
+          price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grooming_packages_groomer_id_fkey"
+            columns: ["groomer_id"]
+            isOneToOne: false
+            referencedRelation: "groomer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       help_requests: {
         Row: {
           created_at: string | null
