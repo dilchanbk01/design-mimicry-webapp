@@ -281,24 +281,14 @@ export default function GroomerDetail() {
               onClick={() => navigate('/')}
             />
 
-            <div className="flex items-center gap-2 sm:gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-white hover:bg-green-600/20"
-                onClick={handleShareGroomer}
-              >
-                <Share2 className="h-5 w-5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-white hover:bg-green-600/20"
-                onClick={() => navigate('/profile')}
-              >
-                <User className="h-5 w-5" />
-              </Button>
-            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-green-600/20"
+              onClick={() => navigate('/profile')}
+            >
+              <User className="h-5 w-5" />
+            </Button>
           </div>
         </div>
       </header>
@@ -324,59 +314,6 @@ export default function GroomerDetail() {
           >
             <Share2 className="h-4 w-4" />
           </Button>
-        </div>
-
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
-          <div className="flex flex-col items-start md:items-end ml-auto">
-            <Button 
-              onClick={() => setIsBookingOpen(true)}
-              className="md:w-auto w-full bg-green-600 hover:bg-green-700 mb-2"
-              disabled={paymentProcessing}
-            >
-              {paymentProcessing ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Book Appointment
-                </>
-              )}
-            </Button>
-            <div className="flex items-center">
-              <p className="font-semibold text-lg text-green-600 mr-2">
-                ₹{priceDetails.totalAmount.toFixed(0)}
-              </p>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button className="text-gray-400 hover:text-green-600">
-                    <Info className="h-4 w-4" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent side="left" align="start" className="w-60 bg-white z-50">
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Price Breakdown</h4>
-                    <div className="text-sm space-y-1">
-                      <div className="flex justify-between">
-                        <span>Base Price:</span>
-                        <span>₹{priceDetails.basePrice.toFixed(0)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>GST (18%):</span>
-                        <span>₹{priceDetails.gstAmount.toFixed(0)}</span>
-                      </div>
-                      <div className="border-t pt-1 mt-1 font-medium flex justify-between">
-                        <span>Total:</span>
-                        <span>₹{priceDetails.totalAmount.toFixed(0)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
         </div>
 
         <div className="space-y-6 bg-white rounded-xl p-4 shadow-sm">
@@ -409,6 +346,58 @@ export default function GroomerDetail() {
                 <span className="text-sm">Home Service Available</span>
               </div>
             )}
+          </div>
+          
+          {/* Booking Section - Moved here below the services */}
+          <div className="flex flex-col items-center">
+            <div className="flex items-center mb-2">
+              <p className="font-semibold text-lg text-green-600 mr-2">
+                ₹{priceDetails.totalAmount.toFixed(0)}
+              </p>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="text-gray-400 hover:text-green-600">
+                    <Info className="h-4 w-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent side="top" align="center" className="w-60 bg-white z-50">
+                  <div className="space-y-2">
+                    <h4 className="font-medium">Price Breakdown</h4>
+                    <div className="text-sm space-y-1">
+                      <div className="flex justify-between">
+                        <span>Base Price:</span>
+                        <span>₹{priceDetails.basePrice.toFixed(0)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>GST (18%):</span>
+                        <span>₹{priceDetails.gstAmount.toFixed(0)}</span>
+                      </div>
+                      <div className="border-t pt-1 mt-1 font-medium flex justify-between">
+                        <span>Total:</span>
+                        <span>₹{priceDetails.totalAmount.toFixed(0)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <Button 
+              onClick={() => setIsBookingOpen(true)}
+              className="w-full md:w-64 bg-green-600 hover:bg-green-700"
+              disabled={paymentProcessing}
+            >
+              {paymentProcessing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Book Appointment
+                </>
+              )}
+            </Button>
           </div>
 
           {/* Grooming Packages Section */}
