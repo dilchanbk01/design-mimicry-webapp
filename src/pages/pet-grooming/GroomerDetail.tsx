@@ -267,13 +267,13 @@ export default function GroomerDetail() {
                   <p className="font-semibold text-lg text-[#9b87f5] mr-2">
                     ₹{priceDetails.totalAmount.toFixed(0)}
                   </p>
-                  <PopoverTrigger asChild>
-                    <button className="text-gray-400 hover:text-gray-600">
-                      <Info className="h-4 w-4" />
-                    </button>
-                  </PopoverTrigger>
                   <Popover>
-                    <PopoverContent className="w-60" side="right">
+                    <PopoverTrigger asChild>
+                      <button className="text-gray-400 hover:text-gray-600">
+                        <Info className="h-4 w-4" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent side="top" align="end" className="w-60">
                       <div className="space-y-2">
                         <h4 className="font-medium">Price Breakdown</h4>
                         <div className="text-sm space-y-1">
