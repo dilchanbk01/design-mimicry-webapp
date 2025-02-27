@@ -17,6 +17,7 @@ import { ServiceTypeSelection } from "./components/ServiceTypeSelection";
 import { PriceDisplay } from "./components/PriceDisplay";
 import { supabase } from "@/integrations/supabase/client";
 import { useGroomer } from "./hooks/useGroomer";
+import { Instagram, Linkedin } from "lucide-react";
 import type { GroomingPackage } from "./types/packages";
 import type { GroomerProfile } from "./types";
 
@@ -227,7 +228,7 @@ export default function GroomerDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen flex flex-col bg-white">
       <GroomingHeader />
       
       <GroomerImageBanner 
@@ -235,7 +236,7 @@ export default function GroomerDetail() {
         altText={groomer.salon_name} 
       />
       
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-6 flex-grow">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <GroomerTitle title={groomer.salon_name} />
@@ -319,6 +320,29 @@ export default function GroomerDetail() {
           </div>
         </div>
       </div>
+      
+      {/* Footer */}
+      <footer className="bg-[#00D26A] py-4 mt-auto">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col items-center justify-center space-y-2">
+            <div className="flex items-center space-x-4 text-white">
+              <a 
+                href="https://instagram.com/petsu" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 hover:text-white/80 transition-colors"
+              >
+                <Instagram size={14} />
+                <span className="text-xs">Follow us</span>
+              </a>
+            </div>
+
+            <p className="text-[10px] text-white/90 text-center">
+              © 2025 Petsu. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
       
       {/* Booking Dialog */}
       <BookingDialog 

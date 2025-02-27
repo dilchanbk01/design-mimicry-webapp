@@ -35,24 +35,24 @@ export function GroomerPackages({
 }: GroomerPackagesProps) {
   return (
     <div>
-      <h2 className="text-lg font-semibold mb-3 text-green-800">Grooming Packages</h2>
+      <h2 className="text-sm font-semibold mb-2 text-green-800">Grooming Packages</h2>
       {packages.length === 0 ? (
-        <p className="text-gray-500 italic">No packages available</p>
+        <p className="text-gray-500 italic text-xs">No packages available</p>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {packages.map((pkg) => (
             <Card 
               key={pkg.id} 
               className={`border rounded-xl ${selectedPackage?.id === pkg.id ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}
             >
-              <CardContent className="p-4">
+              <CardContent className="p-3">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-md font-medium">{pkg.name}</h3>
+                      <h3 className="text-sm font-medium">{pkg.name}</h3>
                       <Popover>
                         <PopoverTrigger>
-                          <Info className="h-4 w-4 text-gray-400 cursor-pointer" />
+                          <Info className="h-3 w-3 text-gray-400 cursor-pointer" />
                         </PopoverTrigger>
                         <PopoverContent side="top" align="start" className="w-[280px] bg-white z-50">
                           <div className="space-y-2">
@@ -62,12 +62,12 @@ export function GroomerPackages({
                         </PopoverContent>
                       </Popover>
                     </div>
-                    <p className="text-green-600 font-semibold mt-1">₹{pkg.price}</p>
+                    <p className="text-green-600 font-semibold mt-1 text-xs">₹{pkg.price}</p>
                   </div>
                   <Button 
                     variant={selectedPackage?.id === pkg.id ? "default" : "outline"} 
                     size="sm"
-                    className={selectedPackage?.id === pkg.id ? "bg-green-600 hover:bg-green-700" : "border-green-500 text-green-600 hover:bg-green-50"}
+                    className={`text-xs py-1 px-2 h-auto ${selectedPackage?.id === pkg.id ? "bg-green-600 hover:bg-green-700" : "border-green-500 text-green-600 hover:bg-green-50"}`}
                     onClick={() => onSelectPackage(pkg)}
                     disabled={isProcessing}
                   >
@@ -81,16 +81,16 @@ export function GroomerPackages({
       )}
 
       {/* Standard service card */}
-      <Card className={`mt-3 border rounded-xl ${!selectedPackage ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}>
-        <CardContent className="p-4">
+      <Card className={`mt-2 border rounded-xl ${!selectedPackage ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}>
+        <CardContent className="p-3">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <h3 className="text-md font-medium">Standard Grooming</h3>
-                <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">Basic</Badge>
+                <h3 className="text-sm font-medium">Standard Grooming</h3>
+                <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200 text-xs py-0 px-1 h-4">Basic</Badge>
                 <Popover>
                   <PopoverTrigger>
-                    <Info className="h-4 w-4 text-gray-400 cursor-pointer" />
+                    <Info className="h-3 w-3 text-gray-400 cursor-pointer" />
                   </PopoverTrigger>
                   <PopoverContent side="top" align="start" className="w-[280px] bg-white z-50">
                     <div className="space-y-2">
@@ -102,12 +102,12 @@ export function GroomerPackages({
                   </PopoverContent>
                 </Popover>
               </div>
-              <p className="text-green-600 font-semibold mt-1">₹{groomerPrice}</p>
+              <p className="text-green-600 font-semibold mt-1 text-xs">₹{groomerPrice}</p>
             </div>
             <Button 
               variant={!selectedPackage ? "default" : "outline"} 
               size="sm"
-              className={!selectedPackage ? "bg-green-600 hover:bg-green-700" : "border-green-500 text-green-600 hover:bg-green-50"}
+              className={`text-xs py-1 px-2 h-auto ${!selectedPackage ? "bg-green-600 hover:bg-green-700" : "border-green-500 text-green-600 hover:bg-green-50"}`}
               onClick={() => onSelectPackage(null)}
               disabled={isProcessing}
             >

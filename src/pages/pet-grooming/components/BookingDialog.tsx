@@ -1,7 +1,8 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -99,10 +100,30 @@ export function BookingDialog({
     onHomeAddressChange(fullAddress);
   };
 
+  // Reset address form fields when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      setStreetAddress('');
+      setCity('');
+      setPincode('');
+    }
+  }, [isOpen]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 right-0 z-50 flex justify-end">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="absolute top-2 right-2 h-6 w-6 p-0 rounded-full" 
+            onClick={onClose}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        <DialogHeader className="pt-6">
           <DialogTitle>Book Appointment</DialogTitle>
           <DialogDescription>
             Schedule your grooming appointment with {groomer.name}

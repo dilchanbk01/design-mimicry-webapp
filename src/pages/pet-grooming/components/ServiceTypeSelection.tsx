@@ -47,7 +47,6 @@ export function ServiceTypeSelection({
           >
             <CardContent className="p-2 flex items-center justify-between">
               <div className="flex items-center gap-1">
-                <Store className="h-3 w-3 text-green-600" />
                 <span className="text-sm font-medium">Salon</span>
               </div>
               {options.salon.selected && (
@@ -64,7 +63,6 @@ export function ServiceTypeSelection({
           >
             <CardContent className="p-2 flex items-center justify-between">
               <div className="flex items-center gap-1">
-                <Home className="h-3 w-3 text-green-600" />
                 <span className="text-sm font-medium">Home Visit</span>
                 {options.home.additionalCost > 0 && (
                   <span className="text-xs text-green-600 font-medium ml-1">
