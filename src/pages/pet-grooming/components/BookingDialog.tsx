@@ -44,14 +44,13 @@ interface BookingDialogProps {
   totalPrice: number;
   isProcessing: boolean;
   
-  onDateChange: (date: Date) => void;  // Updated to accept Date instead of string
+  onDateChange: (date: Date) => void;
   onTimeChange: (time: string) => void;
   onPackageChange: (pkg: GroomingPackage | null) => void;
   onServiceTypeChange: (type: 'salon' | 'home') => void;
   onPetDetailsChange: (details: string) => void;
   onHomeAddressChange: (address: string) => void;
   onConfirm: () => void;
-  onClose: () => void;
 }
 
 export function BookingDialog({ 
