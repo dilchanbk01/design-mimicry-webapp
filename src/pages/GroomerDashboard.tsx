@@ -142,14 +142,17 @@ export default function GroomerDashboard() {
     if (!profile) return;
     
     try {
-      // Use raw query for newly created table that hasn't been added to types
+      // Use a raw query instead of rpc for the TypeScript error
       const { data, error } = await supabase
-        .rpc('fetch_groomer_packages', { groomer_id_param: profile.id });
+        .from('grooming_packages')
+        .select('*')
+        .eq('groomer_id', profile.id)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       
       if (data) {
-        // Convert raw data to properly typed objects
+        // Convert data to our interface type
         const typedPackages: GroomingPackage[] = data.map((pkg: any) => ({
           id: pkg.id,
           name: pkg.name,
@@ -231,17 +234,20 @@ export default function GroomerDashboard() {
         return;
       }
 
-      // Use RPC for newly created table that hasn't been added to types
-      const { data, error } = await supabase.rpc('add_grooming_package', {
-        name_param: newPackage.name,
-        description_param: newPackage.description,
-        price_param: newPackage.price,
-        groomer_id_param: profile.id
-      });
+      // Use regular insert instead of RPC
+      const { data, error } = await supabase
+        .from('grooming_packages')
+        .insert({
+          name: newPackage.name,
+          description: newPackage.description,
+          price: newPackage.price,
+          groomer_id: profile.id
+        })
+        .select();
 
       if (error) throw error;
-
-      // Fetch the latest packages after adding a new one
+      
+      // Refresh the packages list
       fetchPackages();
       
       toast({
