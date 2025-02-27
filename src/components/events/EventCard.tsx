@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import type { Event } from "@/types/events";
+import { getOptimizedImageUrl } from "@/utils/imageCompression";
 
 interface EventCardProps {
   event: Event;
@@ -19,9 +20,14 @@ export function EventCard({ event, isBooked }: EventCardProps) {
       onClick={() => navigate(`/events/${event.id}`)}
     >
       <img
-        src={event.image_url}
+        src={getOptimizedImageUrl(event.image_url, 800)}
         alt={event.title}
         className="w-full h-48 object-cover"
+        loading="lazy"
+        onError={(e) => {
+          const target = e.target as HTMLImageElement;
+          target.src = '/placeholder.svg';
+        }}
       />
       <div className="p-6">
         <h3 className="text-xl font-semibold text-gray-800 mb-4 line-clamp-1">

@@ -1,6 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { getOptimizedImageUrl } from "@/utils/imageCompression";
 
 interface GroomingHeroBannerProps {
   currentSlide: number;
@@ -48,10 +49,14 @@ export function GroomingHeroBanner({ currentSlide, setCurrentSlide }: GroomingHe
             }`}
           >
             <img
-              src={banner.image_url}
+              src={getOptimizedImageUrl(banner.image_url, 1200)}
               alt="Grooming banner"
               className="w-full h-full object-cover"
-              loading="lazy"
+              loading={index === 0 ? "eager" : "lazy"}
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/placeholder.svg';
+              }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
           </div>
