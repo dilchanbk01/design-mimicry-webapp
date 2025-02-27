@@ -102,23 +102,60 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
+      // First, fetch bookings
+      const { data: bookingsData, error: bookingsError } = await supabase
         .from("grooming_bookings")
-        .select("*, profiles(full_name, phone_number)")
+        .select("*")
         .eq("groomer_id", groomerId)
         .order("date", { ascending: true })
         .order("time", { ascending: true });
 
-      if (error) throw error;
+      if (bookingsError) throw bookingsError;
 
-      const formattedBookings: Booking[] = data.map(booking => ({
-        ...booking,
-        user_name: booking.profiles?.full_name || "Unknown",
-        user_phone: booking.profiles?.phone_number || "Not provided",
-      }));
+      if (!bookingsData || bookingsData.length === 0) {
+        setBookings([]);
+        setFilteredBookings([]);
+        return;
+      }
+
+      // Fetch user details separately
+      const bookingsWithUserDetails = await Promise.all(
+        bookingsData.map(async (booking) => {
+          try {
+            // Get user profile information
+            const { data: userData, error: userError } = await supabase
+              .from("profiles")
+              .select("full_name, phone_number")
+              .eq("id", booking.user_id)
+              .single();
+
+            if (userError) {
+              console.error("Error fetching user details:", userError);
+              return {
+                ...booking,
+                user_name: "Unknown",
+                user_phone: "Not provided",
+              };
+            }
+
+            return {
+              ...booking,
+              user_name: userData?.full_name || "Unknown",
+              user_phone: userData?.phone_number || "Not provided",
+            };
+          } catch (err) {
+            console.error("Error processing booking user details:", err);
+            return {
+              ...booking,
+              user_name: "Unknown",
+              user_phone: "Not provided",
+            };
+          }
+        })
+      );
       
-      setBookings(formattedBookings);
-      setFilteredBookings(formattedBookings);
+      setBookings(bookingsWithUserDetails);
+      setFilteredBookings(bookingsWithUserDetails);
     } catch (error) {
       console.error("Error fetching bookings:", error);
       toast({
