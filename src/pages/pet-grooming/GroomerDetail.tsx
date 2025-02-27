@@ -81,7 +81,9 @@ export default function GroomerDetail() {
     setSelectedPackage(pkg);
   };
 
-  const handleBookingDialogOpen = () => {
+  const handleBookingDialogOpen = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent any default navigation
+    
     // Set default package if none selected
     if (!selectedPackage && packages.length > 0) {
       setSelectedPackage(packages[0]);
