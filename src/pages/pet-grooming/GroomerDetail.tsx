@@ -248,7 +248,7 @@ export default function GroomerDetail() {
   const priceDetails = calculatePriceDetails(selectedPrice);
 
   if (!groomer) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <div className="animate-pulse flex flex-col items-center">
         <div className="h-32 w-32 bg-gray-200 rounded-full mb-4"></div>
         <div className="h-6 w-40 bg-gray-200 rounded mb-4"></div>
@@ -260,7 +260,7 @@ export default function GroomerDetail() {
   const defaultImage = 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?w=800&auto=format&fit=crop&q=60';
 
   return (
-    <div className="min-h-screen bg-green-50">
+    <div className="min-h-screen bg-white">
       {/* Transparent header with back button, logo, and profile icon */}
       <header className="absolute top-0 left-0 right-0 bg-transparent z-50">
         <div className="px-4 py-3">
@@ -311,26 +311,23 @@ export default function GroomerDetail() {
           className="w-full h-full object-cover"
         />
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-black/40 to-transparent"></div>
-        <div className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm rounded-full px-2 py-1 flex items-center">
-          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-          <span className="ml-1 font-medium">4.5</span>
-        </div>
       </div>
 
       <div className="px-4 py-6">
+        <div className="flex justify-between items-start mb-6">
+          <h1 className="text-2xl font-bold text-green-800">{groomer.salon_name}</h1>
+          <Button
+            variant="outline"
+            size="icon"
+            className="rounded-full h-8 w-8 border-green-500 text-green-600 hover:bg-green-50 ml-auto"
+            onClick={handleShareGroomer}
+          >
+            <Share2 className="h-4 w-4" />
+          </Button>
+        </div>
+
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-green-800">{groomer.salon_name}</h1>
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-full h-8 w-8 border-green-500 text-green-600 hover:bg-green-50"
-              onClick={handleShareGroomer}
-            >
-              <Share2 className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="flex flex-col items-start md:items-end">
+          <div className="flex flex-col items-start md:items-end ml-auto">
             <Button 
               onClick={() => setIsBookingOpen(true)}
               className="md:w-auto w-full bg-green-600 hover:bg-green-700 mb-2"
@@ -358,7 +355,7 @@ export default function GroomerDetail() {
                     <Info className="h-4 w-4" />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent side="top" align="end" className="w-60 bg-white">
+                <PopoverContent side="left" align="start" className="w-60 bg-white z-50">
                   <div className="space-y-2">
                     <h4 className="font-medium">Price Breakdown</h4>
                     <div className="text-sm space-y-1">
@@ -382,7 +379,7 @@ export default function GroomerDetail() {
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 bg-white rounded-xl p-4 shadow-sm">
           {/* Specializations Section */}
           <div>
             <h2 className="text-lg font-semibold mb-3 text-green-800">Specializations</h2>
@@ -424,7 +421,7 @@ export default function GroomerDetail() {
                 {packages.map((pkg) => (
                   <Card 
                     key={pkg.id} 
-                    className={`border ${selectedPackage?.id === pkg.id ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}
+                    className={`border rounded-xl ${selectedPackage?.id === pkg.id ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
@@ -435,7 +432,7 @@ export default function GroomerDetail() {
                               <PopoverTrigger>
                                 <Info className="h-4 w-4 text-gray-400 cursor-pointer" />
                               </PopoverTrigger>
-                              <PopoverContent side="right" className="w-72 bg-white">
+                              <PopoverContent side="top" align="start" className="w-[280px] bg-white z-50">
                                 <div className="space-y-2">
                                   <h4 className="font-medium">{pkg.name}</h4>
                                   <p className="text-sm text-gray-600">{pkg.description}</p>
@@ -462,7 +459,7 @@ export default function GroomerDetail() {
             )}
 
             {/* Standard service card */}
-            <Card className={`mt-3 border ${!selectedPackage ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}>
+            <Card className={`mt-3 border rounded-xl ${!selectedPackage ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-500 transition-all`}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -473,7 +470,7 @@ export default function GroomerDetail() {
                         <PopoverTrigger>
                           <Info className="h-4 w-4 text-gray-400 cursor-pointer" />
                         </PopoverTrigger>
-                        <PopoverContent side="right" className="w-72 bg-white">
+                        <PopoverContent side="top" align="start" className="w-[280px] bg-white z-50">
                           <div className="space-y-2">
                             <h4 className="font-medium">Standard Grooming</h4>
                             <p className="text-sm text-gray-600">
