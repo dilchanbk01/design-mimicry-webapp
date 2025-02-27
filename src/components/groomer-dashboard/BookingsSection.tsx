@@ -36,6 +36,28 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
   useEffect(() => {
     fetchBookings();
 
+    // Enable realtime for the grooming_bookings table
+    const enableRealtimeForTable = async () => {
+      try {
+        // Check if replication is already enabled for table
+        const { data: replicatedTables, error: replicatedError } = await supabase
+          .from('pg_catalog.pg_publication_tables')
+          .select('tablename')
+          .eq('pubname', 'supabase_realtime');
+        
+        if (replicatedError) {
+          console.error("Error checking replicated tables:", replicatedError);
+        }
+        
+        // Log the tables currently enabled for realtime
+        console.log("Tables with realtime enabled:", replicatedTables);
+      } catch (error) {
+        console.error("Error checking realtime status:", error);
+      }
+    };
+    
+    enableRealtimeForTable();
+
     // Set up realtime subscription for booking updates
     const channel = supabase
       .channel('grooming_bookings_changes')
@@ -46,12 +68,14 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
           table: 'grooming_bookings',
           filter: `groomer_id=eq.${groomerId}`
         }, 
-        () => {
-          console.log("Booking changed, refreshing data...");
+        (payload) => {
+          console.log("Booking changed, received event:", payload);
           fetchBookings();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("Realtime subscription status:", status);
+      });
 
     // Cleanup subscription on unmount
     return () => {
@@ -62,51 +86,72 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
   const fetchBookings = async () => {
     try {
       setLoading(true);
+      console.log("Fetching bookings for groomer:", groomerId);
+      
       const { data, error } = await supabase
         .from("grooming_bookings")
         .select("*")
         .eq("groomer_id", groomerId)
-        .order("date", { ascending: false });
+        .order("date", { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching bookings:", error);
+        throw error;
+      }
+
+      console.log("Fetched bookings data:", data);
 
       // Get user details for each booking
       const bookingsWithUserDetails = await Promise.all(
         (data || []).map(async (booking) => {
           try {
-            const { data: userData } = await supabase
+            console.log("Processing booking:", booking.id, "Service type:", booking.service_type);
+            
+            // Get profile data
+            const { data: userData, error: userError } = await supabase
               .from("profiles")
-              .select("id, full_name, phone_number")
+              .select("full_name, phone_number")
               .eq("id", booking.user_id)
               .single();
 
-            // Get user email from auth.users
-            const { data: { user: userAuth } } = await supabase.auth.admin.getUserById(booking.user_id);
+            if (userError) {
+              console.error("Error fetching user profile:", userError);
+            }
+
+            // Get user auth data
+            const { data: authData, error: authError } = await supabase.auth.admin.getUserById(booking.user_id);
+            
+            if (authError) {
+              console.error("Error fetching user auth data:", authError);
+            }
 
             // Get package details if available
             let packageName = "Standard Grooming";
             
-            // Check if package_id exists in the booking data
             if (booking.package_id) {
-              const { data: packageData } = await supabase
+              const { data: packageData, error: packageError } = await supabase
                 .from("grooming_packages")
                 .select("name")
                 .eq("id", booking.package_id)
                 .single();
               
+              if (packageError) {
+                console.error("Error fetching package:", packageError);
+              }
+              
               if (packageData) {
                 packageName = packageData.name;
               }
             }
-
-            // Return a properly typed Booking object with all required fields
+            
+            // Return booking with user details
             return {
               ...booking,
               user_name: userData?.full_name || "Unknown",
-              user_email: userAuth?.email || "Unknown",
+              user_email: authData?.user?.email || "Unknown",
               user_phone: userData?.phone_number || "Not provided",
               package_name: packageName,
-              // Make sure all required fields are present
+              // Ensure required fields are present
               id: booking.id,
               date: booking.date,
               time: booking.time,
@@ -122,15 +167,15 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
               additional_cost: booking.additional_cost || 0
             } as Booking;
           } catch (err) {
-            console.error("Error fetching user details:", err);
-            // Return a properly typed Booking object for error case
+            console.error("Error processing booking:", booking.id, err);
+            // Return booking with default values
             return {
               ...booking,
               user_name: "Unknown",
               user_email: "Unknown",
               user_phone: "Not provided",
               package_name: "Standard Grooming",
-              // Make sure all required fields are present even in error case
+              // Ensure required fields are present
               id: booking.id,
               date: booking.date,
               time: booking.time,
@@ -149,7 +194,31 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
         })
       );
 
-      setBookings(bookingsWithUserDetails);
+      // Filter for only upcoming appointments (today or future dates)
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      const upcomingBookings = bookingsWithUserDetails.filter(booking => {
+        const bookingDate = new Date(booking.date);
+        return bookingDate >= today && booking.status !== 'cancelled';
+      });
+      
+      console.log("Upcoming bookings:", upcomingBookings.length);
+      
+      // Sort by date and time
+      upcomingBookings.sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        
+        if (dateA.getTime() !== dateB.getTime()) {
+          return dateA.getTime() - dateB.getTime();
+        }
+        
+        // If dates are the same, sort by time
+        return a.time.localeCompare(b.time);
+      });
+      
+      setBookings(upcomingBookings);
     } catch (error) {
       console.error("Error fetching bookings:", error);
       toast({
@@ -213,7 +282,7 @@ export function BookingsSection({ groomerId }: { groomerId: string }) {
           ) : bookings.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Calendar className="h-10 w-10 mx-auto mb-2 text-gray-400" />
-              <p>No bookings yet</p>
+              <p>No upcoming bookings</p>
             </div>
           ) : (
             <div className="space-y-3 mt-2">
