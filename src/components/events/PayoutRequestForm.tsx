@@ -1,11 +1,12 @@
 
 import { useState, useEffect } from "react";
-import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { AlertCircle, Clock, CheckCircle, Ban, Mail } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { BankDetails, BankDetailsForm } from "./payout/BankDetailsForm";
+import { PayoutStatusButton } from "./payout/PayoutStatusButton";
 
 interface PayoutRequestFormProps {
   eventId: string;
@@ -18,6 +19,12 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
   const { toast } = useToast();
   const [currentStatus, setCurrentStatus] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bankDetails, setBankDetails] = useState<BankDetails>({
+    accountName: "",
+    accountNumber: "",
+    ifscCode: ""
+  });
+  const [showBankForm, setShowBankForm] = useState(false);
   
   // Check if a payout request already exists for this event
   const checkExistingRequest = async () => {
@@ -55,6 +62,34 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
     checkExistingRequest();
   }, [eventId]);
 
+  const validateBankDetails = (): boolean => {
+    if (!bankDetails.accountName.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please enter account holder name",
+        variant: "destructive",
+      });
+      return false;
+    }
+    if (!bankDetails.accountNumber.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please enter account number",
+        variant: "destructive",
+      });
+      return false;
+    }
+    if (!bankDetails.ifscCode.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please enter IFSC code",
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmitRequest = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -80,6 +115,17 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
       return;
     }
 
+    // If we don't have bank details yet, show the form instead of submitting
+    if (!showBankForm) {
+      setShowBankForm(true);
+      return;
+    }
+
+    // Validate bank details before submission
+    if (!validateBankDetails()) {
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -95,10 +141,13 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
         return;
       }
 
-      // Use Supabase RPC call to create a payout request
+      // Use Supabase RPC call to create a payout request with bank details
       const { data, error } = await supabase.rpc('create_simplified_payout_request', {
         p_event_id: eventId,
-        p_organizer_id: user.id
+        p_organizer_id: user.id,
+        p_account_name: bankDetails.accountName,
+        p_account_number: bankDetails.accountNumber,
+        p_ifsc_code: bankDetails.ifscCode
       });
 
       if (error) {
@@ -107,6 +156,7 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
       }
 
       setCurrentStatus('waiting_for_review');
+      setShowBankForm(false);
       
       // Notify admin (this would be implemented in a Supabase Edge Function)
       try {
@@ -124,7 +174,7 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
 
       toast({
         title: "Request Submitted Successfully",
-        description: "Your payout request has been sent to the admin team. They will contact you for payment details.",
+        description: "Your payout request has been sent to the admin team. They will review the provided bank details.",
       });
 
     } catch (error) {
@@ -138,73 +188,6 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
       setIsSubmitting(false);
     }
   };
-
-  const renderStatusButton = () => {
-    if (!currentStatus) {
-      return (
-        <Button
-          className="w-full bg-green-600 hover:bg-green-700 text-white"
-          onClick={handleSubmitRequest}
-          disabled={!eventEnded || isSubmitting}
-        >
-          {isSubmitting ? "Submitting..." : "Request Payout"}
-        </Button>
-      );
-    }
-
-    switch (currentStatus) {
-      case 'waiting_for_review':
-        return (
-          <Button
-            className="w-full bg-amber-500 hover:bg-amber-600 text-white cursor-default"
-            disabled
-          >
-            <Clock className="h-4 w-4 mr-2" />
-            Waiting for Review
-          </Button>
-        );
-      case 'processing':
-        return (
-          <Button
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white cursor-default"
-            disabled
-          >
-            <Mail className="h-4 w-4 mr-2" />
-            Contact Pending
-          </Button>
-        );
-      case 'payment_sent':
-        return (
-          <Button
-            className="w-full bg-green-500 hover:bg-green-600 text-white cursor-default"
-            disabled
-          >
-            <CheckCircle className="h-4 w-4 mr-2" />
-            Payment Sent
-          </Button>
-        );
-      case 'rejected':
-        return (
-          <Button
-            className="w-full bg-red-500 hover:bg-red-600 text-white"
-            onClick={handleSubmitRequest}
-          >
-            <Ban className="h-4 w-4 mr-2" />
-            Request Rejected - Try Again
-          </Button>
-        );
-      default:
-        return (
-          <Button
-            className="w-full bg-amber-500 hover:bg-amber-600 text-white cursor-default"
-            disabled
-          >
-            <Clock className="h-4 w-4 mr-2" />
-            Request Pending
-          </Button>
-        );
-    }
-  };
   
   return (
     <div className="px-6 pb-6">
@@ -212,7 +195,14 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="relative inline-block w-full">
-              {renderStatusButton()}
+              {!showBankForm && (
+                <PayoutStatusButton 
+                  status={currentStatus}
+                  isSubmitting={isSubmitting}
+                  eventEnded={eventEnded}
+                  onClick={handleSubmitRequest}
+                />
+              )}
               {!eventEnded && !currentStatus && (
                 <div className="flex items-center mt-2 text-xs text-amber-600">
                   <AlertCircle className="h-3 w-3 mr-1" />
@@ -229,10 +219,34 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
         </Tooltip>
       </TooltipProvider>
       
+      {showBankForm && !currentStatus && (
+        <div className="mt-4 space-y-4">
+          <h3 className="text-sm font-medium text-gray-700">Enter Bank Details</h3>
+          <BankDetailsForm onBankDetailsChange={setBankDetails} />
+          
+          <div className="flex gap-2 pt-2">
+            <Button 
+              variant="outline" 
+              className="flex-1"
+              onClick={() => setShowBankForm(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              onClick={handleSubmitRequest}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Submitting..." : "Submit Request"}
+            </Button>
+          </div>
+        </div>
+      )}
+      
       {currentStatus && (
         <div className="mt-4 text-sm text-gray-600">
           <p className="italic">
-            Our admin team will contact you via email to arrange your payout.
+            Our admin team will review your request and process the payment using your provided bank details.
           </p>
         </div>
       )}

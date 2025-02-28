@@ -2,8 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import { Check, X, ChevronDown, ChevronUp, ChevronsUpDown, FileCheck, Ban, Mail } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Check, X, ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -14,34 +13,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 
-interface PayoutRequest {
-  id: string;
-  event_id: string;
-  organizer_id: string;
-  status: string;
-  processed_at: string | null;
-  created_at: string;
-  amount: number | null;
-  event_title?: string;
-  organizer_name?: string;
-  organizer_email?: string;
-}
+import { PayoutRequest } from "./payout/types";
+import { StatusBadge } from "./payout/StatusBadge";
+import { RequestDetailsDialog } from "./payout/RequestDetailsDialog";
+import { PaymentProcessingDialog } from "./payout/PaymentProcessingDialog";
+import { ActionConfirmationDialog } from "./payout/ActionConfirmationDialog";
 
 interface PayoutRequestsSectionProps {
   searchQuery?: string;
@@ -140,21 +117,6 @@ export function PayoutRequestsSection({ searchQuery = "" }: PayoutRequestsSectio
   const handleViewDetails = (request: PayoutRequest) => {
     setSelectedRequest(request);
     setShowDetails(true);
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "waiting_for_review":
-        return <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">Awaiting Review</Badge>;
-      case "processing":
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">Processing</Badge>;
-      case "payment_sent":
-        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">Payment Sent</Badge>;
-      case "rejected":
-        return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">Rejected</Badge>;
-      default:
-        return <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">Pending</Badge>;
-    }
   };
 
   const handleProcessRequest = (request: PayoutRequest) => {
@@ -356,7 +318,7 @@ export function PayoutRequestsSection({ searchQuery = "" }: PayoutRequestsSectio
                   <TableRow key={request.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => handleViewDetails(request)}>
                     <TableCell className="font-medium">{request.event_title}</TableCell>
                     <TableCell>{format(new Date(request.created_at), "MMM d, yyyy")}</TableCell>
-                    <TableCell>{getStatusBadge(request.status)}</TableCell>
+                    <TableCell><StatusBadge status={request.status} /></TableCell>
                     <TableCell className="text-right">
                       <div onClick={(e) => e.stopPropagation()}>
                         {getActionButtons(request)}
@@ -369,160 +331,31 @@ export function PayoutRequestsSection({ searchQuery = "" }: PayoutRequestsSectio
           </div>
 
           {/* Details Dialog */}
-          <Dialog open={showDetails} onOpenChange={setShowDetails}>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Payout Request Details</DialogTitle>
-                <DialogDescription>
-                  Review the details of this payout request
-                </DialogDescription>
-              </DialogHeader>
-
-              {selectedRequest && (
-                <div className="space-y-4 py-2">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-gray-500">Event</p>
-                      <p>{selectedRequest.event_title}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-gray-500">Status</p>
-                      <p>{getStatusBadge(selectedRequest.status)}</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-500">Organizer</p>
-                    <p>{selectedRequest.organizer_name}</p>
-                    <p className="text-sm text-gray-500">{selectedRequest.organizer_email}</p>
-                  </div>
-
-                  {selectedRequest.amount && (
-                    <div className="pt-2 border-t">
-                      <p className="text-sm font-medium text-gray-500 mb-1">Payment</p>
-                      <p className="font-medium text-green-600">₹{selectedRequest.amount}</p>
-                    </div>
-                  )}
-
-                  <div className="pt-2 border-t">
-                    <p className="text-sm font-medium text-gray-500 mb-2">Timeline</p>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Requested</span>
-                        <span>{format(new Date(selectedRequest.created_at), "MMM d, yyyy")}</span>
-                      </div>
-                      {selectedRequest.processed_at && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-500">Processed</span>
-                          <span>{format(new Date(selectedRequest.processed_at), "MMM d, yyyy")}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <DialogFooter className="sm:justify-start">
-                {selectedRequest && getActionButtons(selectedRequest)}
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <RequestDetailsDialog
+            request={selectedRequest}
+            open={showDetails}
+            onOpenChange={setShowDetails}
+            actionButtons={selectedRequest ? getActionButtons(selectedRequest) : null}
+          />
 
           {/* Payment Processing Dialog */}
-          <Dialog open={showReviewForm} onOpenChange={setShowReviewForm}>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Process Payment</DialogTitle>
-                <DialogDescription>
-                  Enter payment details for this payout request
-                </DialogDescription>
-              </DialogHeader>
-
-              {selectedRequest && (
-                <div className="space-y-4">
-                  <Card className="bg-gray-50">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm">Event Details</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="font-medium">{selectedRequest.event_title}</p>
-                      <p className="text-sm text-gray-600">Organizer: {selectedRequest.organizer_name}</p>
-                      <p className="text-sm text-gray-600">{selectedRequest.organizer_email}</p>
-                    </CardContent>
-                  </Card>
-
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium">
-                      Payment Amount (₹)
-                      <Input 
-                        type="number" 
-                        value={paymentAmount}
-                        onChange={(e) => setPaymentAmount(Number(e.target.value))}
-                        className="mt-1"
-                      />
-                    </label>
-                    
-                    <p className="text-xs text-gray-500 italic">
-                      Note: Contact the organizer directly to obtain their bank details for processing this payment.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowReviewForm(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSendPayment}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <Check className="h-4 w-4 mr-1" /> Mark as Paid
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <PaymentProcessingDialog
+            request={selectedRequest}
+            open={showReviewForm}
+            onOpenChange={setShowReviewForm}
+            paymentAmount={paymentAmount}
+            onPaymentAmountChange={setPaymentAmount}
+            onSendPayment={handleSendPayment}
+          />
 
           {/* Action Confirmation Dialog */}
-          <Dialog open={actionDialog.open} onOpenChange={(open) => setActionDialog({ ...actionDialog, open })}>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>
-                  {actionDialog.action === "reject" && "Reject Payout Request"}
-                </DialogTitle>
-                <DialogDescription>
-                  {actionDialog.action === "reject" && "Reject the payout request. The organizer will be able to submit a new request."}
-                </DialogDescription>
-              </DialogHeader>
-
-              {actionDialog.request && (
-                <div className="py-3">
-                  <div className="bg-gray-50 p-3 rounded-md">
-                    <p className="font-medium">{actionDialog.request.event_title}</p>
-                    <p className="text-sm text-gray-600">Organizer: {actionDialog.request.organizer_name}</p>
-                  </div>
-                </div>
-              )}
-
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setActionDialog({ open: false, action: "", request: null })}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={confirmAction}
-                >
-                  <Ban className="h-4 w-4 mr-1" /> Reject
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <ActionConfirmationDialog
+            actionType={actionDialog.action}
+            request={actionDialog.request}
+            open={actionDialog.open}
+            onOpenChange={(open) => setActionDialog({ ...actionDialog, open })}
+            onConfirm={confirmAction}
+          />
         </>
       )}
     </div>
