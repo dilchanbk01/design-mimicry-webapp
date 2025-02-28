@@ -4,6 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { GroomingHeader } from "./components/GroomingHeader";
 import { Button } from "@/components/ui/button";
+import { Footer } from "@/components/layout/Footer";
 import { useGroomer } from "./hooks/useGroomer";
 import { useBooking } from "./hooks/useBooking";
 import { generateTimeSlots } from "./utils/timeSlots";
@@ -145,10 +146,10 @@ export default function GroomerBooking() {
   const displayTimeSlots = showAllTimeSlots ? availableTimes : availableTimes.slice(0, 8);
 
   return (
-    <div className="min-h-screen bg-green-500" style={{ backgroundColor: "#0dcf6a" }}>
+    <div className="min-h-screen flex flex-col bg-green-500" style={{ backgroundColor: "#0dcf6a" }}>
       <GroomingHeader />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 flex-grow">
         <Button
           variant="ghost"
           className="mb-6 text-white hover:bg-white/20"
@@ -239,6 +240,8 @@ export default function GroomerBooking() {
           </div>
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 }

@@ -13,6 +13,7 @@ import { GroomerPackages } from "./components/GroomerPackages";
 import { GroomerSpecializations } from "./components/GroomerSpecializations";
 import { GroomerImageBanner } from "./components/GroomerImageBanner";
 import { BookingSection } from "./components/BookingSection";
+import { Footer } from "@/components/layout/Footer";
 import { calculateTotalPrice } from "./utils/booking";
 import { useGroomer } from "./hooks/useGroomer";
 import { useBooking } from "./hooks/useBooking";
@@ -178,28 +179,7 @@ export default function GroomerDetail() {
         </div>
       </div>
       
-      {/* Footer */}
-      <footer className="bg-[#00D26A] py-4 mt-auto">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col items-center justify-center space-y-2">
-            <div className="flex items-center space-x-4 text-white">
-              <a 
-                href="https://instagram.com/petsu" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 hover:text-white/80 transition-colors"
-              >
-                <Instagram size={14} />
-                <span className="text-xs">Follow us</span>
-              </a>
-            </div>
-
-            <p className="text-[10px] text-white/90 text-center">
-              © 2025 Petsu. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
       
       {/* Booking Dialog */}
       <BookingDialog 

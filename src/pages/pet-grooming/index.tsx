@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Home, Store, Info } from "lucide-react";
+import { Footer } from "@/components/layout/Footer";
 import type { GroomingPartner, GroomerProfile } from "./types";
 import {
   Tooltip,
@@ -57,7 +58,7 @@ export default function PetGrooming() {
   });
 
   return (
-    <div className="min-h-screen bg-[#00D26A]">
+    <div className="min-h-screen flex flex-col bg-[#00D26A]">
       <GroomingHeader />
       
       <GroomingHeroBanner 
@@ -65,7 +66,7 @@ export default function PetGrooming() {
         setCurrentSlide={setCurrentSlide} 
       />
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 flex-grow">
         <div className="mb-8">
           <div className="grid grid-cols-2 gap-4 items-center">
             <TooltipProvider>
@@ -151,6 +152,8 @@ export default function PetGrooming() {
           </div>
         )}
       </main>
+      
+      <Footer />
     </div>
   );
 }
