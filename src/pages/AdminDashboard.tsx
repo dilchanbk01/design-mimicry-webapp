@@ -2,34 +2,16 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { EventsTable } from "@/components/admin/EventsTable";
 import { AdminAnalytics } from "@/components/admin/AdminAnalytics";
+import { EventsList } from "@/components/admin/EventsList";
+import { GroomersList } from "@/components/admin/GroomersList";
+import { SearchBar } from "@/components/admin/SearchBar";
 import { PayoutRequestsSection } from "@/components/admin/PayoutRequestsSection";
 import { GroomerPayoutsSection } from "@/components/admin/GroomerPayoutsSection";
-import { GroomerManagement } from "@/components/admin/GroomerManagement";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, CalendarDays, Users, CircleDollarSign } from "lucide-react";
-
-interface Event {
-  id: string;
-  title: string;
-  date: string;
-  status: 'pending' | 'approved' | 'rejected';
-  location: string;
-  organizer_name: string;
-  capacity: number;
-  created_at: string;
-  description: string;
-  duration: number;
-  event_type: string;
-  image_url: string;
-  organizer_email: string;
-  organizer_id: string;
-  price: number;
-}
+import { CalendarDays, Users, CircleDollarSign } from "lucide-react";
 
 interface Analytics {
   total_events: number;
@@ -42,8 +24,6 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [events, setEvents] = useState<Event[]>([]);
-  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [analytics, setAnalytics] = useState<Analytics>({
     total_events: 0,
     pending_events: 0,
@@ -58,20 +38,6 @@ export default function AdminDashboard() {
     checkAdminStatus();
     fetchDashboardData();
   }, []);
-
-  useEffect(() => {
-    // Apply search filter when search query changes
-    if (activeTab === "events") {
-      setFilteredEvents(
-        events.filter(event => 
-          event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          event.organizer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          event.organizer_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          event.location.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      );
-    }
-  }, [searchQuery, events, activeTab]);
 
   const checkAdminStatus = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -98,39 +64,27 @@ export default function AdminDashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const { data: eventsData, error: eventsError } = await supabase
-        .from('events')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (eventsError) throw eventsError;
-
-      if (eventsData) {
-        const typedEvents = eventsData.map(event => ({
-          ...event,
-          status: event.status as 'pending' | 'approved' | 'rejected'
-        }));
-        setEvents(typedEvents);
-        setFilteredEvents(typedEvents);
-        setAnalytics(prev => ({
-          ...prev,
-          total_events: eventsData.length,
-          pending_events: eventsData.filter(e => e.status === 'pending').length
-        }));
-      }
-
+      // Fetch analytics data
       const { data: analyticsData, error: analyticsError } = await supabase
         .from('event_analytics')
         .select('tickets_sold, total_amount');
 
       if (analyticsError) throw analyticsError;
 
-      if (analyticsData) {
-        setAnalytics(prev => ({
-          ...prev,
+      // Get total events and pending events count
+      const { data: eventsData, error: eventsError } = await supabase
+        .from('events')
+        .select('status');
+
+      if (eventsError) throw eventsError;
+
+      if (analyticsData && eventsData) {
+        setAnalytics({
+          total_events: eventsData.length,
+          pending_events: eventsData.filter(e => e.status === 'pending').length,
           total_tickets: analyticsData.reduce((sum, event) => sum + (event.tickets_sold || 0), 0),
           total_revenue: analyticsData.reduce((sum, event) => sum + (event.total_amount || 0), 0)
-        }));
+        });
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -141,37 +95,6 @@ export default function AdminDashboard() {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleEventStatus = async (eventId: string, newStatus: 'approved' | 'rejected') => {
-    try {
-      const { error } = await supabase
-        .from('events')
-        .update({ status: newStatus })
-        .eq('id', eventId);
-
-      if (error) throw error;
-
-      setEvents(prev => prev.map(event => 
-        event.id === eventId ? { ...event, status: newStatus } : event
-      ));
-      
-      setFilteredEvents(prev => prev.map(event => 
-        event.id === eventId ? { ...event, status: newStatus } : event
-      ));
-      
-      toast({
-        title: "Success",
-        description: `Event ${newStatus} successfully`,
-      });
-    } catch (error) {
-      console.error('Error updating event status:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update event status",
-        variant: "destructive",
-      });
     }
   };
 
@@ -207,16 +130,11 @@ export default function AdminDashboard() {
           </div>
 
           <div className="mb-6">
-            <div className="relative">
-              <Input
-                type="text"
-                placeholder="Search by name, email, location, account details..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            </div>
+            <SearchBar 
+              searchQuery={searchQuery} 
+              setSearchQuery={setSearchQuery} 
+              placeholder="Search by name, email, location, account details..."
+            />
           </div>
 
           <Tabs 
@@ -241,11 +159,7 @@ export default function AdminDashboard() {
 
             <TabsContent value="events" className="space-y-4">
               <AdminAnalytics analytics={analytics} />
-              <EventsTable 
-                events={filteredEvents} 
-                onEventDeleted={fetchDashboardData}
-                onStatusChange={handleEventStatus}
-              />
+              <EventsList searchQuery={searchQuery} />
             </TabsContent>
 
             <TabsContent value="payouts">
@@ -280,10 +194,7 @@ export default function AdminDashboard() {
             </TabsContent>
 
             <TabsContent value="groomers">
-              <GroomerManagement 
-                searchQuery={searchQuery}
-                onRefresh={handleRefreshData}
-              />
+              <GroomersList searchQuery={searchQuery} />
             </TabsContent>
           </Tabs>
         </div>
