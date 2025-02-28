@@ -9,7 +9,7 @@ import { EventInformation } from "@/components/events/EventInformation";
 import { EventHeader } from "@/components/events/EventHeader";
 import { EventImage } from "@/components/events/EventImage";
 import { EventTitle } from "@/components/events/EventTitle";
-import { EventFooter } from "@/components/events/EventFooter";
+import { Footer } from "@/components/layout/Footer";
 import { EventSuccess } from "@/components/events/EventSuccess";
 import { useEvent } from "@/hooks/useEvent";
 
@@ -100,10 +100,10 @@ export default function EventDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-[#00D26A]">
+    <div className="min-h-screen bg-[#00D26A] flex flex-col">
       <EventHeader />
 
-      <main className="pt-16">
+      <main className="pt-16 flex-grow">
         <EventImage imageUrl={event.image_url} altText={event.title} />
 
         <div className="bg-white rounded-t-3xl -mt-6 relative z-10">
@@ -120,10 +120,10 @@ export default function EventDetail() {
           </div>
 
           <EventInformation event={event} />
-          <EventFooter />
         </div>
       </main>
 
+      <Footer />
       <EventSuccess show={showTicketAnimation} />
     </div>
   );

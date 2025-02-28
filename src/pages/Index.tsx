@@ -3,11 +3,11 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 import { ServicesGrid } from "@/components/home/ServicesGrid";
 import { PartnerCards } from "@/components/home/PartnerCards";
 import { CitySelectionDialog } from "@/components/home/CitySelectionDialog";
 import { NotifyDialog } from "@/components/home/NotifyDialog";
-import { Instagram, Linkedin } from "lucide-react";
 
 const Index = () => {
   const { toast } = useToast();
@@ -75,65 +75,7 @@ const Index = () => {
         </div>
       </main>
 
-      <footer className="py-6">
-        <div className="px-4">
-          <div className="flex flex-col items-center justify-center space-y-4">
-            <div className="flex space-x-6">
-              <a 
-                href="https://instagram.com/petsu" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-white hover:text-white/80 transition-colors text-xs"
-              >
-                <Instagram size={16} />
-                <span>Follow on Instagram</span>
-              </a>
-              <a 
-                href="https://linkedin.com/company/petsu" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-white hover:text-white/80 transition-colors text-xs"
-              >
-                <Linkedin size={16} />
-                <span>Follow on LinkedIn</span>
-              </a>
-              <a 
-                href="/blog" 
-                className="flex items-center gap-2 text-white hover:text-white/80 transition-colors text-xs"
-              >
-                <span>Blog</span>
-              </a>
-            </div>
-
-            <div className="flex space-x-4 text-xs text-white/90">
-              <button 
-                onClick={() => navigate('/privacy-policy')}
-                className="hover:text-white transition-colors"
-              >
-                Privacy Policy
-              </button>
-              <span className="text-white/50">•</span>
-              <button 
-                onClick={() => navigate('/terms')}
-                className="hover:text-white transition-colors"
-              >
-                Terms & Conditions
-              </button>
-              <span className="text-white/50">•</span>
-              <button 
-                onClick={() => navigate('/cancellation-policy')}
-                className="hover:text-white transition-colors"
-              >
-                Cancellation Policy
-              </button>
-            </div>
-
-            <p className="text-[10px] text-white/70">
-              © {new Date().getFullYear()} Petsu. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
 
       <CitySelectionDialog
         open={isCityDialogOpen}

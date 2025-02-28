@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapPin, Plus } from "lucide-react";
@@ -10,7 +11,7 @@ import type { Event } from "@/types/events";
 import { getOptimizedImageUrl } from "@/utils/imageCompression";
 import { EventsHeader } from "@/components/events/EventsHeader";
 import { EventCard } from "@/components/events/EventCard";
-import { EventsFooter } from "@/components/events/EventsFooter";
+import { Footer } from "@/components/layout/Footer";
 import { HeroBanner } from "@/components/events/HeroBanner";
 
 interface Booking {
@@ -133,7 +134,7 @@ export default function Events() {
   };
 
   return (
-    <div className="min-h-screen bg-[#00D26A]">
+    <div className="min-h-screen bg-[#00D26A] flex flex-col">
       <HeroBanner currentSlide={currentSlide} setCurrentSlide={setCurrentSlide} />
       
       <EventsHeader
@@ -143,7 +144,7 @@ export default function Events() {
         setIsSearchOpen={setIsSearchOpen}
       />
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 flex-grow">
         <div className="flex justify-between items-center mb-6">
           <Button
             variant={showNearbyOnly ? "outline" : "default"}
@@ -179,7 +180,7 @@ export default function Events() {
         </div>
       </main>
 
-      <EventsFooter />
+      <Footer />
     </div>
   );
 }
