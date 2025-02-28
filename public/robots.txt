@@ -1,0 +1,11 @@
+
+User-agent: *
+Allow: /
+
+# Disallow admin routes
+Disallow: /admin-*
+Disallow: /groomer-dashboard
+Disallow: /vet-dashboard
+
+# Sitemap location
+Sitemap: https://petsu.app/sitemap.xml
