@@ -1,49 +1,56 @@
 
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 
 export function EventHeader() {
   const navigate = useNavigate();
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    let lastScrollY = window.scrollY;
-
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      setIsScrolled(currentScrollY > lastScrollY && currentScrollY > 20);
-      lastScrollY = currentScrollY;
+    const checkAuthStatus = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
     };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    
+    checkAuthStatus();
   }, []);
-  
+
   return (
-    <header className={`fixed top-0 left-0 right-0 bg-transparent z-50 transition-all duration-300 ${
-      isScrolled ? '-translate-y-full' : 'translate-y-0'
-    }`}>
-      <div className="container mx-auto px-4 py-2">
-        <div className="flex items-center justify-between">
+    <header className="bg-white shadow-sm py-2">
+      <div className="container mx-auto px-4">
+        <div className="flex justify-between items-center">
           <Button
-            onClick={() => navigate(-1)}
             variant="ghost"
-            size="icon"
-            className="text-white hover:bg-white/20"
+            size="sm"
+            onClick={() => navigate(-1)}
+            className="flex items-center text-gray-600"
           >
-            <ArrowLeft className="h-6 w-6" />
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            <span>Back</span>
           </Button>
-          <img 
-            src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
-            alt="Petsu"
-            className="h-12 cursor-pointer"
-            width="48"
-            height="48"
-            onClick={() => navigate('/')}
-          />
-          <div className="w-10" />
+
+          <Link to="/" className="flex items-center">
+            <img
+              src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png"
+              alt="Petsu"
+              className="h-8"
+              width="32"
+              height="32"
+            />
+          </Link>
+
+          {isLoggedIn ? (
+            <Link to="/profile" className="flex items-center text-gray-600">
+              <User className="h-5 w-5" />
+            </Link>
+          ) : (
+            <Link to="/auth" className="text-sm text-gray-600 hover:text-gray-800">
+              Sign In
+            </Link>
+          )}
         </div>
       </div>
     </header>

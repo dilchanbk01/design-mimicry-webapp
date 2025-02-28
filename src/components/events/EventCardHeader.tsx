@@ -22,7 +22,7 @@ export function EventCardHeader({ imageUrl, title }: EventCardHeaderProps) {
         }}
       />
       <div className="p-6">
-        <h3 className="text-xl font-semibold text-gray-800 mb-4 line-clamp-1">
+        <h3 className="text-xl font-semibold text-gray-800 mb-4 text-left line-clamp-1">
           {title}
         </h3>
       </div>
