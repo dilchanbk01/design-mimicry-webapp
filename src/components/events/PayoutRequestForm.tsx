@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,9 +60,9 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
   };
 
   // Check status on component mount
-  useState(() => {
+  useEffect(() => {
     checkExistingRequest();
-  });
+  }, [eventId]);
 
   const handlePayoutRequest = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -154,16 +154,6 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
         });
         return;
       }
-
-      // Log to help with debugging
-      console.log("Submitting payout request:", {
-        event_id: eventId,
-        organizer_id: user.id,
-        account_name: accountName,
-        account_number: accountNumber,
-        ifsc_code: ifscCode,
-        status: 'waiting_for_payment'
-      });
 
       // Store bank details with initial status of waiting_for_payment
       const { error } = await supabase.from('payout_requests').insert({

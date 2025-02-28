@@ -1,38 +1,27 @@
 
-import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  AlertCircle, 
-  CheckCircle, 
-  CircleDollarSign, 
-  Search, 
-  UserIcon, 
-  Calendar, 
-  AtSign, 
-  PhoneIcon,
-  Globe, 
-  MapPin,
-  Clock, 
-  Loader2,
-  DollarSign
-} from 'lucide-react';
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { Check, X, ChevronDown, ChevronUp, ChevronsUpDown, FileCheck, Ban } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface PayoutRequest {
   id: string;
@@ -42,526 +31,424 @@ interface PayoutRequest {
   account_number: string;
   ifsc_code: string;
   status: string;
-  created_at: string;
   processed_at: string | null;
+  created_at: string;
   amount: number | null;
   event_title?: string;
   organizer_name?: string;
   organizer_email?: string;
-  organizer_phone?: string;
-  event_date?: string;
-  event_location?: string;
-  event_price?: number;
-  organizer_website?: string;
 }
 
-interface PayoutRequestsSectionProps {
-  searchQuery?: string;
-}
-
-export function PayoutRequestsSection({ searchQuery = '' }: PayoutRequestsSectionProps) {
-  const [payoutRequests, setPayoutRequests] = useState<PayoutRequest[]>([]);
-  const [filteredRequests, setFilteredRequests] = useState<PayoutRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedFilter, setSelectedFilter] = useState<string>('waiting_for_payment');
-  const [selectedRequest, setSelectedRequest] = useState<PayoutRequest | null>(null);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [showRejectDialog, setShowRejectDialog] = useState(false);
-  const [showMarkPaidDialog, setShowMarkPaidDialog] = useState(false);
-  const [processingAction, setProcessingAction] = useState(false);
-  const [localSearchQuery, setLocalSearchQuery] = useState('');
+export function PayoutRequestsSection() {
   const { toast } = useToast();
+  const [payoutRequests, setPayoutRequests] = useState<PayoutRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sortColumn, setSortColumn] = useState<string>("created_at");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [selectedRequest, setSelectedRequest] = useState<PayoutRequest | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [actionDialog, setActionDialog] = useState<{ open: boolean; action: string; request: PayoutRequest | null }>({
+    open: false,
+    action: "",
+    request: null,
+  });
 
   useEffect(() => {
     fetchPayoutRequests();
-  }, [selectedFilter]);
-
-  useEffect(() => {
-    // Apply parent component search query when it changes
-    if (searchQuery) {
-      setLocalSearchQuery(searchQuery);
-    }
-  }, [searchQuery]);
-
-  useEffect(() => {
-    // Filter requests based on search query
-    const query = searchQuery || localSearchQuery;
-    if (query) {
-      const filtered = payoutRequests.filter(request => 
-        request.event_title?.toLowerCase().includes(query.toLowerCase()) ||
-        request.organizer_name?.toLowerCase().includes(query.toLowerCase()) ||
-        request.organizer_email?.toLowerCase().includes(query.toLowerCase()) ||
-        request.account_name.toLowerCase().includes(query.toLowerCase()) ||
-        request.event_location?.toLowerCase().includes(query.toLowerCase())
-      );
-      setFilteredRequests(filtered);
-    } else {
-      setFilteredRequests(payoutRequests);
-    }
-  }, [payoutRequests, searchQuery, localSearchQuery]);
+  }, [sortColumn, sortDirection]);
 
   const fetchPayoutRequests = async () => {
-    setLoading(true);
     try {
-      // Join with events to get the event title
-      const { data: requestsWithEvents, error: requestsError } = await supabase
-        .from('payout_requests')
+      setLoading(true);
+
+      // Fetch payout requests with event details
+      const { data, error } = await supabase
+        .from("payout_requests")
         .select(`
           *,
-          events:event_id (title, organizer_name, organizer_email, organizer_phone, date, location, price, organizer_website)
+          events!inner (
+            id,
+            title,
+            organizer_name,
+            organizer_email
+          )
         `)
-        .eq('status', selectedFilter)
-        .order('created_at', { ascending: false });
+        .order(sortColumn, { ascending: sortDirection === "asc" });
 
-      if (requestsError) throw requestsError;
+      if (error) throw error;
 
-      // Get organizer details separately since we can't directly join with auth.users
-      let processedRequests = [];
-      if (requestsWithEvents && requestsWithEvents.length > 0) {
-        processedRequests = requestsWithEvents.map(request => {
-          return {
-            ...request,
-            event_title: request.events?.title || 'Unknown Event',
-            organizer_name: request.events?.organizer_name || 'Event Organizer',
-            organizer_email: request.events?.organizer_email || '',
-            organizer_phone: request.events?.organizer_phone || '',
-            event_date: request.events?.date || '',
-            event_location: request.events?.location || '',
-            event_price: request.events?.price || 0,
-            organizer_website: request.events?.organizer_website || ''
-          };
-        });
-      }
-      
-      setPayoutRequests(processedRequests);
-      setFilteredRequests(processedRequests);
+      // Transform data to include event_title and other fields
+      const transformedData = data.map((item) => ({
+        ...item,
+        event_title: item.events?.title || "Unknown Event",
+        organizer_name: item.events?.organizer_name || "Unknown Organizer",
+        organizer_email: item.events?.organizer_email || "",
+      }));
+
+      setPayoutRequests(transformedData);
     } catch (error) {
-      console.error('Error fetching payout requests:', error);
+      console.error("Error fetching payout requests:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to load payout requests',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to load payout requests",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleApprove = async () => {
-    if (!selectedRequest) return;
-    
-    setProcessingAction(true);
-    try {
-      const { error } = await supabase
-        .from('payout_requests')
-        .update({ 
-          status: 'approved',
-          processed_at: new Date().toISOString()
-        })
-        .eq('id', selectedRequest.id);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Request Approved',
-        description: 'The payout request has been approved successfully.',
-      });
-      
-      setShowConfirmDialog(false);
-      setSelectedRequest(null);
-      fetchPayoutRequests();
-    } catch (error) {
-      console.error('Error approving request:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to approve the request',
-        variant: 'destructive',
-      });
-    } finally {
-      setProcessingAction(false);
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
     }
   };
 
-  const handleReject = async () => {
-    if (!selectedRequest) return;
-    
-    setProcessingAction(true);
-    try {
-      const { error } = await supabase
-        .from('payout_requests')
-        .update({ 
-          status: 'rejected',
-          processed_at: new Date().toISOString()
-        })
-        .eq('id', selectedRequest.id);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Request Rejected',
-        description: 'The payout request has been rejected.',
-      });
-      
-      setShowRejectDialog(false);
-      setSelectedRequest(null);
-      fetchPayoutRequests();
-    } catch (error) {
-      console.error('Error rejecting request:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to reject the request',
-        variant: 'destructive',
-      });
-    } finally {
-      setProcessingAction(false);
-    }
+  const getSortIcon = (column: string) => {
+    if (sortColumn !== column) return <ChevronsUpDown className="h-4 w-4" />;
+    return sortDirection === "asc" ? (
+      <ChevronUp className="h-4 w-4" />
+    ) : (
+      <ChevronDown className="h-4 w-4" />
+    );
   };
 
-  const handleMarkAsPaid = async () => {
-    if (!selectedRequest) return;
-    
-    setProcessingAction(true);
-    try {
-      const { error } = await supabase
-        .from('payout_requests')
-        .update({ 
-          status: 'payment_received',
-          processed_at: new Date().toISOString()
-        })
-        .eq('id', selectedRequest.id);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Payment Recorded',
-        description: 'The payment has been recorded and the organizer has been notified.',
-      });
-      
-      setShowMarkPaidDialog(false);
-      setSelectedRequest(null);
-      fetchPayoutRequests();
-    } catch (error) {
-      console.error('Error marking as paid:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update payment status',
-        variant: 'destructive',
-      });
-    } finally {
-      setProcessingAction(false);
-    }
+  const handleViewDetails = (request: PayoutRequest) => {
+    setSelectedRequest(request);
+    setShowDetails(true);
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'waiting_for_payment':
-        return <Badge variant="outline" className="bg-amber-100 text-amber-800">Waiting for Payment</Badge>;
-      case 'payment_received':
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800">Payment Received</Badge>;
-      case 'pending':
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Pending</Badge>;
-      case 'approved':
-        return <Badge variant="outline" className="bg-green-100 text-green-800">Approved</Badge>;
-      case 'rejected':
-        return <Badge variant="outline" className="bg-red-100 text-red-800">Rejected</Badge>;
+      case "waiting_for_payment":
+        return <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">Waiting for Payment</Badge>;
+      case "payment_received":
+        return <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">Payment Received</Badge>;
+      case "approved":
+        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">Approved</Badge>;
+      case "rejected":
+        return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">Rejected</Badge>;
       default:
-        return <Badge variant="outline">Unknown</Badge>;
+        return <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">Pending</Badge>;
     }
   };
 
-  const formatAccountNumber = (number: string) => {
-    // Show only last 4 digits for security
-    const lastFour = number.slice(-4);
-    return `XXXX-XXXX-${lastFour}`;
+  const handleMarkAsPaid = (request: PayoutRequest) => {
+    setActionDialog({
+      open: true,
+      action: "mark_paid",
+      request,
+    });
+  };
+
+  const handleApproveRequest = (request: PayoutRequest) => {
+    setActionDialog({
+      open: true,
+      action: "approve",
+      request,
+    });
+  };
+
+  const handleRejectRequest = (request: PayoutRequest) => {
+    setActionDialog({
+      open: true,
+      action: "reject",
+      request,
+    });
+  };
+
+  const confirmAction = async () => {
+    if (!actionDialog.request) return;
+
+    try {
+      const now = new Date().toISOString();
+      let newStatus = "";
+      let actionMessage = "";
+
+      switch (actionDialog.action) {
+        case "mark_paid":
+          newStatus = "payment_received";
+          actionMessage = "Payment has been marked as sent";
+          break;
+        case "approve":
+          newStatus = "approved";
+          actionMessage = "Payout request has been approved";
+          break;
+        case "reject":
+          newStatus = "rejected";
+          actionMessage = "Payout request has been rejected";
+          break;
+      }
+
+      const { error } = await supabase
+        .from("payout_requests")
+        .update({
+          status: newStatus,
+          processed_at: now,
+        })
+        .eq("id", actionDialog.request.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: actionMessage,
+      });
+
+      // Refresh list
+      fetchPayoutRequests();
+    } catch (error) {
+      console.error("Error updating payout request:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update payout request",
+        variant: "destructive",
+      });
+    } finally {
+      setActionDialog({ open: false, action: "", request: null });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="w-full h-10 animate-pulse bg-gray-200 rounded"></div>
+        ))}
+      </div>
+    );
+  }
+
+  const getActionButtons = (request: PayoutRequest) => {
+    switch (request.status) {
+      case "waiting_for_payment":
+        return (
+          <Button
+            size="sm"
+            variant="outline"
+            className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100"
+            onClick={() => handleMarkAsPaid(request)}
+          >
+            Mark as Paid
+          </Button>
+        );
+      case "payment_received":
+        return (
+          <div className="flex space-x-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100"
+              onClick={() => handleApproveRequest(request)}
+            >
+              <Check className="h-4 w-4 mr-1" /> Approve
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+              onClick={() => handleRejectRequest(request)}
+            >
+              <X className="h-4 w-4 mr-1" /> Reject
+            </Button>
+          </div>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
-    <Card className="mt-6">
-      <CardHeader>
-        <CardTitle className="text-xl flex items-center">
-          <CircleDollarSign className="h-5 w-5 mr-2 text-blue-600" />
-          Payout Requests
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {!searchQuery && (
-          <div className="mb-4 relative">
-            <Input
-              type="text"
-              placeholder="Search by organizer, event title, or location..."
-              value={localSearchQuery}
-              onChange={(e) => setLocalSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          </div>
-        )}
+    <div>
+      <h3 className="text-lg font-medium mb-4">Payout Requests</h3>
 
-        <Tabs defaultValue="waiting_for_payment" onValueChange={setSelectedFilter}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="waiting_for_payment" className="flex items-center gap-1">
-              <Clock className="h-4 w-4" /> Awaiting Payment
-            </TabsTrigger>
-            <TabsTrigger value="payment_received" className="flex items-center gap-1">
-              <DollarSign className="h-4 w-4" /> Payment Received
-            </TabsTrigger>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="approved">Approved</TabsTrigger>
-            <TabsTrigger value="rejected">Rejected</TabsTrigger>
-          </TabsList>
-          
-          {loading ? (
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-24 bg-gray-100 animate-pulse rounded-lg" />
-              ))}
-            </div>
-          ) : filteredRequests.length === 0 ? (
-            <div className="text-center py-8">
-              <CircleDollarSign className="h-10 w-10 mx-auto text-gray-400 mb-2" />
-              <p className="text-gray-500">
-                {localSearchQuery || searchQuery 
-                  ? "No payout requests matching your search" 
-                  : `No ${selectedFilter.replace('_', ' ')} payout requests found`}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredRequests.map(request => (
-                <div 
-                  key={request.id}
-                  className="border p-4 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex flex-col lg:flex-row lg:justify-between">
-                    <div>
-                      <h3 className="font-medium text-lg">{request.event_title}</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 mt-2">
-                        <p className="text-sm flex items-center">
-                          <UserIcon className="h-3.5 w-3.5 mr-1 text-gray-400" /> {request.organizer_name}
-                        </p>
-                        <p className="text-sm flex items-center">
-                          <AtSign className="h-3.5 w-3.5 mr-1 text-gray-400" /> {request.organizer_email}
-                        </p>
-                        {request.organizer_phone && (
-                          <p className="text-sm flex items-center">
-                            <PhoneIcon className="h-3.5 w-3.5 mr-1 text-gray-400" /> {request.organizer_phone}
-                          </p>
-                        )}
-                        {request.organizer_website && (
-                          <p className="text-sm flex items-center">
-                            <Globe className="h-3.5 w-3.5 mr-1 text-gray-400" /> {request.organizer_website}
-                          </p>
-                        )}
-                        {request.event_date && (
-                          <p className="text-sm flex items-center">
-                            <Calendar className="h-3.5 w-3.5 mr-1 text-gray-400" /> {format(new Date(request.event_date), 'PPP')}
-                          </p>
-                        )}
-                        {request.event_location && (
-                          <p className="text-sm flex items-center">
-                            <MapPin className="h-3.5 w-3.5 mr-1 text-gray-400" /> {request.event_location}
-                          </p>
-                        )}
+      {payoutRequests.length === 0 ? (
+        <div className="text-center py-8 border rounded-md bg-gray-50">
+          <p className="text-gray-500">No payout requests found</p>
+        </div>
+      ) : (
+        <>
+          <div className="rounded-md border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead
+                    className="w-[200px] cursor-pointer"
+                    onClick={() => handleSort("events.title")}
+                  >
+                    <div className="flex items-center">
+                      Event {getSortIcon("events.title")}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => handleSort("created_at")}
+                  >
+                    <div className="flex items-center">
+                      Requested {getSortIcon("created_at")}
+                    </div>
+                  </TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {payoutRequests.map((request) => (
+                  <TableRow key={request.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => handleViewDetails(request)}>
+                    <TableCell className="font-medium">{request.event_title}</TableCell>
+                    <TableCell>{format(new Date(request.created_at), "MMM d, yyyy")}</TableCell>
+                    <TableCell>{getStatusBadge(request.status)}</TableCell>
+                    <TableCell className="text-right">
+                      <div onClick={(e) => e.stopPropagation()}>
+                        {getActionButtons(request)}
                       </div>
-                      <div className="flex items-center gap-2 mt-3">
-                        <p className="text-xs text-gray-500">
-                          Submitted on {format(new Date(request.created_at), 'PPP')}
-                        </p>
-                        {getStatusBadge(request.status)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Details Dialog */}
+          <Dialog open={showDetails} onOpenChange={setShowDetails}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Payout Request Details</DialogTitle>
+                <DialogDescription>
+                  Review the details of this payout request
+                </DialogDescription>
+              </DialogHeader>
+
+              {selectedRequest && (
+                <div className="space-y-4 py-2">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-gray-500">Event</p>
+                      <p>{selectedRequest.event_title}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-gray-500">Status</p>
+                      <p>{getStatusBadge(selectedRequest.status)}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-gray-500">Organizer</p>
+                    <p>{selectedRequest.organizer_name}</p>
+                    <p className="text-sm text-gray-500">{selectedRequest.organizer_email}</p>
+                  </div>
+
+                  <div className="pt-2 border-t">
+                    <p className="text-sm font-medium text-gray-500 mb-2">Bank Details</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-500">Account Name</p>
+                        <p className="font-medium">{selectedRequest.account_name}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-500">IFSC Code</p>
+                        <p className="font-medium">{selectedRequest.ifsc_code}</p>
+                      </div>
+                      <div className="space-y-1 col-span-2">
+                        <p className="text-xs text-gray-500">Account Number</p>
+                        <p className="font-medium">{selectedRequest.account_number}</p>
                       </div>
                     </div>
-                    
-                    <div className="mt-4 lg:mt-0 flex flex-col items-start lg:items-end">
-                      <div className="text-xl font-bold text-green-600 mb-2">
-                        ₹{request.amount?.toFixed(2) || request.event_price?.toFixed(2) || 'N/A'}
-                      </div>
-                      <div className="text-sm">
-                        <p className="text-gray-500"><span className="font-medium">Account:</span> {request.account_name}</p>
-                        <p className="text-gray-500"><span className="font-medium">Number:</span> {formatAccountNumber(request.account_number)}</p>
-                        <p className="text-gray-500"><span className="font-medium">IFSC:</span> {request.ifsc_code}</p>
-                      </div>
-                      
-                      {request.status === 'waiting_for_payment' && (
-                        <div className="mt-3 flex gap-2">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedRequest(request);
-                              setShowRejectDialog(true);
-                            }}
-                            className="text-red-600 hover:bg-red-50"
-                          >
-                            Reject
-                          </Button>
-                          <Button 
-                            size="sm"
-                            onClick={() => {
-                              setSelectedRequest(request);
-                              setShowMarkPaidDialog(true);
-                            }}
-                            className="bg-blue-600 hover:bg-blue-700"
-                          >
-                            Mark as Paid
-                          </Button>
-                        </div>
-                      )}
+                  </div>
 
-                      {request.status === 'payment_received' && (
-                        <div className="mt-3 flex gap-2">
-                          <Button 
-                            size="sm"
-                            onClick={() => {
-                              setSelectedRequest(request);
-                              setShowConfirmDialog(true);
-                            }}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            Approve Payout
-                          </Button>
+                  <div className="pt-2 border-t">
+                    <p className="text-sm font-medium text-gray-500 mb-2">Timeline</p>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Requested</span>
+                        <span>{format(new Date(selectedRequest.created_at), "MMM d, yyyy")}</span>
+                      </div>
+                      {selectedRequest.processed_at && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">Processed</span>
+                          <span>{format(new Date(selectedRequest.processed_at), "MMM d, yyyy")}</span>
                         </div>
-                      )}
-                      
-                      {request.status === 'pending' && (
-                        <div className="mt-3 flex gap-2">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedRequest(request);
-                              setShowRejectDialog(true);
-                            }}
-                            className="text-red-600 hover:bg-red-50"
-                          >
-                            Reject
-                          </Button>
-                          <Button 
-                            size="sm"
-                            onClick={() => {
-                              setSelectedRequest(request);
-                              setShowConfirmDialog(true);
-                            }}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            Approve
-                          </Button>
-                        </div>
-                      )}
-                      
-                      {request.status !== 'pending' && request.status !== 'waiting_for_payment' && request.status !== 'payment_received' && request.processed_at && (
-                        <p className="text-xs text-gray-500 mt-2">
-                          {request.status === 'approved' ? 'Approved' : 'Rejected'} on {format(new Date(request.processed_at), 'PPP')}
-                        </p>
                       )}
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </Tabs>
-      </CardContent>
+              )}
 
-      {/* Confirmation Dialog */}
-      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Approve Payout Request</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to approve this payout request for {selectedRequest?.event_title}?
-              <div className="mt-2 p-3 bg-gray-50 rounded-md">
-                <p><strong>Organizer:</strong> {selectedRequest?.organizer_name}</p>
-                <p><strong>Email:</strong> {selectedRequest?.organizer_email}</p>
-                <p><strong>Amount:</strong> ₹{selectedRequest?.amount?.toFixed(2) || selectedRequest?.event_price?.toFixed(2) || 'N/A'}</p>
-                <p><strong>Account Name:</strong> {selectedRequest?.account_name}</p>
-                <p><strong>Account Number:</strong> {selectedRequest?.account_number}</p>
-                <p><strong>IFSC Code:</strong> {selectedRequest?.ifsc_code}</p>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={processingAction}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={processingAction}
-              onClick={(e) => {
-                e.preventDefault();
-                handleApprove();
-              }}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {processingAction ? "Processing..." : "Yes, Approve"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              <DialogFooter className="sm:justify-start">
+                {selectedRequest && getActionButtons(selectedRequest)}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
-      {/* Reject Dialog */}
-      <AlertDialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reject Payout Request</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to reject this payout request for {selectedRequest?.event_title}?
-              <div className="mt-2 p-3 bg-gray-50 rounded-md">
-                <p><strong>Organizer:</strong> {selectedRequest?.organizer_name}</p>
-                <p><strong>Email:</strong> {selectedRequest?.organizer_email}</p>
-                <p><strong>Amount:</strong> ₹{selectedRequest?.amount?.toFixed(2) || selectedRequest?.event_price?.toFixed(2) || 'N/A'}</p>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={processingAction}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={processingAction}
-              onClick={(e) => {
-                e.preventDefault();
-                handleReject();
-              }}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {processingAction ? "Processing..." : "Yes, Reject"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          {/* Action Confirmation Dialog */}
+          <Dialog open={actionDialog.open} onOpenChange={(open) => setActionDialog({ ...actionDialog, open })}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>
+                  {actionDialog.action === "mark_paid" && "Mark Payment as Sent"}
+                  {actionDialog.action === "approve" && "Approve Payout Request"}
+                  {actionDialog.action === "reject" && "Reject Payout Request"}
+                </DialogTitle>
+                <DialogDescription>
+                  {actionDialog.action === "mark_paid" && "Confirm that you have sent the payment to the organizer's bank account."}
+                  {actionDialog.action === "approve" && "Confirm that the payout request is approved and the payment process is complete."}
+                  {actionDialog.action === "reject" && "Reject the payout request. The organizer will be able to submit a new request."}
+                </DialogDescription>
+              </DialogHeader>
 
-      {/* Mark as Paid Dialog */}
-      <AlertDialog open={showMarkPaidDialog} onOpenChange={setShowMarkPaidDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Mark Payment as Received</AlertDialogTitle>
-            <AlertDialogDescription>
-              Confirm that you have made the payment to this organizer's account:
-              <div className="mt-2 p-3 bg-gray-50 rounded-md">
-                <p><strong>Event:</strong> {selectedRequest?.event_title}</p>
-                <p><strong>Organizer:</strong> {selectedRequest?.organizer_name}</p>
-                <p><strong>Amount:</strong> ₹{selectedRequest?.amount?.toFixed(2) || selectedRequest?.event_price?.toFixed(2) || 'N/A'}</p>
-                <p><strong>Account Name:</strong> {selectedRequest?.account_name}</p>
-                <p><strong>Account Number:</strong> {selectedRequest?.account_number}</p>
-                <p><strong>IFSC Code:</strong> {selectedRequest?.ifsc_code}</p>
-              </div>
-              <p className="mt-2 text-amber-600">
-                This will notify the organizer that payment has been sent. 
-                Please ensure the transaction has been completed successfully.
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={processingAction}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={processingAction}
-              onClick={(e) => {
-                e.preventDefault();
-                handleMarkAsPaid();
-              }}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {processingAction ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <DollarSign className="mr-2 h-4 w-4" />}
-              {processingAction ? "Processing..." : "Confirm Payment Sent"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </Card>
+              {actionDialog.request && (
+                <div className="py-3">
+                  <div className="bg-gray-50 p-3 rounded-md">
+                    <p className="font-medium">{actionDialog.request.event_title}</p>
+                    <p className="text-sm text-gray-600">Organizer: {actionDialog.request.organizer_name}</p>
+                    {actionDialog.action === "mark_paid" && (
+                      <div className="mt-2 pt-2 border-t border-gray-200">
+                        <p className="text-sm font-medium">Bank Details:</p>
+                        <p className="text-sm">{actionDialog.request.account_name}</p>
+                        <p className="text-sm">Acc: {actionDialog.request.account_number}</p>
+                        <p className="text-sm">IFSC: {actionDialog.request.ifsc_code}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setActionDialog({ open: false, action: "", request: null })}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant={actionDialog.action === "reject" ? "destructive" : "default"}
+                  className={actionDialog.action === "approve" ? "bg-green-600 hover:bg-green-700" : ""}
+                  onClick={confirmAction}
+                >
+                  {actionDialog.action === "mark_paid" && (
+                    <>
+                      <Check className="h-4 w-4 mr-1" /> Confirm Payment Sent
+                    </>
+                  )}
+                  {actionDialog.action === "approve" && (
+                    <>
+                      <FileCheck className="h-4 w-4 mr-1" /> Approve
+                    </>
+                  )}
+                  {actionDialog.action === "reject" && (
+                    <>
+                      <Ban className="h-4 w-4 mr-1" /> Reject
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
+    </div>
   );
 }
