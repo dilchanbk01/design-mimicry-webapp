@@ -35,9 +35,9 @@ export function EventHeader() {
             <img
               src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png"
               alt="Petsu"
-              className="h-8"
-              width="32"
-              height="32"
+              className="h-10"
+              width="40"
+              height="40"
             />
           </Link>
 
