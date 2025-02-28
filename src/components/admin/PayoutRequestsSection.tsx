@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import { Check, X, ChevronDown, ChevronUp, ChevronsUpDown, FileCheck, Ban } from "lucide-react";
+import { Check, X, ChevronDown, ChevronUp, ChevronsUpDown, FileCheck, Ban, Mail } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -22,14 +22,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 interface PayoutRequest {
   id: string;
   event_id: string;
   organizer_id: string;
-  account_name: string;
-  account_number: string;
-  ifsc_code: string;
   status: string;
   processed_at: string | null;
   created_at: string;
@@ -47,6 +51,8 @@ export function PayoutRequestsSection() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [selectedRequest, setSelectedRequest] = useState<PayoutRequest | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState<number>(0);
   const [actionDialog, setActionDialog] = useState<{ open: boolean; action: string; request: PayoutRequest | null }>({
     open: false,
     action: "",
@@ -123,12 +129,12 @@ export function PayoutRequestsSection() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "waiting_for_payment":
-        return <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">Waiting for Payment</Badge>;
-      case "payment_received":
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">Payment Received</Badge>;
-      case "approved":
-        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">Approved</Badge>;
+      case "waiting_for_review":
+        return <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">Awaiting Review</Badge>;
+      case "processing":
+        return <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">Processing</Badge>;
+      case "payment_sent":
+        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">Payment Sent</Badge>;
       case "rejected":
         return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">Rejected</Badge>;
       default:
@@ -136,20 +142,31 @@ export function PayoutRequestsSection() {
     }
   };
 
-  const handleMarkAsPaid = (request: PayoutRequest) => {
-    setActionDialog({
-      open: true,
-      action: "mark_paid",
-      request,
-    });
+  const handleProcessRequest = (request: PayoutRequest) => {
+    setSelectedRequest(request);
+    
+    // For analyzing event revenue
+    fetchEventAnalytics(request.event_id);
+    
+    setShowReviewForm(true);
   };
 
-  const handleApproveRequest = (request: PayoutRequest) => {
-    setActionDialog({
-      open: true,
-      action: "approve",
-      request,
-    });
+  const fetchEventAnalytics = async (eventId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('event_analytics')
+        .select('*')
+        .eq('event_id', eventId)
+        .single();
+        
+      if (error) throw error;
+      
+      if (data) {
+        setPaymentAmount(data.total_amount || 0);
+      }
+    } catch (error) {
+      console.error("Error fetching event analytics:", error);
+    }
   };
 
   const handleRejectRequest = (request: PayoutRequest) => {
@@ -158,6 +175,42 @@ export function PayoutRequestsSection() {
       action: "reject",
       request,
     });
+  };
+
+  const handleSendPayment = async () => {
+    if (!selectedRequest) return;
+    
+    try {
+      const now = new Date().toISOString();
+      
+      // Update the payout request status
+      const { error } = await supabase
+        .from("payout_requests")
+        .update({
+          status: "payment_sent",
+          processed_at: now,
+          amount: paymentAmount
+        })
+        .eq("id", selectedRequest.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Payment has been marked as sent",
+      });
+
+      // Refresh list
+      fetchPayoutRequests();
+      setShowReviewForm(false);
+    } catch (error) {
+      console.error("Error updating payout request:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update payout request",
+        variant: "destructive",
+      });
+    }
   };
 
   const confirmAction = async () => {
@@ -169,14 +222,6 @@ export function PayoutRequestsSection() {
       let actionMessage = "";
 
       switch (actionDialog.action) {
-        case "mark_paid":
-          newStatus = "payment_received";
-          actionMessage = "Payment has been marked as sent";
-          break;
-        case "approve":
-          newStatus = "approved";
-          actionMessage = "Payout request has been approved";
-          break;
         case "reject":
           newStatus = "rejected";
           actionMessage = "Payout request has been rejected";
@@ -224,33 +269,29 @@ export function PayoutRequestsSection() {
 
   const getActionButtons = (request: PayoutRequest) => {
     switch (request.status) {
-      case "waiting_for_payment":
-        return (
-          <Button
-            size="sm"
-            variant="outline"
-            className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100"
-            onClick={() => handleMarkAsPaid(request)}
-          >
-            Mark as Paid
-          </Button>
-        );
-      case "payment_received":
+      case "waiting_for_review":
+      case "processing":
         return (
           <div className="flex space-x-2">
             <Button
               size="sm"
               variant="outline"
-              className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100"
-              onClick={() => handleApproveRequest(request)}
+              className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleProcessRequest(request);
+              }}
             >
-              <Check className="h-4 w-4 mr-1" /> Approve
+              Process Payment
             </Button>
             <Button
               size="sm"
               variant="outline"
               className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
-              onClick={() => handleRejectRequest(request)}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRejectRequest(request);
+              }}
             >
               <X className="h-4 w-4 mr-1" /> Reject
             </Button>
@@ -341,23 +382,12 @@ export function PayoutRequestsSection() {
                     <p className="text-sm text-gray-500">{selectedRequest.organizer_email}</p>
                   </div>
 
-                  <div className="pt-2 border-t">
-                    <p className="text-sm font-medium text-gray-500 mb-2">Bank Details</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <p className="text-xs text-gray-500">Account Name</p>
-                        <p className="font-medium">{selectedRequest.account_name}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs text-gray-500">IFSC Code</p>
-                        <p className="font-medium">{selectedRequest.ifsc_code}</p>
-                      </div>
-                      <div className="space-y-1 col-span-2">
-                        <p className="text-xs text-gray-500">Account Number</p>
-                        <p className="font-medium">{selectedRequest.account_number}</p>
-                      </div>
+                  {selectedRequest.amount && (
+                    <div className="pt-2 border-t">
+                      <p className="text-sm font-medium text-gray-500 mb-1">Payment</p>
+                      <p className="font-medium text-green-600">₹{selectedRequest.amount}</p>
                     </div>
-                  </div>
+                  )}
 
                   <div className="pt-2 border-t">
                     <p className="text-sm font-medium text-gray-500 mb-2">Timeline</p>
@@ -383,18 +413,72 @@ export function PayoutRequestsSection() {
             </DialogContent>
           </Dialog>
 
+          {/* Payment Processing Dialog */}
+          <Dialog open={showReviewForm} onOpenChange={setShowReviewForm}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Process Payment</DialogTitle>
+                <DialogDescription>
+                  Enter payment details for this payout request
+                </DialogDescription>
+              </DialogHeader>
+
+              {selectedRequest && (
+                <div className="space-y-4">
+                  <Card className="bg-gray-50">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">Event Details</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="font-medium">{selectedRequest.event_title}</p>
+                      <p className="text-sm text-gray-600">Organizer: {selectedRequest.organizer_name}</p>
+                      <p className="text-sm text-gray-600">{selectedRequest.organizer_email}</p>
+                    </CardContent>
+                  </Card>
+
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium">
+                      Payment Amount (₹)
+                      <Input 
+                        type="number" 
+                        value={paymentAmount}
+                        onChange={(e) => setPaymentAmount(Number(e.target.value))}
+                        className="mt-1"
+                      />
+                    </label>
+                    
+                    <p className="text-xs text-gray-500 italic">
+                      Note: Contact the organizer directly to obtain their bank details for processing this payment.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowReviewForm(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSendPayment}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Check className="h-4 w-4 mr-1" /> Mark as Paid
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           {/* Action Confirmation Dialog */}
           <Dialog open={actionDialog.open} onOpenChange={(open) => setActionDialog({ ...actionDialog, open })}>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>
-                  {actionDialog.action === "mark_paid" && "Mark Payment as Sent"}
-                  {actionDialog.action === "approve" && "Approve Payout Request"}
                   {actionDialog.action === "reject" && "Reject Payout Request"}
                 </DialogTitle>
                 <DialogDescription>
-                  {actionDialog.action === "mark_paid" && "Confirm that you have sent the payment to the organizer's bank account."}
-                  {actionDialog.action === "approve" && "Confirm that the payout request is approved and the payment process is complete."}
                   {actionDialog.action === "reject" && "Reject the payout request. The organizer will be able to submit a new request."}
                 </DialogDescription>
               </DialogHeader>
@@ -404,14 +488,6 @@ export function PayoutRequestsSection() {
                   <div className="bg-gray-50 p-3 rounded-md">
                     <p className="font-medium">{actionDialog.request.event_title}</p>
                     <p className="text-sm text-gray-600">Organizer: {actionDialog.request.organizer_name}</p>
-                    {actionDialog.action === "mark_paid" && (
-                      <div className="mt-2 pt-2 border-t border-gray-200">
-                        <p className="text-sm font-medium">Bank Details:</p>
-                        <p className="text-sm">{actionDialog.request.account_name}</p>
-                        <p className="text-sm">Acc: {actionDialog.request.account_number}</p>
-                        <p className="text-sm">IFSC: {actionDialog.request.ifsc_code}</p>
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
@@ -424,25 +500,10 @@ export function PayoutRequestsSection() {
                   Cancel
                 </Button>
                 <Button
-                  variant={actionDialog.action === "reject" ? "destructive" : "default"}
-                  className={actionDialog.action === "approve" ? "bg-green-600 hover:bg-green-700" : ""}
+                  variant="destructive"
                   onClick={confirmAction}
                 >
-                  {actionDialog.action === "mark_paid" && (
-                    <>
-                      <Check className="h-4 w-4 mr-1" /> Confirm Payment Sent
-                    </>
-                  )}
-                  {actionDialog.action === "approve" && (
-                    <>
-                      <FileCheck className="h-4 w-4 mr-1" /> Approve
-                    </>
-                  )}
-                  {actionDialog.action === "reject" && (
-                    <>
-                      <Ban className="h-4 w-4 mr-1" /> Reject
-                    </>
-                  )}
+                  <Ban className="h-4 w-4 mr-1" /> Reject
                 </Button>
               </DialogFooter>
             </DialogContent>

@@ -95,21 +95,21 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
         return;
       }
 
-      // Create a simpler payout request without bank details
-      const { error } = await supabase.from('payout_requests').insert({
-        event_id: eventId,
-        organizer_id: user.id,
-        status: 'waiting_for_review'
+      // Create a payout request record with minimal information
+      // Using RPC function to avoid not-null constraint issues with the payout_requests table
+      const { data, error } = await supabase.rpc('create_simplified_payout_request', {
+        p_event_id: eventId,
+        p_organizer_id: user.id
       });
 
       if (error) {
-        console.error("Supabase error inserting payout request:", error);
+        console.error("Supabase error creating payout request:", error);
         throw error;
       }
 
       setCurrentStatus('waiting_for_review');
       
-      // Notify admin via email function (this would be implemented in a Supabase Edge Function)
+      // Notify admin (this would be implemented in a Supabase Edge Function)
       try {
         await supabase.functions.invoke('notify-admin', {
           body: {
