@@ -52,19 +52,6 @@ function App() {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
-  // Add the Google verification meta tag to the document head
-  useEffect(() => {
-    // Check if the meta tag already exists
-    const existingTag = document.querySelector('meta[name="google-site-verification"]');
-    
-    if (!existingTag) {
-      const metaTag = document.createElement('meta');
-      metaTag.name = 'google-site-verification';
-      metaTag.content = 'KXi8c652AYEi6bvRvk9BTUScY2LrrwffGxZnWZH10W0';
-      document.head.appendChild(metaTag);
-    }
-  }, []);
-
   return (
     <Routes>
       {/* Home Route */}
