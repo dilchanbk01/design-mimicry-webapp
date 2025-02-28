@@ -20,12 +20,15 @@ const Index = () => {
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
+    let lastScrollY = window.scrollY;
+
     const handleScroll = () => {
-      const scrollPosition = window.scrollY;
-      setIsScrolled(scrollPosition > 10);
+      const currentScrollY = window.scrollY;
+      setIsScrolled(currentScrollY > lastScrollY && currentScrollY > 50);
+      lastScrollY = currentScrollY;
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
