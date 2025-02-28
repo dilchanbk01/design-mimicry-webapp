@@ -60,8 +60,8 @@ const Index = () => {
         onCitySelect={() => setIsCityDialogOpen(true)}
       />
 
-      <main className="container mx-auto px-4 pt-24 pb-20 flex-grow">
-        <div className="max-w-4xl mx-auto space-y-4">
+      <main className="flex-grow">
+        <div className="max-w-4xl mx-auto px-4 pt-24 pb-20">
           <ServicesGrid onEssentialsClick={() => setIsNotifyDialogOpen(true)} />
           <PartnerCards
             onVetPartnerClick={handleVetPartnerClick}
@@ -71,7 +71,7 @@ const Index = () => {
       </main>
 
       <footer className="py-6">
-        <div className="container mx-auto px-4">
+        <div className="px-4">
           <div className="flex flex-col items-center justify-center space-y-4">
             <div className="flex space-x-6">
               <a 
