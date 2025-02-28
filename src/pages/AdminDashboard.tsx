@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { EventsTable } from "@/components/admin/EventsTable";
@@ -9,8 +10,8 @@ import { AnalyticsOverview } from "@/components/admin/AnalyticsOverview";
 import { PayoutRequestsSection } from "@/components/admin/PayoutRequestsSection";
 import { GroomerPayoutsSection } from "@/components/admin/GroomerPayoutsSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
-import { Check, X, CircleDollarSign } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Check, X, CircleDollarSign, Search, CalendarDays, Users } from "lucide-react";
 
 interface Event {
   id: string;
@@ -44,6 +45,10 @@ interface GroomerProfile {
   application_status: string;
   created_at: string;
   admin_notes: string | null;
+  contact_number: string;
+  address: string;
+  bio: string | null;
+  email?: string;
 }
 
 export default function AdminDashboard() {
@@ -51,6 +56,7 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<Event[]>([]);
+  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [analytics, setAnalytics] = useState<Analytics>({
     total_events: 0,
     pending_events: 0,
@@ -58,8 +64,10 @@ export default function AdminDashboard() {
     total_revenue: 0
   });
   const [groomers, setGroomers] = useState<GroomerProfile[]>([]);
+  const [filteredGroomers, setFilteredGroomers] = useState<GroomerProfile[]>([]);
   const [activeTab, setActiveTab] = useState("events");
   const [activePayoutTab, setActivePayoutTab] = useState("events");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     checkAdminStatus();
@@ -71,6 +79,29 @@ export default function AdminDashboard() {
       fetchGroomers();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    // Apply search filter when search query changes
+    if (activeTab === "events") {
+      setFilteredEvents(
+        events.filter(event => 
+          event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          event.organizer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          event.organizer_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          event.location.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      );
+    } else if (activeTab === "groomers") {
+      setFilteredGroomers(
+        groomers.filter(groomer => 
+          groomer.salon_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          groomer.contact_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          groomer.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          groomer.email?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      );
+    }
+  }, [searchQuery, events, groomers, activeTab]);
 
   const checkAdminStatus = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -110,6 +141,7 @@ export default function AdminDashboard() {
           status: event.status as 'pending' | 'approved' | 'rejected'
         }));
         setEvents(typedEvents);
+        setFilteredEvents(typedEvents);
         setAnalytics(prev => ({
           ...prev,
           total_events: eventsData.length,
@@ -155,6 +187,10 @@ export default function AdminDashboard() {
         event.id === eventId ? { ...event, status: newStatus } : event
       ));
       
+      setFilteredEvents(prev => prev.map(event => 
+        event.id === eventId ? { ...event, status: newStatus } : event
+      ));
+      
       toast({
         title: "Success",
         description: `Event ${newStatus} successfully`,
@@ -186,18 +222,38 @@ export default function AdminDashboard() {
       console.log("Raw groomer data:", data);
       
       if (data && data.length > 0) {
+        // Get user emails for groomers
+        const userIds = data.map(groomer => groomer.user_id);
+        const { data: userData, error: userError } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', userIds);
+          
+        if (userError) {
+          console.error("Error fetching user data:", userError);
+        }
+        
         // Process the data to ensure we have all fields needed
-        const processedData = data.map(groomer => ({
-          id: groomer.id,
-          salon_name: groomer.salon_name || "Unnamed Salon",
-          experience_years: groomer.experience_years || 0,
-          application_status: groomer.application_status || "pending",
-          created_at: groomer.created_at || new Date().toISOString(),
-          admin_notes: groomer.admin_notes
-        }));
+        const processedData = data.map(groomer => {
+          const userData = userError ? null : userData?.find(u => u.id === groomer.user_id);
+          
+          return {
+            id: groomer.id,
+            salon_name: groomer.salon_name || "Unnamed Salon",
+            experience_years: groomer.experience_years || 0,
+            application_status: groomer.application_status || "pending",
+            created_at: groomer.created_at || new Date().toISOString(),
+            admin_notes: groomer.admin_notes,
+            contact_number: groomer.contact_number || "Not provided",
+            address: groomer.address || "Not provided",
+            bio: groomer.bio,
+            email: userData?.full_name || "Unknown user"
+          };
+        });
         
         console.log("Processed groomer data:", processedData);
         setGroomers(processedData);
+        setFilteredGroomers(processedData);
         
         // Log specific details about pending applications
         const pendingApplications = data.filter(g => g.application_status === 'pending');
@@ -205,6 +261,7 @@ export default function AdminDashboard() {
       } else {
         console.log("No groomer data found or empty array returned");
         setGroomers([]);
+        setFilteredGroomers([]);
       }
     } catch (error) {
       console.error("Error fetching groomers:", error);
@@ -275,20 +332,42 @@ export default function AdminDashboard() {
             </Button>
           </div>
 
+          <div className="mb-6">
+            <div className="relative">
+              <Input
+                type="text"
+                placeholder="Search by name, email, location..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            </div>
+          </div>
+
           <Tabs 
             defaultValue="events" 
             onValueChange={(value) => setActiveTab(value)}
           >
             <TabsList className="mb-4">
-              <TabsTrigger value="events">Events</TabsTrigger>
-              <TabsTrigger value="payouts">Payouts</TabsTrigger>
-              <TabsTrigger value="groomers">Groomers</TabsTrigger>
+              <TabsTrigger value="events" className="flex items-center">
+                <CalendarDays className="h-4 w-4 mr-2" />
+                Events
+              </TabsTrigger>
+              <TabsTrigger value="payouts" className="flex items-center">
+                <CircleDollarSign className="h-4 w-4 mr-2" />
+                Payouts
+              </TabsTrigger>
+              <TabsTrigger value="groomers" className="flex items-center">
+                <Users className="h-4 w-4 mr-2" />
+                Groomers
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="events">
               <AnalyticsOverview analytics={analytics} />
               <EventsTable 
-                events={events} 
+                events={filteredEvents} 
                 onEventDeleted={fetchDashboardData}
                 onStatusChange={handleEventStatus}
               />
@@ -315,11 +394,11 @@ export default function AdminDashboard() {
                   </TabsList>
                   
                   <TabsContent value="events">
-                    <PayoutRequestsSection />
+                    <PayoutRequestsSection searchQuery={searchQuery} />
                   </TabsContent>
                   
                   <TabsContent value="groomers">
-                    <GroomerPayoutsSection />
+                    <GroomerPayoutsSection searchQuery={searchQuery} />
                   </TabsContent>
                 </Tabs>
               </div>
@@ -334,51 +413,79 @@ export default function AdminDashboard() {
               </div>
               
               <div className="space-y-4">
-                {groomers.length === 0 ? (
+                {filteredGroomers.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
-                    No groomer applications found. Try refreshing or check the database.
+                    {searchQuery ? 
+                      "No groomer applications found matching your search criteria." : 
+                      "No groomer applications found. Try refreshing or check the database."}
                   </div>
                 ) : (
-                  groomers.map((groomer) => (
+                  filteredGroomers.map((groomer) => (
                     <Card key={groomer.id} className="p-4">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h3 className="font-semibold">{groomer.salon_name}</h3>
-                          <p className="text-sm text-gray-500">
-                            Experience: {groomer.experience_years} years
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            Status: <span className={`font-medium ${
-                              groomer.application_status === 'approved' ? 'text-green-600' :
-                              groomer.application_status === 'rejected' ? 'text-red-600' :
-                              'text-yellow-600'
-                            }`}>
-                              {groomer.application_status}
-                            </span>
-                          </p>
-                          <p className="text-xs text-gray-400 mt-1">
-                            ID: {groomer.id}
-                          </p>
-                        </div>
-                        {groomer.application_status === 'pending' && (
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={() => handleGroomerStatus(groomer.id, 'approved')}
-                              className="bg-[#4CAF50] hover:bg-[#3e8e41]"
-                            >
-                              <Check className="h-4 w-4 mr-1" />
-                              Approve
-                            </Button>
-                            <Button
-                              onClick={() => handleGroomerStatus(groomer.id, 'rejected')}
-                              variant="destructive"
-                            >
-                              <X className="h-4 w-4 mr-1" />
-                              Reject
-                            </Button>
+                      <CardContent className="p-0">
+                        <div className="flex flex-col md:flex-row md:justify-between">
+                          <div className="mb-4 md:mb-0">
+                            <h3 className="font-semibold text-lg">{groomer.salon_name}</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 mt-2">
+                              <p className="text-sm">
+                                <span className="text-gray-500">Experience:</span> {groomer.experience_years} years
+                              </p>
+                              <p className="text-sm">
+                                <span className="text-gray-500">Contact:</span> {groomer.contact_number}
+                              </p>
+                              <p className="text-sm">
+                                <span className="text-gray-500">Email/User:</span> {groomer.email}
+                              </p>
+                              <p className="text-sm">
+                                <span className="text-gray-500">Location:</span> {groomer.address}
+                              </p>
+                              <p className="text-sm col-span-2">
+                                <span className="text-gray-500">Status:</span> <span className={`font-medium ${
+                                  groomer.application_status === 'approved' ? 'text-green-600' :
+                                  groomer.application_status === 'rejected' ? 'text-red-600' :
+                                  'text-yellow-600'
+                                }`}>
+                                  {groomer.application_status}
+                                </span>
+                              </p>
+                              {groomer.bio && (
+                                <p className="text-sm col-span-2">
+                                  <span className="text-gray-500">Bio:</span> {groomer.bio}
+                                </p>
+                              )}
+                              <p className="text-xs text-gray-400 col-span-2">
+                                Created: {new Date(groomer.created_at).toLocaleDateString()}
+                              </p>
+                              <p className="text-xs text-gray-400 col-span-2">
+                                ID: {groomer.id}
+                              </p>
+                              {groomer.admin_notes && (
+                                <p className="text-sm col-span-2 mt-2 p-2 bg-yellow-50 rounded-md">
+                                  <span className="font-medium text-yellow-800">Admin Notes:</span> {groomer.admin_notes}
+                                </p>
+                              )}
+                            </div>
                           </div>
-                        )}
-                      </div>
+                          {groomer.application_status === 'pending' && (
+                            <div className="flex gap-2 md:flex-col md:items-end">
+                              <Button
+                                onClick={() => handleGroomerStatus(groomer.id, 'approved')}
+                                className="bg-[#4CAF50] hover:bg-[#3e8e41]"
+                              >
+                                <Check className="h-4 w-4 mr-1" />
+                                Approve
+                              </Button>
+                              <Button
+                                onClick={() => handleGroomerStatus(groomer.id, 'rejected')}
+                                variant="destructive"
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                Reject
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
                     </Card>
                   ))
                 )}
