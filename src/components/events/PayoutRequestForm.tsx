@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { AlertCircle, X } from "lucide-react";
+import { AlertCircle, Clock, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PayoutRequestFormProps {
@@ -20,6 +20,7 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
   const { toast } = useToast();
   const [showBankDetails, setShowBankDetails] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState<string | null>(null);
   
   // Bank details form states
   const [accountName, setAccountName] = useState("");
@@ -27,8 +28,56 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
   const [confirmAccountNumber, setConfirmAccountNumber] = useState("");
   const [ifscCode, setIfscCode] = useState("");
 
-  const handlePayoutRequest = (e: React.MouseEvent) => {
+  // Check if a payout request already exists for this event
+  const checkExistingRequest = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) return null;
+
+      const { data, error } = await supabase
+        .from('payout_requests')
+        .select('status')
+        .eq('event_id', eventId)
+        .eq('organizer_id', user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error checking existing request:", error);
+        return null;
+      }
+
+      if (data) {
+        setCurrentStatus(data.status);
+        return data.status;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error("Error in checkExistingRequest:", error);
+      return null;
+    }
+  };
+
+  // Check status on component mount
+  useState(() => {
+    checkExistingRequest();
+  });
+
+  const handlePayoutRequest = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    // First check if a request already exists
+    const existingStatus = await checkExistingRequest();
+    if (existingStatus) {
+      setCurrentStatus(existingStatus);
+      toast({
+        title: "Request already exists",
+        description: `Your payout request is currently ${existingStatus}. Please wait for admin approval.`,
+      });
+      return;
+    }
+    
     setShowBankDetails(true);
   };
 
@@ -113,17 +162,17 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
         account_name: accountName,
         account_number: accountNumber,
         ifsc_code: ifscCode,
-        status: 'pending'
+        status: 'waiting_for_payment'
       });
 
-      // Store bank details
+      // Store bank details with initial status of waiting_for_payment
       const { error } = await supabase.from('payout_requests').insert({
         event_id: eventId,
         organizer_id: user.id,
         account_name: accountName,
         account_number: accountNumber,
         ifsc_code: ifscCode,
-        status: 'pending'
+        status: 'waiting_for_payment'
       });
 
       if (error) {
@@ -131,9 +180,11 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
         throw error;
       }
 
+      setCurrentStatus('waiting_for_payment');
+      
       toast({
         title: "Request Submitted Successfully",
-        description: "Your payout request has been sent to the admin team for processing. You will be notified once it's approved.",
+        description: "Your payout request has been sent to the admin team for processing. You will be notified once payment is processed.",
       });
 
       // Reset form and close
@@ -142,7 +193,6 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
       setConfirmAccountNumber("");
       setIfscCode("");
       setShowBankDetails(false);
-      onClose();
     } catch (error) {
       console.error("Error saving bank details:", error);
       toast({
@@ -154,6 +204,70 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
       setIsSubmitting(false);
     }
   };
+
+  const getStatusButton = () => {
+    if (!currentStatus) {
+      return (
+        <Button
+          className="w-full bg-green-600 hover:bg-green-700 text-white"
+          onClick={handlePayoutRequest}
+          disabled={!eventEnded}
+        >
+          Send Payout Request
+        </Button>
+      );
+    }
+
+    switch (currentStatus) {
+      case 'waiting_for_payment':
+        return (
+          <Button
+            className="w-full bg-amber-500 hover:bg-amber-600 text-white cursor-default"
+            disabled
+          >
+            <Clock className="h-4 w-4 mr-2" />
+            Waiting for Payment
+          </Button>
+        );
+      case 'payment_received':
+        return (
+          <Button
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white cursor-default"
+            disabled
+          >
+            Payment Received
+          </Button>
+        );
+      case 'approved':
+        return (
+          <Button
+            className="w-full bg-green-500 hover:bg-green-600 text-white cursor-default"
+            disabled
+          >
+            Payout Approved
+          </Button>
+        );
+      case 'rejected':
+        return (
+          <Button
+            className="w-full bg-red-500 hover:bg-red-600 text-white"
+            onClick={handlePayoutRequest}
+          >
+            Request Rejected - Try Again
+          </Button>
+        );
+      case 'pending':
+      default:
+        return (
+          <Button
+            className="w-full bg-amber-500 hover:bg-amber-600 text-white cursor-default"
+            disabled
+          >
+            Request Pending
+          </Button>
+        );
+    }
+  };
   
   return (
     <div className="px-6 pb-6">
@@ -162,14 +276,8 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="relative inline-block w-full">
-                <Button
-                  className="w-full bg-green-600 hover:bg-green-700 text-white"
-                  onClick={handlePayoutRequest}
-                  disabled={!eventEnded}
-                >
-                  Send Payout Request
-                </Button>
-                {!eventEnded && (
+                {getStatusButton()}
+                {!eventEnded && !currentStatus && (
                   <div className="flex items-center mt-2 text-xs text-amber-600">
                     <AlertCircle className="h-3 w-3 mr-1" />
                     <span>Available after event ends</span>

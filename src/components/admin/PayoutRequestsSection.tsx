@@ -8,7 +8,21 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle, CheckCircle, CircleDollarSign, Search, UserIcon, Calendar, AtSign, PhoneIcon, Globe, MapPin } from 'lucide-react';
+import { 
+  AlertCircle, 
+  CheckCircle, 
+  CircleDollarSign, 
+  Search, 
+  UserIcon, 
+  Calendar, 
+  AtSign, 
+  PhoneIcon,
+  Globe, 
+  MapPin,
+  Clock, 
+  Loader2,
+  DollarSign
+} from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,10 +63,11 @@ export function PayoutRequestsSection({ searchQuery = '' }: PayoutRequestsSectio
   const [payoutRequests, setPayoutRequests] = useState<PayoutRequest[]>([]);
   const [filteredRequests, setFilteredRequests] = useState<PayoutRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedFilter, setSelectedFilter] = useState<string>('pending');
+  const [selectedFilter, setSelectedFilter] = useState<string>('waiting_for_payment');
   const [selectedRequest, setSelectedRequest] = useState<PayoutRequest | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [showMarkPaidDialog, setShowMarkPaidDialog] = useState(false);
   const [processingAction, setProcessingAction] = useState(false);
   const [localSearchQuery, setLocalSearchQuery] = useState('');
   const { toast } = useToast();
@@ -202,8 +217,47 @@ export function PayoutRequestsSection({ searchQuery = '' }: PayoutRequestsSectio
     }
   };
 
+  const handleMarkAsPaid = async () => {
+    if (!selectedRequest) return;
+    
+    setProcessingAction(true);
+    try {
+      const { error } = await supabase
+        .from('payout_requests')
+        .update({ 
+          status: 'payment_received',
+          processed_at: new Date().toISOString()
+        })
+        .eq('id', selectedRequest.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Payment Recorded',
+        description: 'The payment has been recorded and the organizer has been notified.',
+      });
+      
+      setShowMarkPaidDialog(false);
+      setSelectedRequest(null);
+      fetchPayoutRequests();
+    } catch (error) {
+      console.error('Error marking as paid:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update payment status',
+        variant: 'destructive',
+      });
+    } finally {
+      setProcessingAction(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case 'waiting_for_payment':
+        return <Badge variant="outline" className="bg-amber-100 text-amber-800">Waiting for Payment</Badge>;
+      case 'payment_received':
+        return <Badge variant="outline" className="bg-blue-100 text-blue-800">Payment Received</Badge>;
       case 'pending':
         return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Pending</Badge>;
       case 'approved':
@@ -243,8 +297,14 @@ export function PayoutRequestsSection({ searchQuery = '' }: PayoutRequestsSectio
           </div>
         )}
 
-        <Tabs defaultValue="pending" onValueChange={setSelectedFilter}>
+        <Tabs defaultValue="waiting_for_payment" onValueChange={setSelectedFilter}>
           <TabsList className="mb-4">
+            <TabsTrigger value="waiting_for_payment" className="flex items-center gap-1">
+              <Clock className="h-4 w-4" /> Awaiting Payment
+            </TabsTrigger>
+            <TabsTrigger value="payment_received" className="flex items-center gap-1">
+              <DollarSign className="h-4 w-4" /> Payment Received
+            </TabsTrigger>
             <TabsTrigger value="pending">Pending</TabsTrigger>
             <TabsTrigger value="approved">Approved</TabsTrigger>
             <TabsTrigger value="rejected">Rejected</TabsTrigger>
@@ -262,7 +322,7 @@ export function PayoutRequestsSection({ searchQuery = '' }: PayoutRequestsSectio
               <p className="text-gray-500">
                 {localSearchQuery || searchQuery 
                   ? "No payout requests matching your search" 
-                  : `No ${selectedFilter} payout requests found`}
+                  : `No ${selectedFilter.replace('_', ' ')} payout requests found`}
               </p>
             </div>
           ) : (
@@ -321,6 +381,47 @@ export function PayoutRequestsSection({ searchQuery = '' }: PayoutRequestsSectio
                         <p className="text-gray-500"><span className="font-medium">IFSC:</span> {request.ifsc_code}</p>
                       </div>
                       
+                      {request.status === 'waiting_for_payment' && (
+                        <div className="mt-3 flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedRequest(request);
+                              setShowRejectDialog(true);
+                            }}
+                            className="text-red-600 hover:bg-red-50"
+                          >
+                            Reject
+                          </Button>
+                          <Button 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedRequest(request);
+                              setShowMarkPaidDialog(true);
+                            }}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            Mark as Paid
+                          </Button>
+                        </div>
+                      )}
+
+                      {request.status === 'payment_received' && (
+                        <div className="mt-3 flex gap-2">
+                          <Button 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedRequest(request);
+                              setShowConfirmDialog(true);
+                            }}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            Approve Payout
+                          </Button>
+                        </div>
+                      )}
+                      
                       {request.status === 'pending' && (
                         <div className="mt-3 flex gap-2">
                           <Button 
@@ -347,7 +448,7 @@ export function PayoutRequestsSection({ searchQuery = '' }: PayoutRequestsSectio
                         </div>
                       )}
                       
-                      {request.status !== 'pending' && request.processed_at && (
+                      {request.status !== 'pending' && request.status !== 'waiting_for_payment' && request.status !== 'payment_received' && request.processed_at && (
                         <p className="text-xs text-gray-500 mt-2">
                           {request.status === 'approved' ? 'Approved' : 'Rejected'} on {format(new Date(request.processed_at), 'PPP')}
                         </p>
@@ -419,6 +520,44 @@ export function PayoutRequestsSection({ searchQuery = '' }: PayoutRequestsSectio
               className="bg-red-600 hover:bg-red-700"
             >
               {processingAction ? "Processing..." : "Yes, Reject"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Mark as Paid Dialog */}
+      <AlertDialog open={showMarkPaidDialog} onOpenChange={setShowMarkPaidDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mark Payment as Received</AlertDialogTitle>
+            <AlertDialogDescription>
+              Confirm that you have made the payment to this organizer's account:
+              <div className="mt-2 p-3 bg-gray-50 rounded-md">
+                <p><strong>Event:</strong> {selectedRequest?.event_title}</p>
+                <p><strong>Organizer:</strong> {selectedRequest?.organizer_name}</p>
+                <p><strong>Amount:</strong> ₹{selectedRequest?.amount?.toFixed(2) || selectedRequest?.event_price?.toFixed(2) || 'N/A'}</p>
+                <p><strong>Account Name:</strong> {selectedRequest?.account_name}</p>
+                <p><strong>Account Number:</strong> {selectedRequest?.account_number}</p>
+                <p><strong>IFSC Code:</strong> {selectedRequest?.ifsc_code}</p>
+              </div>
+              <p className="mt-2 text-amber-600">
+                This will notify the organizer that payment has been sent. 
+                Please ensure the transaction has been completed successfully.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={processingAction}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={processingAction}
+              onClick={(e) => {
+                e.preventDefault();
+                handleMarkAsPaid();
+              }}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {processingAction ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <DollarSign className="mr-2 h-4 w-4" />}
+              {processingAction ? "Processing..." : "Confirm Payment Sent"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
