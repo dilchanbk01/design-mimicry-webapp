@@ -74,8 +74,12 @@ function App() {
       <Route path="/vet-dashboard" element={<VetDashboard />} />
       <Route path="/find-vets" element={<FindVets />} />
       <Route path="/consultation/:id" element={<ConsultationChat />} />
-      <Route path="/admin-auth" element={<AdminAuth />} />
-      <Route path="/admin-dashboard" element={<AdminDashboard />} />
+      
+      {/* Admin Routes - make sure paths match with what AdminAuth.tsx uses */}
+      <Route path="/admin/auth" element={<AdminAuth />} />
+      <Route path="/admin/dashboard" element={<AdminDashboard />} />
+      <Route path="/admin-auth" element={<AdminAuth />} /> {/* Keep for backward compatibility */}
+      <Route path="/admin-dashboard" element={<AdminDashboard />} /> {/* Keep for backward compatibility */}
       
       {/* User Routes */}
       <Route path="/profile" element={<Profile />} />
