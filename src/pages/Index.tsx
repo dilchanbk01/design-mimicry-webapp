@@ -71,12 +71,12 @@ const Index = () => {
             <img
               src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png"
               alt="Petsu"
-              className="h-50 sm:pt-0 -mt-20 mb-8 sm:my-0"
+              className="h-50 sm:pt-0 -mt-50 sm:my-0"
               width="200"
               height="200"
             />
             <h2 
-              className="text-[#f8db14] mt-0 sm:mt-[-2] mb-2 text-[20px] sm:text-[30px] font-medium"
+              className="text-[#f8db14] mt-6 sm:mt-4 mb-2 text-[20px] sm:text-[30px] font-medium"
               style={{ fontFamily: "'Fredoka', sans-serif" }}
             >
               Making Pet Care Effortless
