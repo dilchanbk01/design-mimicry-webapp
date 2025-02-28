@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Dialog, 
   DialogContent, 
@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 interface BankDetailsDialogProps {
   isOpen: boolean;
@@ -28,6 +29,35 @@ export function BankDetailsDialog({ isOpen, onClose, onSubmit, eventId }: BankDe
   const [confirmAccountNumber, setConfirmAccountNumber] = useState("");
   const [ifscCode, setIfscCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [eventEnded, setEventEnded] = useState(true);
+  const [eventDate, setEventDate] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen && eventId) {
+      checkEventStatus();
+    }
+  }, [isOpen, eventId]);
+
+  const checkEventStatus = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select('date')
+        .eq('id', eventId)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        const eventTime = new Date(data.date);
+        const now = new Date();
+        setEventDate(format(eventTime, "PPP"));
+        setEventEnded(eventTime < now);
+      }
+    } catch (error) {
+      console.error("Error checking event status:", error);
+    }
+  };
 
   const validateIFSC = (code: string): boolean => {
     // IFSC code format: 4 characters (bank code) + 0 + 6 characters (branch code)
@@ -37,6 +67,15 @@ export function BankDetailsDialog({ isOpen, onClose, onSubmit, eventId }: BankDe
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!eventEnded) {
+      toast({
+        title: "Event not ended",
+        description: "Payout requests can only be made after the event has ended.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     // Validate all fields are filled
     if (!accountName || !accountNumber || !confirmAccountNumber || !ifscCode) {
@@ -123,6 +162,14 @@ export function BankDetailsDialog({ isOpen, onClose, onSubmit, eventId }: BankDe
           </DialogDescription>
         </DialogHeader>
 
+        {!eventEnded && eventDate && (
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-700 text-sm">
+            <p className="font-medium">Important Note:</p>
+            <p>Payout requests can only be made after the event has ended.</p>
+            <p>This event is scheduled for {eventDate}.</p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="accountName">Account Holder Name (as per passbook)</Label>
@@ -132,6 +179,7 @@ export function BankDetailsDialog({ isOpen, onClose, onSubmit, eventId }: BankDe
               onChange={(e) => setAccountName(e.target.value)}
               placeholder="Enter name as on passbook"
               required
+              disabled={!eventEnded}
             />
           </div>
 
@@ -145,6 +193,7 @@ export function BankDetailsDialog({ isOpen, onClose, onSubmit, eventId }: BankDe
               type="text"
               inputMode="numeric"
               required
+              disabled={!eventEnded}
             />
           </div>
 
@@ -158,6 +207,7 @@ export function BankDetailsDialog({ isOpen, onClose, onSubmit, eventId }: BankDe
               type="text"
               inputMode="numeric"
               required
+              disabled={!eventEnded}
             />
             {accountNumber && confirmAccountNumber && accountNumber !== confirmAccountNumber && (
               <p className="text-xs text-red-500">Account numbers don't match</p>
@@ -173,6 +223,7 @@ export function BankDetailsDialog({ isOpen, onClose, onSubmit, eventId }: BankDe
               placeholder="e.g., SBIN0123456"
               required
               maxLength={11}
+              disabled={!eventEnded}
             />
             <p className="text-xs text-gray-500">
               IFSC code format: 4 characters (bank code) + 0 + 6 characters (branch code)
@@ -183,7 +234,7 @@ export function BankDetailsDialog({ isOpen, onClose, onSubmit, eventId }: BankDe
             <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading || !eventEnded}>
               {isLoading ? "Processing..." : "Submit Request"}
             </Button>
           </DialogFooter>

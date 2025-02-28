@@ -1,12 +1,13 @@
 
-import { Calendar, MapPin, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { Calendar, MapPin, Clock, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Event } from "@/types/events";
 import { getOptimizedImageUrl } from "@/utils/imageCompression";
 import { BankDetailsDialog } from "@/components/events/BankDetailsDialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface EventCardProps {
   event: Event;
@@ -22,6 +23,14 @@ export function EventCard({ event, isBooked, isOrganizer, analytics }: EventCard
   const navigate = useNavigate();
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showBankDetails, setShowBankDetails] = useState(false);
+  const [eventEnded, setEventEnded] = useState(false);
+
+  useEffect(() => {
+    // Check if event has ended
+    const eventDate = new Date(event.date);
+    const now = new Date();
+    setEventEnded(eventDate < now);
+  }, [event.date]);
 
   const handlePayoutRequest = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -108,12 +117,32 @@ export function EventCard({ event, isBooked, isOrganizer, analytics }: EventCard
         )}
 
         {isOrganizer ? (
-          <Button
-            className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white"
-            onClick={handlePayoutRequest}
-          >
-            Send Payout Request
-          </Button>
+          <div className="mt-6">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="relative inline-block w-full">
+                    <Button
+                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                      onClick={handlePayoutRequest}
+                      disabled={!eventEnded}
+                    >
+                      Send Payout Request
+                    </Button>
+                    {!eventEnded && (
+                      <div className="flex items-center mt-2 text-xs text-amber-600">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        <span>Available after event ends</span>
+                      </div>
+                    )}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Payout requests can only be made after the event has ended</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         ) : (
           <Button
             className={`w-full mt-6 ${
