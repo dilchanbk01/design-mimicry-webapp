@@ -106,8 +106,7 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
         return;
       }
 
-      // Store bank details
-      const { error } = await supabase.from('payout_requests').insert({
+      console.log("Submitting payout request:", {
         event_id: eventId,
         organizer_id: user.id,
         account_name: accountName,
@@ -116,7 +115,22 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
         status: 'pending'
       });
 
-      if (error) throw error;
+      // Store bank details
+      const { data, error } = await supabase.from('payout_requests').insert({
+        event_id: eventId,
+        organizer_id: user.id,
+        account_name: accountName,
+        account_number: accountNumber,
+        ifsc_code: ifscCode,
+        status: 'pending'
+      }).select();
+
+      if (error) {
+        console.error("Supabase error inserting payout request:", error);
+        throw error;
+      }
+
+      console.log("Payout request submitted successfully:", data);
 
       toast({
         title: "Request Submitted Successfully",
