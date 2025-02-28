@@ -639,6 +639,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      insert_payout_request: {
+        Args: {
+          p_event_id: string
+          p_organizer_id: string
+          p_account_name: string
+          p_account_number: string
+          p_ifsc_code: string
+          p_status?: string
+        }
+        Returns: string
+      }
       is_groomer: {
         Args: {
           user_id: string
