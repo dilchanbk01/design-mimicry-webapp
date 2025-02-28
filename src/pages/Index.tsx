@@ -61,10 +61,20 @@ const Index = () => {
         isScrolled={isScrolled}
         selectedCity={selectedCity}
         onCitySelect={() => setIsCityDialogOpen(true)}
+        transparent={true}
       />
 
       <main className="flex-grow">
         <div className="max-w-4xl mx-auto px-4 pt-24 pb-20">
+          <div className="flex justify-center mb-8 mt-6">
+            <img
+              src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png"
+              alt="Petsu"
+              className="h-10"
+              width="40"
+              height="40"
+            />
+          </div>
           <div className="space-y-12">
             <ServicesGrid onEssentialsClick={() => setIsNotifyDialogOpen(true)} />
             <PartnerCards

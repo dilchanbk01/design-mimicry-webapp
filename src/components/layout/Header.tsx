@@ -69,19 +69,6 @@ export function Header({ isScrolled, selectedCity, onCitySelect, transparent = f
           )}
         </div>
 
-        {/* Center logo */}
-        <div className="absolute left-1/2 transform -translate-x-1/2">
-          <Link to="/" className="flex items-center justify-center">
-            <img
-              src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png"
-              alt="Petsu"
-              className="h-10"
-              width="40"
-              height="40"
-            />
-          </Link>
-        </div>
-
         {/* Right side with profile icon */}
         <div className="flex items-center gap-2">
           {isMobile ? (
