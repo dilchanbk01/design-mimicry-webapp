@@ -142,8 +142,8 @@ export function EventCard({ event, isBooked, isOrganizer, analytics }: EventCard
       if (error) throw error;
 
       toast({
-        title: "Details submitted",
-        description: "Payout request sent successfully. We'll process it within 7 business days.",
+        title: "Request Submitted Successfully",
+        description: "Your payout request has been sent to the admin team for processing. You will be notified once it's approved.",
       });
 
       // Reset form and close

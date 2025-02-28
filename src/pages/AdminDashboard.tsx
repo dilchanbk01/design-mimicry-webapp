@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { EventsTable } from "@/components/admin/EventsTable";
 import { AnalyticsOverview } from "@/components/admin/AnalyticsOverview";
+import { PayoutRequestsSection } from "@/components/admin/PayoutRequestsSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Check, X } from "lucide-react";
@@ -278,6 +279,7 @@ export default function AdminDashboard() {
           >
             <TabsList className="mb-4">
               <TabsTrigger value="events">Events</TabsTrigger>
+              <TabsTrigger value="payouts">Payouts</TabsTrigger>
               <TabsTrigger value="groomers">Groomers</TabsTrigger>
             </TabsList>
 
@@ -288,6 +290,10 @@ export default function AdminDashboard() {
                 onEventDeleted={fetchDashboardData}
                 onStatusChange={handleEventStatus}
               />
+            </TabsContent>
+
+            <TabsContent value="payouts">
+              <PayoutRequestsSection />
             </TabsContent>
 
             <TabsContent value="groomers">
