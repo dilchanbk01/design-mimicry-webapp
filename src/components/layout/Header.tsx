@@ -42,19 +42,18 @@ export function Header({ isScrolled, selectedCity, onCitySelect, transparent = f
       }`}
     >
       <div className="container mx-auto px-4 flex justify-between items-center">
-        {/* Left side with location selector */}
+        {/* Left side with location selector - only icon */}
         <div className="flex items-center">
           {onCitySelect && (
             <Button
               variant="ghost"
               size="sm"
               onClick={onCitySelect}
-              className={`text-sm font-medium flex items-center gap-1 ${
+              className={`text-sm font-medium flex items-center ${
                 isOpaque || !transparent ? "text-gray-600" : "text-white"
               }`}
             >
               <MapPin className="h-4 w-4" />
-              {selectedCity && <span className="hidden sm:inline">{selectedCity}</span>}
             </Button>
           )}
         </div>
