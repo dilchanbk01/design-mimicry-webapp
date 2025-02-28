@@ -39,15 +39,16 @@ export function EventCard({ event, isBooked, isOrganizer, analytics }: EventCard
   useEffect(() => {
     // Check if event has ended
     const eventDate = new Date(event.date);
+    
+    // Add the event duration in hours to get the end time
+    const eventEndDate = new Date(eventDate);
+    eventEndDate.setHours(eventEndDate.getHours() + event.duration);
+    
     const now = new Date();
     
-    // Debug info
-    console.log('Event date:', eventDate);
-    console.log('Current date:', now);
-    console.log('Event ended:', eventDate < now);
-    
-    setEventEnded(eventDate < now);
-  }, [event.date]);
+    // Check if current time is past the event end time
+    setEventEnded(now > eventEndDate);
+  }, [event.date, event.duration]);
 
   const handleCardClick = (e: React.MouseEvent) => {
     if (!showBankDetails) {
@@ -80,11 +81,7 @@ export function EventCard({ event, isBooked, isOrganizer, analytics }: EventCard
     e.preventDefault();
     e.stopPropagation();
     
-    // Force the eventEnded check to be true for now, since we know the event has ended
-    // This is a temporary fix until we identify the date comparison issue
-    const forceEventEnded = true;
-    
-    if (!forceEventEnded) {
+    if (!eventEnded) {
       toast({
         title: "Event not ended",
         description: "Payout requests can only be made after the event has ended.",
@@ -259,8 +256,7 @@ export function EventCard({ event, isBooked, isOrganizer, analytics }: EventCard
                       <Button
                         className="w-full bg-green-600 hover:bg-green-700 text-white"
                         onClick={handlePayoutRequest}
-                        // Always enable the button as we're having issues with date comparison
-                        // disabled={!eventEnded}
+                        disabled={!eventEnded}
                       >
                         Send Payout Request
                       </Button>
@@ -298,7 +294,7 @@ export function EventCard({ event, isBooked, isOrganizer, analytics }: EventCard
                   <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-700 text-sm">
                     <p className="font-medium">Important Note:</p>
                     <p>Payout requests can only be made after the event has ended.</p>
-                    <p>This event is scheduled for {format(new Date(event.date), "PPP")}.</p>
+                    <p>This event is scheduled for {format(new Date(event.date), "PPP")} at {format(new Date(event.date), "p")}.</p>
                   </div>
                 )}
                 
@@ -314,8 +310,7 @@ export function EventCard({ event, isBooked, isOrganizer, analytics }: EventCard
                       placeholder="Enter name as on passbook"
                       className="h-9 text-sm"
                       required
-                      // Always enable the inputs
-                      disabled={isSubmitting}
+                      disabled={!eventEnded || isSubmitting}
                     />
                   </div>
                   
@@ -332,7 +327,7 @@ export function EventCard({ event, isBooked, isOrganizer, analytics }: EventCard
                       type="text"
                       inputMode="numeric"
                       required
-                      disabled={isSubmitting}
+                      disabled={!eventEnded || isSubmitting}
                     />
                   </div>
                   
@@ -349,7 +344,7 @@ export function EventCard({ event, isBooked, isOrganizer, analytics }: EventCard
                       type="text"
                       inputMode="numeric"
                       required
-                      disabled={isSubmitting}
+                      disabled={!eventEnded || isSubmitting}
                     />
                     {accountNumber && confirmAccountNumber && accountNumber !== confirmAccountNumber && (
                       <p className="text-xs text-red-500">Account numbers don't match</p>
@@ -368,7 +363,7 @@ export function EventCard({ event, isBooked, isOrganizer, analytics }: EventCard
                       className="h-9 text-sm"
                       maxLength={11}
                       required
-                      disabled={isSubmitting}
+                      disabled={!eventEnded || isSubmitting}
                     />
                     <p className="text-xs text-gray-500">
                       4 chars (bank) + 0 + 6 chars (branch)
@@ -388,7 +383,7 @@ export function EventCard({ event, isBooked, isOrganizer, analytics }: EventCard
                     <Button
                       type="submit"
                       className="flex-1 h-9 text-sm bg-green-600 hover:bg-green-700"
-                      disabled={isSubmitting}
+                      disabled={!eventEnded || isSubmitting}
                     >
                       {isSubmitting ? "Processing..." : "Submit Request"}
                     </Button>
