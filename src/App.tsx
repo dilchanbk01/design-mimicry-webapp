@@ -1,6 +1,6 @@
 
 import { useEffect } from "react";
-import { Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { Routes, Route, useLocation, Navigate, useParams } from "react-router-dom";
 import "./App.css";
 
 // Import pages
@@ -37,6 +37,12 @@ import CategoryPage from "./pages/blog/CategoryPage";
 import PetGrooming from "./pages/pet-grooming";
 import GroomerDetail from "./pages/pet-grooming/GroomerDetail";
 import GroomerBooking from "./pages/pet-grooming/GroomerBooking";
+
+// Wrapper component to handle the redirection
+const GroomerRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={`/pet-grooming/${id}`} replace />;
+};
 
 function App() {
   const location = useLocation();
@@ -104,11 +110,7 @@ function App() {
       <Route path="/pet-grooming/:id/booking" element={<GroomerBooking />} />
       
       {/* Redirect groomer links to pet-grooming */}
-      <Route path="/groomer/:id" element={<Navigate to={(location) => {
-        const pathParts = location.pathname.split('/');
-        const id = pathParts[pathParts.length - 1];
-        return `/pet-grooming/${id}`;
-      }} replace />} />
+      <Route path="/groomer/:id" element={<GroomerRedirect />} />
       
       {/* 404 Route */}
       <Route path="*" element={<NotFound />} />
