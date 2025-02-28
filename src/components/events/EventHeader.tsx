@@ -19,17 +19,16 @@ export function EventHeader() {
   }, []);
 
   return (
-    <header className="bg-white shadow-sm py-2">
+    <header className="bg-transparent py-2">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center">
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
             onClick={() => navigate(-1)}
-            className="flex items-center text-gray-600"
+            className="flex items-center text-white"
           >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            <span>Back</span>
+            <ArrowLeft className="h-5 w-5" />
           </Button>
 
           <Link to="/" className="flex items-center">
@@ -42,15 +41,9 @@ export function EventHeader() {
             />
           </Link>
 
-          {isLoggedIn ? (
-            <Link to="/profile" className="flex items-center text-gray-600">
-              <User className="h-5 w-5" />
-            </Link>
-          ) : (
-            <Link to="/auth" className="text-sm text-gray-600 hover:text-gray-800">
-              Sign In
-            </Link>
-          )}
+          <Link to={isLoggedIn ? "/profile" : "/auth"} className="flex items-center text-white">
+            <User className="h-5 w-5" />
+          </Link>
         </div>
       </div>
     </header>

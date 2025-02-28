@@ -1,11 +1,11 @@
 
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { MapPin, Menu } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { MapPin, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AuthButton } from "@/components/AuthButton";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { supabase } from "@/integrations/supabase/client";
 
 interface HeaderProps {
   isScrolled?: boolean;
@@ -17,6 +17,8 @@ interface HeaderProps {
 export function Header({ isScrolled, selectedCity, onCitySelect, transparent = false }: HeaderProps) {
   const [isOpaque, setIsOpaque] = useState(false);
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   
   useEffect(() => {
     if (isScrolled !== undefined) {
@@ -34,6 +36,15 @@ export function Header({ isScrolled, selectedCity, onCitySelect, transparent = f
 
     return () => window.removeEventListener("scroll", handleScroll);
   }, [isScrolled]);
+
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
+    };
+    
+    checkAuthStatus();
+  }, []);
 
   return (
     <header
@@ -71,13 +82,13 @@ export function Header({ isScrolled, selectedCity, onCitySelect, transparent = f
           </Link>
         </div>
 
-        {/* Right side with auth button */}
+        {/* Right side with profile icon */}
         <div className="flex items-center gap-2">
           {isMobile ? (
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
-                  <Menu className={`h-6 w-6 ${isOpaque || !transparent ? "text-gray-600" : "text-white"}`} />
+                  <User className={`h-6 w-6 ${isOpaque || !transparent ? "text-gray-600" : "text-white"}`} />
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="p-0">
@@ -139,16 +150,29 @@ export function Header({ isScrolled, selectedCity, onCitySelect, transparent = f
                     </ul>
                   </nav>
                   <div className="p-4 border-t">
-                    <AuthButton provider="google" className="w-full" />
+                    {isLoggedIn ? (
+                      <Link to="/profile" className="block w-full py-2 px-4 text-center bg-primary text-white rounded-md">
+                        My Profile
+                      </Link>
+                    ) : (
+                      <Link to="/auth" className="block w-full py-2 px-4 text-center bg-primary text-white rounded-md">
+                        Sign In
+                      </Link>
+                    )}
                   </div>
                 </div>
               </SheetContent>
             </Sheet>
           ) : (
-            <AuthButton
-              provider="google"
-              className={!isOpaque && transparent ? "text-white border-white hover:bg-white/10" : ""}
-            />
+            <Link to={isLoggedIn ? "/profile" : "/auth"}>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className={`${!isOpaque && transparent ? "text-white hover:bg-white/10" : "text-gray-600"}`}
+              >
+                <User className="h-5 w-5" />
+              </Button>
+            </Link>
           )}
         </div>
       </div>
