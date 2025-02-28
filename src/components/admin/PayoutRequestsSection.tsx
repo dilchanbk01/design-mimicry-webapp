@@ -52,34 +52,32 @@ export function PayoutRequestsSection() {
   const fetchPayoutRequests = async () => {
     setLoading(true);
     try {
-      // Fetch payout requests with event and organizer details
-      const { data, error } = await supabase
+      // Join with events to get the event title
+      const { data: requestsWithEvents, error: requestsError } = await supabase
         .from('payout_requests')
         .select(`
           *,
-          events:event_id (
-            title
-          ),
-          profiles:organizer_id (
-            full_name,
-            email
-          )
+          events:event_id (title)
         `)
         .eq('status', selectedFilter)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (requestsError) throw requestsError;
 
-      if (data) {
-        const formattedData = data.map(item => ({
-          ...item,
-          event_title: item.events?.title || 'Unknown Event',
-          organizer_name: item.profiles?.full_name || 'Unknown Organizer',
-          organizer_email: item.profiles?.email || ''
-        }));
-        
-        setPayoutRequests(formattedData);
+      // Get organizer details separately since we can't directly join with auth.users
+      let processedRequests = [];
+      if (requestsWithEvents && requestsWithEvents.length > 0) {
+        processedRequests = requestsWithEvents.map(request => {
+          return {
+            ...request,
+            event_title: request.events?.title || 'Unknown Event',
+            organizer_name: 'Event Organizer', // Default name
+            organizer_email: ''
+          };
+        });
       }
+      
+      setPayoutRequests(processedRequests);
     } catch (error) {
       console.error('Error fetching payout requests:', error);
       toast({

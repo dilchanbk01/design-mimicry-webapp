@@ -73,7 +73,14 @@ export default function Events() {
 
       if (error) throw error;
       
-      return data.map(event => ({
+      // Filter out past events
+      const now = new Date();
+      const futureEvents = data.filter(event => {
+        const eventDate = new Date(event.date);
+        return eventDate > now;
+      });
+      
+      return futureEvents.map(event => ({
         ...event,
         image_url: getOptimizedImageUrl(event.image_url)
       }));

@@ -46,7 +46,8 @@ export function EventCard({ event, isBooked, isOrganizer, analytics }: EventCard
   }, [event.date]);
 
   const handleCardClick = (e: React.MouseEvent) => {
-    if (!showBankDetails) {
+    // Only navigate if not organizer view and not showing bank details
+    if (!isOrganizer && !showBankDetails) {
       navigate(`/events/${event.id}`);
     }
   };
@@ -166,8 +167,10 @@ export function EventCard({ event, isBooked, isOrganizer, analytics }: EventCard
 
   return (
     <div
-      className={`bg-white rounded-3xl shadow-lg overflow-hidden transition-all duration-300 cursor-pointer hover:shadow-xl ${
-        showBankDetails ? "transform-none" : "hover:-translate-y-1"
+      className={`bg-white rounded-3xl shadow-lg overflow-hidden transition-all duration-300 ${
+        isOrganizer ? "" : "cursor-pointer hover:shadow-xl"
+      } ${
+        !isOrganizer && !showBankDetails ? "hover:-translate-y-1" : ""
       }`}
       onClick={handleCardClick}
     >
