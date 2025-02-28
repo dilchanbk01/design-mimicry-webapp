@@ -66,7 +66,7 @@ const Index = () => {
 
       <main className="flex-grow">
         <div className="max-w-4xl mx-auto px-4 pt-16 pb-20">
-          <div className="flex justify-center mb-16 mt-2">
+          <div className="flex flex-col items-center mb-14 mt-2">
             <img
               src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png"
               alt="Petsu"
@@ -74,6 +74,12 @@ const Index = () => {
               width="200"
               height="200"
             />
+            <h2 
+              className="text-[#f8db14] mt-4 mb-6 text-[30px] font-medium"
+              style={{ fontFamily: "'Fredoka', sans-serif" }}
+            >
+              Making Pet Care Effortless
+            </h2>
           </div>
           <div className="space-y-12">
             <ServicesGrid onEssentialsClick={() => setIsNotifyDialogOpen(true)} />
