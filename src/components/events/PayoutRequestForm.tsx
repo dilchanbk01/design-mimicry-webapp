@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { AlertCircle, Clock, X } from "lucide-react";
+import { AlertCircle, Clock, X, CheckCircle, Ban } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PayoutRequestFormProps {
@@ -65,6 +65,7 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
   }, [eventId]);
 
   const handlePayoutRequest = async (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     
     // First check if a request already exists
@@ -74,6 +75,7 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
       toast({
         title: "Request already exists",
         description: `Your payout request is currently ${existingStatus}. Please wait for admin approval.`,
+        variant: "destructive"
       });
       return;
     }
@@ -82,14 +84,15 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
   };
 
   const handleCancelForm = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     setShowBankDetails(false);
-    onClose();
     // Reset form fields
     setAccountName("");
     setAccountNumber("");
     setConfirmAccountNumber("");
     setIfscCode("");
+    onClose();
   };
 
   const validateIFSC = (code: string): boolean => {
@@ -152,6 +155,7 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
           description: "Please sign in to continue",
           variant: "destructive",
         });
+        setIsSubmitting(false);
         return;
       }
 
@@ -195,7 +199,7 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
     }
   };
 
-  const getStatusButton = () => {
+  const renderStatusButton = () => {
     if (!currentStatus) {
       return (
         <Button
@@ -225,6 +229,7 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
             className="w-full bg-blue-500 hover:bg-blue-600 text-white cursor-default"
             disabled
           >
+            <CheckCircle className="h-4 w-4 mr-2" />
             Payment Received
           </Button>
         );
@@ -234,6 +239,7 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
             className="w-full bg-green-500 hover:bg-green-600 text-white cursor-default"
             disabled
           >
+            <CheckCircle className="h-4 w-4 mr-2" />
             Payout Approved
           </Button>
         );
@@ -243,16 +249,17 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
             className="w-full bg-red-500 hover:bg-red-600 text-white"
             onClick={handlePayoutRequest}
           >
+            <Ban className="h-4 w-4 mr-2" />
             Request Rejected - Try Again
           </Button>
         );
-      case 'pending':
       default:
         return (
           <Button
             className="w-full bg-amber-500 hover:bg-amber-600 text-white cursor-default"
             disabled
           >
+            <Clock className="h-4 w-4 mr-2" />
             Request Pending
           </Button>
         );
@@ -266,7 +273,7 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="relative inline-block w-full">
-                {getStatusButton()}
+                {renderStatusButton()}
                 {!eventEnded && !currentStatus && (
                   <div className="flex items-center mt-2 text-xs text-amber-600">
                     <AlertCircle className="h-3 w-3 mr-1" />
@@ -282,7 +289,7 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
         </TooltipProvider>
       ) : (
         <div 
-          className="mt-4 animate-scale-in"
+          className="mt-4 animate-in fade-in-50 duration-200"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex justify-between items-center mb-3">
