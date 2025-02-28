@@ -6,12 +6,12 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { EventsTable } from "@/components/admin/EventsTable";
-import { AnalyticsOverview } from "@/components/admin/AnalyticsOverview";
+import { AdminAnalytics } from "@/components/admin/AdminAnalytics";
 import { PayoutRequestsSection } from "@/components/admin/PayoutRequestsSection";
 import { GroomerPayoutsSection } from "@/components/admin/GroomerPayoutsSection";
+import { GroomerManagement } from "@/components/admin/GroomerManagement";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
-import { Check, X, CircleDollarSign, Search, CalendarDays, Users } from "lucide-react";
+import { Search, CalendarDays, Users, CircleDollarSign } from "lucide-react";
 
 interface Event {
   id: string;
@@ -38,20 +38,6 @@ interface Analytics {
   total_revenue: number;
 }
 
-interface GroomerProfile {
-  id: string;
-  salon_name: string;
-  experience_years: number;
-  application_status: string;
-  created_at: string;
-  admin_notes: string | null;
-  contact_number: string;
-  address: string;
-  bio: string | null;
-  email?: string;
-  user_id?: string;
-}
-
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -64,8 +50,6 @@ export default function AdminDashboard() {
     total_tickets: 0,
     total_revenue: 0
   });
-  const [groomers, setGroomers] = useState<GroomerProfile[]>([]);
-  const [filteredGroomers, setFilteredGroomers] = useState<GroomerProfile[]>([]);
   const [activeTab, setActiveTab] = useState("events");
   const [activePayoutTab, setActivePayoutTab] = useState("events");
   const [searchQuery, setSearchQuery] = useState("");
@@ -74,12 +58,6 @@ export default function AdminDashboard() {
     checkAdminStatus();
     fetchDashboardData();
   }, []);
-
-  useEffect(() => {
-    if (activeTab === "groomers") {
-      fetchGroomers();
-    }
-  }, [activeTab]);
 
   useEffect(() => {
     // Apply search filter when search query changes
@@ -92,17 +70,8 @@ export default function AdminDashboard() {
           event.location.toLowerCase().includes(searchQuery.toLowerCase())
         )
       );
-    } else if (activeTab === "groomers") {
-      setFilteredGroomers(
-        groomers.filter(groomer => 
-          groomer.salon_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          groomer.contact_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          groomer.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          groomer.email?.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      );
     }
-  }, [searchQuery, events, groomers, activeTab]);
+  }, [searchQuery, events, activeTab]);
 
   const checkAdminStatus = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -206,124 +175,25 @@ export default function AdminDashboard() {
     }
   };
 
-  const fetchGroomers = async () => {
-    try {
-      console.log("Fetching groomer applications...");
-      
-      // Drop any filters to see all groomer profiles
-      const { data, error } = await supabase
-        .from("groomer_profiles")
-        .select("*");
-      
-      if (error) {
-        console.error("Error fetching groomers:", error);
-        throw error;
-      }
-      
-      console.log("Raw groomer data:", data);
-      
-      if (data && data.length > 0) {
-        // Get user emails for groomers
-        const userIds = data.map(groomer => groomer.user_id);
-        
-        // Fetch user data first
-        const { data: userData, error: userError } = await supabase
-          .from('profiles')
-          .select('id, full_name')
-          .in('id', userIds);
-          
-        if (userError) {
-          console.error("Error fetching user data:", userError);
-        }
-        
-        // Process the data to ensure we have all fields needed
-        const processedData = data.map(groomer => {
-          const userInfo = userData ? userData.find(u => u.id === groomer.user_id) : null;
-          
-          return {
-            id: groomer.id,
-            user_id: groomer.user_id,
-            salon_name: groomer.salon_name || "Unnamed Salon",
-            experience_years: groomer.experience_years || 0,
-            application_status: groomer.application_status || "pending",
-            created_at: groomer.created_at || new Date().toISOString(),
-            admin_notes: groomer.admin_notes,
-            contact_number: groomer.contact_number || "Not provided",
-            address: groomer.address || "Not provided",
-            bio: groomer.bio,
-            email: userInfo?.full_name || "Unknown user"
-          };
-        });
-        
-        console.log("Processed groomer data:", processedData);
-        setGroomers(processedData);
-        setFilteredGroomers(processedData);
-        
-        // Log specific details about pending applications
-        const pendingApplications = data.filter(g => g.application_status === 'pending');
-        console.log(`Found ${pendingApplications.length} pending applications:`, pendingApplications);
-      } else {
-        console.log("No groomer data found or empty array returned");
-        setGroomers([]);
-        setFilteredGroomers([]);
-      }
-    } catch (error) {
-      console.error("Error fetching groomers:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch groomer applications",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleGroomerStatus = async (groomerId: string, status: 'approved' | 'rejected') => {
-    try {
-      console.log(`Updating groomer ${groomerId} to status: ${status}`);
-      
-      const { error } = await supabase
-        .from("groomer_profiles")
-        .update({ application_status: status })
-        .eq("id", groomerId);
-
-      if (error) {
-        console.error("Error updating groomer status:", error);
-        throw error;
-      }
-
-      console.log("Groomer status updated successfully");
-      toast({
-        title: "Success",
-        description: `Groomer application ${status}`,
-      });
-
-      // Refetch the groomers to update the UI
-      fetchGroomers();
-    } catch (error) {
-      console.error("Error updating groomer status:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update groomer status",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // For debugging - force fetch groomers
-  const handleRefreshGroomers = () => {
-    console.log("Manual refresh of groomers requested");
-    fetchGroomers();
+  // For debugging - force fetch data
+  const handleRefreshData = () => {
+    console.log("Manual refresh of data requested");
+    fetchDashboardData();
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700"></div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <h1 className="text-3xl font-bold">Admin Dashboard</h1>
             <Button
               onClick={async () => {
@@ -340,7 +210,7 @@ export default function AdminDashboard() {
             <div className="relative">
               <Input
                 type="text"
-                placeholder="Search by name, email, location..."
+                placeholder="Search by name, email, location, account details..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -352,8 +222,9 @@ export default function AdminDashboard() {
           <Tabs 
             defaultValue="events" 
             onValueChange={(value) => setActiveTab(value)}
+            className="space-y-4"
           >
-            <TabsList className="mb-4">
+            <TabsList className="w-full sm:w-auto grid grid-cols-3 md:flex">
               <TabsTrigger value="events" className="flex items-center">
                 <CalendarDays className="h-4 w-4 mr-2" />
                 Events
@@ -368,8 +239,8 @@ export default function AdminDashboard() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="events">
-              <AnalyticsOverview analytics={analytics} />
+            <TabsContent value="events" className="space-y-4">
+              <AdminAnalytics analytics={analytics} />
               <EventsTable 
                 events={filteredEvents} 
                 onEventDeleted={fetchDashboardData}
@@ -409,91 +280,10 @@ export default function AdminDashboard() {
             </TabsContent>
 
             <TabsContent value="groomers">
-              <div className="mb-4 flex justify-between items-center">
-                <h2 className="text-xl font-semibold">Groomer Applications</h2>
-                <Button onClick={handleRefreshGroomers} variant="outline" size="sm">
-                  Refresh
-                </Button>
-              </div>
-              
-              <div className="space-y-4">
-                {filteredGroomers.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    {searchQuery ? 
-                      "No groomer applications found matching your search criteria." : 
-                      "No groomer applications found. Try refreshing or check the database."}
-                  </div>
-                ) : (
-                  filteredGroomers.map((groomer) => (
-                    <Card key={groomer.id} className="p-4">
-                      <CardContent className="p-0">
-                        <div className="flex flex-col md:flex-row md:justify-between">
-                          <div className="mb-4 md:mb-0">
-                            <h3 className="font-semibold text-lg">{groomer.salon_name}</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 mt-2">
-                              <p className="text-sm">
-                                <span className="text-gray-500">Experience:</span> {groomer.experience_years} years
-                              </p>
-                              <p className="text-sm">
-                                <span className="text-gray-500">Contact:</span> {groomer.contact_number}
-                              </p>
-                              <p className="text-sm">
-                                <span className="text-gray-500">Email/User:</span> {groomer.email}
-                              </p>
-                              <p className="text-sm">
-                                <span className="text-gray-500">Location:</span> {groomer.address}
-                              </p>
-                              <p className="text-sm col-span-2">
-                                <span className="text-gray-500">Status:</span> <span className={`font-medium ${
-                                  groomer.application_status === 'approved' ? 'text-green-600' :
-                                  groomer.application_status === 'rejected' ? 'text-red-600' :
-                                  'text-yellow-600'
-                                }`}>
-                                  {groomer.application_status}
-                                </span>
-                              </p>
-                              {groomer.bio && (
-                                <p className="text-sm col-span-2">
-                                  <span className="text-gray-500">Bio:</span> {groomer.bio}
-                                </p>
-                              )}
-                              <p className="text-xs text-gray-400 col-span-2">
-                                Created: {new Date(groomer.created_at).toLocaleDateString()}
-                              </p>
-                              <p className="text-xs text-gray-400 col-span-2">
-                                ID: {groomer.id}
-                              </p>
-                              {groomer.admin_notes && (
-                                <p className="text-sm col-span-2 mt-2 p-2 bg-yellow-50 rounded-md">
-                                  <span className="font-medium text-yellow-800">Admin Notes:</span> {groomer.admin_notes}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          {groomer.application_status === 'pending' && (
-                            <div className="flex gap-2 md:flex-col md:items-end">
-                              <Button
-                                onClick={() => handleGroomerStatus(groomer.id, 'approved')}
-                                className="bg-[#4CAF50] hover:bg-[#3e8e41]"
-                              >
-                                <Check className="h-4 w-4 mr-1" />
-                                Approve
-                              </Button>
-                              <Button
-                                onClick={() => handleGroomerStatus(groomer.id, 'rejected')}
-                                variant="destructive"
-                              >
-                                <X className="h-4 w-4 mr-1" />
-                                Reject
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
+              <GroomerManagement 
+                searchQuery={searchQuery}
+                onRefresh={handleRefreshData}
+              />
             </TabsContent>
           </Tabs>
         </div>
