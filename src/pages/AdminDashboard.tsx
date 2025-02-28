@@ -49,6 +49,7 @@ interface GroomerProfile {
   address: string;
   bio: string | null;
   email?: string;
+  user_id?: string;
 }
 
 export default function AdminDashboard() {
@@ -224,6 +225,8 @@ export default function AdminDashboard() {
       if (data && data.length > 0) {
         // Get user emails for groomers
         const userIds = data.map(groomer => groomer.user_id);
+        
+        // Fetch user data first
         const { data: userData, error: userError } = await supabase
           .from('profiles')
           .select('id, full_name')
@@ -235,10 +238,11 @@ export default function AdminDashboard() {
         
         // Process the data to ensure we have all fields needed
         const processedData = data.map(groomer => {
-          const userData = userError ? null : userData?.find(u => u.id === groomer.user_id);
+          const userInfo = userData ? userData.find(u => u.id === groomer.user_id) : null;
           
           return {
             id: groomer.id,
+            user_id: groomer.user_id,
             salon_name: groomer.salon_name || "Unnamed Salon",
             experience_years: groomer.experience_years || 0,
             application_status: groomer.application_status || "pending",
@@ -247,7 +251,7 @@ export default function AdminDashboard() {
             contact_number: groomer.contact_number || "Not provided",
             address: groomer.address || "Not provided",
             bio: groomer.bio,
-            email: userData?.full_name || "Unknown user"
+            email: userInfo?.full_name || "Unknown user"
           };
         });
         
