@@ -24,7 +24,8 @@ const Index = () => {
 
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      setIsScrolled(currentScrollY > lastScrollY && currentScrollY > 50);
+      // Setting isScrolled to false to hide the header on scroll
+      setIsScrolled(false);
       lastScrollY = currentScrollY;
     };
 
@@ -75,7 +76,7 @@ const Index = () => {
               height="200"
             />
             <h2 
-              className="text-[#f8db14] mt-[-2] mb-2 text-[20px] sm:text-[30px] font-medium"
+              className="text-[#f8db14] mt-6 sm:mt-[-2] mb-2 text-[20px] sm:text-[30px] font-medium"
               style={{ fontFamily: "'Fredoka', sans-serif" }}
             >
               Making Pet Care Effortless
