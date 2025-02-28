@@ -37,9 +37,14 @@ export default {
           "0%": { transform: "translateY(0px)" },
           "100%": { transform: "translateY(-8px)" },
         },
+        "scale-in": {
+          "0%": { transform: "scale(0.95)", opacity: "0" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
       },
       animation: {
         "card-hover": "card-hover 0.3s ease-out forwards",
+        "scale-in": "scale-in 0.3s ease-out forwards",
       },
     },
   },
