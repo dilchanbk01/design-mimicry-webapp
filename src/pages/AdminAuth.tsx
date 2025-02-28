@@ -39,7 +39,7 @@ export default function AdminAuth() {
             title: "Success",
             description: "Welcome back, admin!",
           });
-          navigate("/admin");
+          navigate("/admin/dashboard");
         } else {
           // If not admin, sign out and show error
           await supabase.auth.signOut();

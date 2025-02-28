@@ -44,6 +44,11 @@ const GroomerRedirect = () => {
   return <Navigate to={`/pet-grooming/${id}`} replace />;
 };
 
+// Admin redirect component
+const AdminRedirect = () => {
+  return <Navigate to="/admin/dashboard" replace />;
+};
+
 function App() {
   const location = useLocation();
 
@@ -76,6 +81,7 @@ function App() {
       <Route path="/consultation/:id" element={<ConsultationChat />} />
       
       {/* Admin Routes - make sure paths match with what AdminAuth.tsx uses */}
+      <Route path="/admin" element={<AdminRedirect />} />
       <Route path="/admin/auth" element={<AdminAuth />} />
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
       <Route path="/admin-auth" element={<AdminAuth />} /> {/* Keep for backward compatibility */}
