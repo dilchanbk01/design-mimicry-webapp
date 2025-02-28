@@ -710,6 +710,13 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      create_simplified_payout_request: {
+        Args: {
+          p_event_id: string
+          p_organizer_id: string
+        }
+        Returns: string
+      }
       get_orphaned_images: {
         Args: Record<PropertyKey, never>
         Returns: {

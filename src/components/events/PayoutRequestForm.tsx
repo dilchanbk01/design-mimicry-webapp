@@ -95,8 +95,7 @@ export function PayoutRequestForm({ eventId, eventDate, eventEnded, onClose }: P
         return;
       }
 
-      // Create a payout request record with minimal information
-      // Using RPC function to avoid not-null constraint issues with the payout_requests table
+      // Use Supabase RPC call to create a payout request
       const { data, error } = await supabase.rpc('create_simplified_payout_request', {
         p_event_id: eventId,
         p_organizer_id: user.id

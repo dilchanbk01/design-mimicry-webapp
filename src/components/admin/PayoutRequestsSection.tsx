@@ -43,7 +43,11 @@ interface PayoutRequest {
   organizer_email?: string;
 }
 
-export function PayoutRequestsSection() {
+interface PayoutRequestsSectionProps {
+  searchQuery?: string;
+}
+
+export function PayoutRequestsSection({ searchQuery = "" }: PayoutRequestsSectionProps) {
   const { toast } = useToast();
   const [payoutRequests, setPayoutRequests] = useState<PayoutRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +65,7 @@ export function PayoutRequestsSection() {
 
   useEffect(() => {
     fetchPayoutRequests();
-  }, [sortColumn, sortDirection]);
+  }, [sortColumn, sortDirection, searchQuery]);
 
   const fetchPayoutRequests = async () => {
     try {
@@ -84,12 +88,23 @@ export function PayoutRequestsSection() {
       if (error) throw error;
 
       // Transform data to include event_title and other fields
-      const transformedData = data.map((item) => ({
+      let transformedData = data.map((item) => ({
         ...item,
         event_title: item.events?.title || "Unknown Event",
         organizer_name: item.events?.organizer_name || "Unknown Organizer",
         organizer_email: item.events?.organizer_email || "",
       }));
+
+      // Apply search filter if searchQuery is provided
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        transformedData = transformedData.filter(
+          (request) =>
+            request.event_title.toLowerCase().includes(query) ||
+            request.organizer_name.toLowerCase().includes(query) ||
+            request.organizer_email.toLowerCase().includes(query)
+        );
+      }
 
       setPayoutRequests(transformedData);
     } catch (error) {
