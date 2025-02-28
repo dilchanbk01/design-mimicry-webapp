@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { PayoutRequest } from "./types";
+import { useState } from "react";
 
 interface PaymentProcessingDialogProps {
   request: PayoutRequest | null;
@@ -23,6 +24,8 @@ export function PaymentProcessingDialog({
   onPaymentAmountChange,
   onSendPayment
 }: PaymentProcessingDialogProps) {
+  const [amount, setAmount] = useState(paymentAmount);
+
   if (!request) return null;
   
   return (
@@ -65,8 +68,12 @@ export function PaymentProcessingDialog({
               Payment Amount (₹)
               <Input 
                 type="number" 
-                value={paymentAmount}
-                onChange={(e) => onPaymentAmountChange(Number(e.target.value))}
+                value={amount}
+                onChange={(e) => {
+                  const newAmount = Number(e.target.value);
+                  setAmount(newAmount);
+                  onPaymentAmountChange(newAmount);
+                }}
                 className="mt-1"
               />
             </label>

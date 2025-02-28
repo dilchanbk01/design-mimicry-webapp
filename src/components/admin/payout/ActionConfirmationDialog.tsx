@@ -5,7 +5,7 @@ import { Ban } from "lucide-react";
 import { PayoutRequest } from "./types";
 
 interface ActionConfirmationDialogProps {
-  actionType: string;
+  actionType: "approve" | "reject";
   request: PayoutRequest | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -22,14 +22,16 @@ export function ActionConfirmationDialog({
   if (!request) return null;
 
   return (
-    <Dialog open={open} onOpenChange={(open) => onOpenChange(open)}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
             {actionType === "reject" && "Reject Payout Request"}
+            {actionType === "approve" && "Approve Payout Request"}
           </DialogTitle>
           <DialogDescription>
             {actionType === "reject" && "Reject the payout request. The organizer will be able to submit a new request."}
+            {actionType === "approve" && "Approve the payout request and proceed to payment processing."}
           </DialogDescription>
         </DialogHeader>
 
@@ -49,12 +51,22 @@ export function ActionConfirmationDialog({
           >
             Cancel
           </Button>
-          <Button
-            variant="destructive"
-            onClick={onConfirm}
-          >
-            <Ban className="h-4 w-4 mr-1" /> Reject
-          </Button>
+          {actionType === "reject" && (
+            <Button
+              variant="destructive"
+              onClick={onConfirm}
+            >
+              <Ban className="h-4 w-4 mr-1" /> Reject
+            </Button>
+          )}
+          {actionType === "approve" && (
+            <Button
+              variant="default"
+              onClick={onConfirm}
+            >
+              Approve
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

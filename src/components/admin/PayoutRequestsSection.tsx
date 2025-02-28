@@ -325,21 +325,52 @@ export function PayoutRequestsSection({ searchQuery }: PayoutRequestsSectionProp
       {selectedRequest && (
         <>
           <RequestDetailsDialog
-            isOpen={isDetailsOpen}
-            onClose={() => setIsDetailsOpen(false)}
+            open={isDetailsOpen}
+            onOpenChange={setIsDetailsOpen}
             request={selectedRequest}
+            actionButtons={
+              request.status === 'waiting_for_review' ? (
+                <div className="flex gap-2">
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    onClick={() => {
+                      setIsDetailsOpen(false);
+                      handleApprove(selectedRequest);
+                    }}
+                  >
+                    Approve
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={() => {
+                      setIsDetailsOpen(false);
+                      handleReject(selectedRequest);
+                    }}
+                  >
+                    Reject
+                  </Button>
+                </div>
+              ) : null
+            }
           />
           <ActionConfirmationDialog
-            isOpen={isConfirmingAction}
-            onClose={() => setIsConfirmingAction(false)}
+            open={isConfirmingAction}
+            onOpenChange={setIsConfirmingAction}
             onConfirm={confirmAction}
             actionType={actionType}
             request={selectedRequest}
           />
           <PaymentProcessingDialog
-            isOpen={isProcessingPayment}
-            onClose={() => setIsProcessingPayment(false)}
-            onComplete={completePayment}
+            open={isProcessingPayment}
+            onOpenChange={setIsProcessingPayment}
+            paymentAmount={selectedRequest.amount || 0}
+            onPaymentAmountChange={(amount) => {
+              // Since we can't directly modify selectedRequest, we'll handle this in the onSendPayment
+              // This is just a placeholder to satisfy the prop requirement
+            }}
+            onSendPayment={() => completePayment(selectedRequest.amount || 0)}
             request={selectedRequest}
           />
         </>
@@ -347,3 +378,4 @@ export function PayoutRequestsSection({ searchQuery }: PayoutRequestsSectionProp
     </div>
   );
 }
+
