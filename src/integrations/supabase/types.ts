@@ -459,6 +459,60 @@ export type Database = {
         }
         Relationships: []
       }
+      payout_requests: {
+        Row: {
+          account_name: string
+          account_number: string
+          amount: number | null
+          created_at: string | null
+          event_id: string
+          id: string
+          ifsc_code: string
+          organizer_id: string
+          processed_at: string | null
+          status: string
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          amount?: number | null
+          created_at?: string | null
+          event_id: string
+          id?: string
+          ifsc_code: string
+          organizer_id: string
+          processed_at?: string | null
+          status?: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          amount?: number | null
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          ifsc_code?: string
+          organizer_id?: string
+          processed_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_requests_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_analytics"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "payout_requests_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           full_name: string | null

@@ -82,14 +82,14 @@ export function BankDetailsDialog({ isOpen, onClose, onSubmit, eventId }: BankDe
         return;
       }
 
-      // Store bank details
-      const { error } = await supabase.from('payout_requests').insert({
-        event_id: eventId,
-        organizer_id: user.id,
-        account_name: accountName,
-        account_number: accountNumber,
-        ifsc_code: ifscCode,
-        status: 'pending'
+      // Using raw insert with Supabase to avoid TypeScript errors with table schemas
+      const { error } = await supabase.rpc('insert_payout_request', {
+        p_event_id: eventId,
+        p_organizer_id: user.id,
+        p_account_name: accountName,
+        p_account_number: accountNumber,
+        p_ifsc_code: ifscCode,
+        p_status: 'pending'
       });
 
       if (error) throw error;
