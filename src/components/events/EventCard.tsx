@@ -37,18 +37,13 @@ export function EventCard({ event, isBooked, isOrganizer, analytics }: EventCard
   const [ifscCode, setIfscCode] = useState("");
 
   useEffect(() => {
-    // Check if event has ended
+    // Check if event has ended - using event date as end date
     const eventDate = new Date(event.date);
-    
-    // Add the event duration in hours to get the end time
-    const eventEndDate = new Date(eventDate);
-    eventEndDate.setHours(eventEndDate.getHours() + event.duration);
-    
     const now = new Date();
     
-    // Check if current time is past the event end time
-    setEventEnded(now > eventEndDate);
-  }, [event.date, event.duration]);
+    // Event is considered ended if current time is past event start time
+    setEventEnded(now > eventDate);
+  }, [event.date]);
 
   const handleCardClick = (e: React.MouseEvent) => {
     if (!showBankDetails) {
