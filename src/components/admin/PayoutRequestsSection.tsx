@@ -329,7 +329,7 @@ export function PayoutRequestsSection({ searchQuery }: PayoutRequestsSectionProp
             onOpenChange={setIsDetailsOpen}
             request={selectedRequest}
             actionButtons={
-              request.status === 'waiting_for_review' ? (
+              selectedRequest.status === 'waiting_for_review' ? (
                 <div className="flex gap-2">
                   <Button 
                     variant="default" 
@@ -378,4 +378,3 @@ export function PayoutRequestsSection({ searchQuery }: PayoutRequestsSectionProp
     </div>
   );
 }
-
