@@ -1,6 +1,6 @@
 
 import { useEffect } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import "./App.css";
 
 // Import pages
@@ -102,6 +102,13 @@ function App() {
       <Route path="/pet-grooming" element={<PetGrooming />} />
       <Route path="/pet-grooming/:id" element={<GroomerDetail />} />
       <Route path="/pet-grooming/:id/booking" element={<GroomerBooking />} />
+      
+      {/* Redirect groomer links to pet-grooming */}
+      <Route path="/groomer/:id" element={<Navigate to={(location) => {
+        const pathParts = location.pathname.split('/');
+        const id = pathParts[pathParts.length - 1];
+        return `/pet-grooming/${id}`;
+      }} replace />} />
       
       {/* 404 Route */}
       <Route path="*" element={<NotFound />} />
