@@ -49,6 +49,11 @@ const AdminRedirect = () => {
   return <Navigate to="/admin/dashboard" replace />;
 };
 
+// Forgot password redirect
+const ForgotPasswordRedirect = () => {
+  return <Navigate to="/auth" replace />;
+};
+
 function App() {
   const location = useLocation();
 
@@ -70,6 +75,8 @@ function App() {
       
       {/* Auth Routes */}
       <Route path="/auth" element={<Auth />} />
+      <Route path="/forgot-password" element={<ForgotPasswordRedirect />} />
+      <Route path="/reset-password" element={<Auth />} />
       <Route path="/groomer-auth" element={<GroomerAuth />} />
       <Route path="/groomer-onboarding" element={<GroomerOnboarding />} />
       <Route path="/groomer-pending" element={<GroomerPending />} />

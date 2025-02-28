@@ -119,6 +119,40 @@ export default function Auth() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({
+        title: "Email required",
+        description: "Please enter your email to reset your password.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Password reset email sent",
+        description: "Please check your email for the password reset link.",
+      });
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      toast({
+        title: "Password reset failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-green-50 flex flex-col">
       {/* Back button */}
@@ -178,7 +212,8 @@ export default function Auth() {
                     <Button
                       variant="link"
                       className="text-xs text-green-600 p-0 h-auto"
-                      onClick={() => navigate("/forgot-password")}
+                      type="button"
+                      onClick={handleForgotPassword}
                     >
                       Forgot password?
                     </Button>
