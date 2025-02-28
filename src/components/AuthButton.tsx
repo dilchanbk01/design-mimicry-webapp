@@ -7,9 +7,10 @@ interface AuthButtonProps {
   provider: "google" | string;
   onSuccess?: () => void;
   onError?: (error: string) => void;
+  className?: string;
 }
 
-export function AuthButton({ provider, onSuccess, onError }: AuthButtonProps) {
+export function AuthButton({ provider, onSuccess, onError, className }: AuthButtonProps) {
   const [loading, setLoading] = useState(false);
 
   const handleAuth = async () => {
@@ -42,7 +43,7 @@ export function AuthButton({ provider, onSuccess, onError }: AuthButtonProps) {
   return (
     <Button
       variant="outline"
-      className="w-full flex items-center justify-center gap-2"
+      className={`flex items-center justify-center gap-2 ${className || ""}`}
       onClick={handleAuth}
       disabled={loading}
     >

@@ -5,7 +5,7 @@ import { MapPin, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuthButton } from "@/components/AuthButton";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface HeaderProps {
   isScrolled?: boolean;
@@ -16,7 +16,7 @@ interface HeaderProps {
 
 export function Header({ isScrolled, selectedCity, onCitySelect, transparent = false }: HeaderProps) {
   const [isOpaque, setIsOpaque] = useState(false);
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     if (isScrolled !== undefined) {
@@ -139,14 +139,14 @@ export function Header({ isScrolled, selectedCity, onCitySelect, transparent = f
                     </ul>
                   </nav>
                   <div className="p-4 border-t">
-                    <AuthButton variant="default" className="w-full" />
+                    <AuthButton provider="google" className="w-full" />
                   </div>
                 </div>
               </SheetContent>
             </Sheet>
           ) : (
             <AuthButton
-              variant={isOpaque || !transparent ? "default" : "outline"}
+              provider="google"
               className={!isOpaque && transparent ? "text-white border-white hover:bg-white/10" : ""}
             />
           )}

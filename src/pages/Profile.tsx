@@ -115,7 +115,7 @@ export default function Profile() {
 
       <main className="container mx-auto px-4 pt-16 pb-20 max-w-lg">
         {activeTab === "profile" && profile && (
-          <ProfileHeader fullName={profile.full_name} />
+          <ProfileHeader userName={profile.full_name} />
         )}
         {renderContent()}
       </main>
