@@ -7,9 +7,10 @@ import { useToast } from "@/hooks/use-toast";
 import { EventsTable } from "@/components/admin/EventsTable";
 import { AnalyticsOverview } from "@/components/admin/AnalyticsOverview";
 import { PayoutRequestsSection } from "@/components/admin/PayoutRequestsSection";
+import { GroomerPayoutsSection } from "@/components/admin/GroomerPayoutsSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { Check, X } from "lucide-react";
+import { Check, X, CircleDollarSign } from "lucide-react";
 
 interface Event {
   id: string;
@@ -58,6 +59,7 @@ export default function AdminDashboard() {
   });
   const [groomers, setGroomers] = useState<GroomerProfile[]>([]);
   const [activeTab, setActiveTab] = useState("events");
+  const [activePayoutTab, setActivePayoutTab] = useState("events");
 
   useEffect(() => {
     checkAdminStatus();
@@ -293,7 +295,34 @@ export default function AdminDashboard() {
             </TabsContent>
 
             <TabsContent value="payouts">
-              <PayoutRequestsSection />
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold mb-4 flex items-center">
+                  <CircleDollarSign className="h-5 w-5 mr-2 text-blue-600" />
+                  Payout Management
+                </h2>
+                <p className="text-gray-600 mb-4">
+                  Manage payout requests from event organizers and grooming service providers.
+                </p>
+                
+                <Tabs 
+                  defaultValue="events" 
+                  onValueChange={(value) => setActivePayoutTab(value)}
+                  className="mt-4"
+                >
+                  <TabsList>
+                    <TabsTrigger value="events">Event Payouts</TabsTrigger>
+                    <TabsTrigger value="groomers">Groomer Payouts</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="events">
+                    <PayoutRequestsSection />
+                  </TabsContent>
+                  
+                  <TabsContent value="groomers">
+                    <GroomerPayoutsSection />
+                  </TabsContent>
+                </Tabs>
+              </div>
             </TabsContent>
 
             <TabsContent value="groomers">
