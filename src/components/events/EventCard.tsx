@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import type { Event } from "@/types/events";
 import { getOptimizedImageUrl } from "@/utils/imageCompression";
+import { BankDetailsDialog } from "@/components/events/BankDetailsDialog";
 
 interface EventCardProps {
   event: Event;
@@ -20,6 +21,16 @@ interface EventCardProps {
 export function EventCard({ event, isBooked, isOrganizer, analytics }: EventCardProps) {
   const navigate = useNavigate();
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showBankDetails, setShowBankDetails] = useState(false);
+
+  const handlePayoutRequest = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowBankDetails(true);
+  };
+
+  const handleBankDetailsSubmitted = () => {
+    // This will be called after successful submission
+  };
 
   return (
     <div
@@ -99,11 +110,7 @@ export function EventCard({ event, isBooked, isOrganizer, analytics }: EventCard
         {isOrganizer ? (
           <Button
             className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white"
-            onClick={(e) => {
-              e.stopPropagation();
-              // Handle payout request logic here
-              alert("Payout request sent. We'll process it within 7 business days.");
-            }}
+            onClick={handlePayoutRequest}
           >
             Send Payout Request
           </Button>
@@ -120,6 +127,14 @@ export function EventCard({ event, isBooked, isOrganizer, analytics }: EventCard
           </Button>
         )}
       </div>
+
+      {/* Bank Details Dialog */}
+      <BankDetailsDialog 
+        isOpen={showBankDetails}
+        onClose={() => setShowBankDetails(false)}
+        onSubmit={handleBankDetailsSubmitted}
+        eventId={event.id}
+      />
     </div>
   );
 }
