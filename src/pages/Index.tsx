@@ -70,7 +70,7 @@ const Index = () => {
             <img
               src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png"
               alt="Petsu"
-              className="h-50 sm:pt-0 pt-6"
+              className="h-50 sm:pt-0 pt-[-29px] pb-[-16px]"
               width="200"
               height="200"
             />
