@@ -11,7 +11,7 @@ export function EventInformation({ event }: EventInformationProps) {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Event Details</h2>
+        <h2 className="text-xl font-semibold text-gray-800 mb-4 text-right">Event Details</h2>
         <div className="space-y-4">
           <p className="text-gray-600">{event.description}</p>
           <div className="grid gap-3 text-sm">
