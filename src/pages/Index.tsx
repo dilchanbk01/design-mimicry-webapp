@@ -62,11 +62,13 @@ const Index = () => {
 
       <main className="flex-grow">
         <div className="max-w-4xl mx-auto px-4 pt-24 pb-20">
-          <ServicesGrid onEssentialsClick={() => setIsNotifyDialogOpen(true)} />
-          <PartnerCards
-            onVetPartnerClick={handleVetPartnerClick}
-            onGroomerPartnerClick={handleGroomerPartnerClick}
-          />
+          <div className="space-y-12">
+            <ServicesGrid onEssentialsClick={() => setIsNotifyDialogOpen(true)} />
+            <PartnerCards
+              onVetPartnerClick={handleVetPartnerClick}
+              onGroomerPartnerClick={handleGroomerPartnerClick}
+            />
+          </div>
         </div>
       </main>
 

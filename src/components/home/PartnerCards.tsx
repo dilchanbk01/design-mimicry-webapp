@@ -8,7 +8,8 @@ interface PartnerCardsProps {
 
 export function PartnerCards({ onVetPartnerClick, onGroomerPartnerClick }: PartnerCardsProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 mt-12">
+      <h2 className="text-2xl font-bold text-white mb-4">Partner with Us</h2>
       <div className="bg-accent rounded-3xl p-6 text-white">
         <h2 className="text-xl font-bold mb-2">Are you a professional groomer?</h2>
         <p className="text-white/90 mb-4">Join our network of pet groomers and grow your business.</p>
