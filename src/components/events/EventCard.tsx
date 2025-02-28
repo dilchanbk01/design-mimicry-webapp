@@ -30,6 +30,8 @@ export function EventCard({ event, isBooked, isOrganizer, analytics }: EventCard
         src={getOptimizedImageUrl(event.image_url, 800)}
         alt={event.title}
         className="w-full h-48 object-cover"
+        width="800"
+        height="192"
         loading="lazy"
         onError={(e) => {
           const target = e.target as HTMLImageElement;

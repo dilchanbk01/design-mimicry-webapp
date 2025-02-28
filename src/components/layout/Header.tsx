@@ -48,6 +48,8 @@ export function Header({ isScrolled, selectedCity, onCitySelect }: HeaderProps) 
             src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
             alt="Petsu"
             className="h-12 cursor-pointer"
+            width="48"
+            height="48"
             onClick={() => navigate('/')}
           />
           <Button

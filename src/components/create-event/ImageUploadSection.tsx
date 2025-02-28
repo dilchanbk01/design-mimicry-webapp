@@ -40,7 +40,8 @@ export function ImageUploadSection({ imagePreview, onImageChange }: ImageUploadS
           src={imagePreview}
           alt="Event preview"
           className="w-full h-full object-cover"
-          loading="lazy"
+          width="800"
+          height="200"
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center">

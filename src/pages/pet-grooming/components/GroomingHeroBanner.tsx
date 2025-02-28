@@ -52,6 +52,8 @@ export function GroomingHeroBanner({ currentSlide, setCurrentSlide }: GroomingHe
               src={getOptimizedImageUrl(banner.image_url, 1200)}
               alt="Grooming banner"
               className="w-full h-full object-cover"
+              width="1200"
+              height="300"
               loading={index === 0 ? "eager" : "lazy"}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;

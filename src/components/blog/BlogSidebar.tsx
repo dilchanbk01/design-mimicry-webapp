@@ -24,6 +24,9 @@ export function BlogSidebar({ recentPosts, categories, popularTags = [] }: BlogS
                   src={post.imageUrl} 
                   alt={post.title}
                   className="h-full w-full object-cover"
+                  width="64"
+                  height="64"
+                  loading="lazy"
                 />
               </div>
               <div className="flex-grow">

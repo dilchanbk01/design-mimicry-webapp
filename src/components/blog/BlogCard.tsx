@@ -33,6 +33,8 @@ export function BlogCard({ post, featured = false }: BlogCardProps) {
             src={post.imageUrl} 
             alt={post.title}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            width="800"
+            height="256"
           />
           <div className="absolute bottom-0 left-0 bg-accent text-white px-4 py-1 text-xs uppercase">
             {post.category}
@@ -62,6 +64,9 @@ export function BlogCard({ post, featured = false }: BlogCardProps) {
           src={post.imageUrl} 
           alt={post.title}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          width="400"
+          height="192"
+          loading="lazy"
         />
         <div className="absolute bottom-0 left-0 bg-accent text-white px-3 py-1 text-xs uppercase">
           {post.category}

@@ -13,7 +13,8 @@ export function EventImage({ imageUrl, altText }: EventImageProps) {
         src={imageUrl ? getOptimizedImageUrl(imageUrl, 1200) : '/placeholder.svg'}
         alt={altText}
         className="w-full h-full object-cover"
-        loading="eager"
+        width="1200"
+        height="256"
         onError={(e) => {
           const target = e.target as HTMLImageElement;
           target.src = '/placeholder.svg';

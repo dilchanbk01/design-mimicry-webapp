@@ -32,6 +32,8 @@ export function Card({ title, icon, className, titleClassName, onClick }: CardPr
           src={icon} 
           alt={title} 
           className="w-32 h-32 object-contain"
+          width="128"
+          height="128"
           loading="lazy"
           onError={(e) => {
             const target = e.target as HTMLImageElement;

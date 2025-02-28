@@ -13,6 +13,8 @@ export function GroomerImageBanner({ imageUrl, altText }: GroomerImageBannerProp
         src={imageUrl || defaultImage}
         alt={altText}
         className="w-full h-full object-cover"
+        width="1200"
+        height="384"
       />
       <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-black/40 to-transparent"></div>
     </div>
