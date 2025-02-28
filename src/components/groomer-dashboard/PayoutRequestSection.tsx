@@ -13,10 +13,24 @@ interface PayoutRequestSectionProps {
   weeklyRevenue: number;
 }
 
+// Define internal types for the component
+interface GroomerPayout {
+  id?: string;
+  groomer_id: string;
+  amount: number;
+  status: string;
+  week_start?: string;
+  week_end?: string;
+  processed_at?: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export function PayoutRequestSection({ groomerId, weeklyRevenue }: PayoutRequestSectionProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [pendingPayouts, setPendingPayouts] = useState<any[]>([]);
+  const [pendingPayouts, setPendingPayouts] = useState<GroomerPayout[]>([]);
   const [hasBankDetails, setHasBankDetails] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const today = new Date();
@@ -39,7 +53,7 @@ export function PayoutRequestSection({ groomerId, weeklyRevenue }: PayoutRequest
         .from('groomer_bank_details')
         .select('id')
         .eq('groomer_id', groomerId)
-        .single();
+        .maybeSingle();
         
       if (error && error.code !== 'PGRST116') {
         console.error("Error checking bank details:", error);
@@ -99,15 +113,17 @@ export function PayoutRequestSection({ groomerId, weeklyRevenue }: PayoutRequest
     try {
       setSubmitting(true);
       
+      const payoutData: GroomerPayout = {
+        groomer_id: groomerId,
+        amount: weeklyRevenue,
+        status: 'pending',
+        week_start: startDate.toISOString(),
+        week_end: endDate.toISOString()
+      };
+      
       const { data, error } = await supabase
         .from('groomer_payouts')
-        .insert({
-          groomer_id: groomerId,
-          amount: weeklyRevenue,
-          status: 'pending',
-          week_start: startDate.toISOString(),
-          week_end: endDate.toISOString()
-        })
+        .insert(payoutData)
         .select();
         
       if (error) throw error;
@@ -202,7 +218,7 @@ export function PayoutRequestSection({ groomerId, weeklyRevenue }: PayoutRequest
                     </Badge>
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    Requested on {format(new Date(payout.created_at), "dd MMM yyyy")}
+                    Requested on {format(new Date(payout.created_at || ''), "dd MMM yyyy")}
                   </div>
                 </div>
               ))}

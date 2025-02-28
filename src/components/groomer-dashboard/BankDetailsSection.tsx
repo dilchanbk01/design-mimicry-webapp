@@ -13,6 +13,17 @@ interface BankDetailsSectionProps {
   onBankDetailsUpdated: () => void;
 }
 
+// Define internal types for the component
+interface BankDetails {
+  id?: string;
+  groomer_id: string;
+  account_name: string;
+  account_number: string;
+  ifsc_code: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export function BankDetailsSection({ groomerId, onBankDetailsUpdated }: BankDetailsSectionProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -35,7 +46,7 @@ export function BankDetailsSection({ groomerId, onBankDetailsUpdated }: BankDeta
         .from('groomer_bank_details')
         .select('*')
         .eq('groomer_id', groomerId)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error("Error fetching bank details:", error);
@@ -97,14 +108,16 @@ export function BankDetailsSection({ groomerId, onBankDetailsUpdated }: BankDeta
         return;
       }
 
+      const bankData: BankDetails = {
+        groomer_id: groomerId,
+        account_name: bankDetails.account_name,
+        account_number: bankDetails.account_number,
+        ifsc_code: bankDetails.ifsc_code
+      };
+
       const { data, error } = await supabase
         .from('groomer_bank_details')
-        .upsert({
-          groomer_id: groomerId,
-          account_name: bankDetails.account_name,
-          account_number: bankDetails.account_number,
-          ifsc_code: bankDetails.ifsc_code
-        })
+        .upsert(bankData)
         .select();
 
       if (error) throw error;

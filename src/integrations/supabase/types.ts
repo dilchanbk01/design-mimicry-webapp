@@ -206,6 +206,91 @@ export type Database = {
         }
         Relationships: []
       }
+      groomer_bank_details: {
+        Row: {
+          account_name: string
+          account_number: string
+          created_at: string | null
+          groomer_id: string
+          id: string
+          ifsc_code: string
+          updated_at: string | null
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          created_at?: string | null
+          groomer_id: string
+          id?: string
+          ifsc_code: string
+          updated_at?: string | null
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          created_at?: string | null
+          groomer_id?: string
+          id?: string
+          ifsc_code?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "groomer_bank_details_groomer_id_fkey"
+            columns: ["groomer_id"]
+            isOneToOne: true
+            referencedRelation: "groomer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groomer_payouts: {
+        Row: {
+          amount: number
+          created_at: string | null
+          groomer_id: string
+          id: string
+          notes: string | null
+          processed_at: string | null
+          status: string
+          updated_at: string | null
+          week_end: string | null
+          week_start: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string | null
+          groomer_id: string
+          id?: string
+          notes?: string | null
+          processed_at?: string | null
+          status?: string
+          updated_at?: string | null
+          week_end?: string | null
+          week_start?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          groomer_id?: string
+          id?: string
+          notes?: string | null
+          processed_at?: string | null
+          status?: string
+          updated_at?: string | null
+          week_end?: string | null
+          week_start?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "groomer_payouts_groomer_id_fkey"
+            columns: ["groomer_id"]
+            isOneToOne: false
+            referencedRelation: "groomer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       groomer_profiles: {
         Row: {
           address: string
