@@ -30,8 +30,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { BookingsSection } from "@/components/groomer-dashboard/BookingsSection";
-import { format, addDays, eachDayOfInterval, startOfDay, parseISO, isToday } from "date-fns";
+import { format, addDays, eachDayOfInterval, startOfDay, parseISO, isToday, startOfWeek, endOfWeek } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
+import { BankDetailsSection } from "@/components/groomer-dashboard/BankDetailsSection";
+import { PayoutRequestSection } from "@/components/groomer-dashboard/PayoutRequestSection";
 
 interface GroomerProfile {
   id: string;
@@ -103,6 +105,7 @@ export default function GroomerDashboard() {
   const [showEditPackage, setShowEditPackage] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showTimeSlotSettings, setShowTimeSlotSettings] = useState(false);
+  const [weeklyRevenue, setWeeklyRevenue] = useState(0);
   const [editedProfile, setEditedProfile] = useState({
     salon_name: '',
     experience_years: 0,
@@ -164,6 +167,7 @@ export default function GroomerDashboard() {
       fetchBookingSummary();
       fetchRevenueData(timeframe);
       fetchAvailableSlots();
+      calculateWeeklyRevenue();
     }
   }, [profile, timeframe]);
 
@@ -250,7 +254,8 @@ export default function GroomerDashboard() {
       await Promise.all([
         fetchBookingSummary(),
         fetchPackages(),
-        fetchRevenueData(timeframe)
+        fetchRevenueData(timeframe),
+        calculateWeeklyRevenue()
       ]);
       
       toast({
@@ -307,6 +312,8 @@ export default function GroomerDashboard() {
     if (!profile) return;
     
     try {
+      // For the prototype, we'll use mock data
+      // In a real app, you would fetch this from the database
       const mockData: Revenue[] = [];
       const daysToShow = period === 'day' ? 24 : period === 'week' ? 7 : 30;
       
@@ -320,6 +327,25 @@ export default function GroomerDashboard() {
       setRevenue(mockData);
     } catch (error) {
       console.error("Error fetching revenue data:", error);
+    }
+  };
+
+  const calculateWeeklyRevenue = async () => {
+    if (!profile) return;
+    
+    try {
+      // In a real app, this would be a real calculation from the database
+      // For prototype, we'll use the sum of the revenue data if timeframe is week
+      if (timeframe === 'week' && revenue.length > 0) {
+        const total = revenue.reduce((sum, item) => sum + item.amount, 0);
+        setWeeklyRevenue(total);
+      } else {
+        // We would make a separate database call here in a real app
+        // But for prototype, we'll use a random value
+        setWeeklyRevenue(Math.floor(Math.random() * 5000) + 1000);
+      }
+    } catch (error) {
+      console.error("Error calculating weekly revenue:", error);
     }
   };
 
@@ -652,6 +678,14 @@ export default function GroomerDashboard() {
     }
   };
 
+  const handleBankDetailsUpdated = () => {
+    // This function is called when bank details are updated
+    toast({
+      title: "Bank Details Updated",
+      description: "Your bank details have been saved successfully",
+    });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -779,6 +813,7 @@ export default function GroomerDashboard() {
             <TabsTrigger value="packages">Grooming Packages</TabsTrigger>
             <TabsTrigger value="revenue">Revenue Insights</TabsTrigger>
             <TabsTrigger value="availability">Manage Availability</TabsTrigger>
+            <TabsTrigger value="banking">Banking & Payouts</TabsTrigger>
           </TabsList>
           
           <TabsContent value="appointments" className="space-y-4">
@@ -832,16 +867,24 @@ export default function GroomerDashboard() {
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-semibold">Revenue Insights</h2>
-                <Select defaultValue={timeframe} onValueChange={(value: 'day' | 'week' | 'month') => setTimeframe(value)}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Timeframe" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="day">Day</SelectItem>
-                    <SelectItem value="week">Week</SelectItem>
-                    <SelectItem value="month">Month</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center gap-4">
+                  <Select defaultValue={timeframe} onValueChange={(value: 'day' | 'week' | 'month') => setTimeframe(value)}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue placeholder="Timeframe" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="day">Day</SelectItem>
+                      <SelectItem value="week">Week</SelectItem>
+                      <SelectItem value="month">Month</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {profile && (
+                    <PayoutRequestSection 
+                      groomerId={profile.id} 
+                      weeklyRevenue={weeklyRevenue} 
+                    />
+                  )}
+                </div>
               </div>
               
               <Card>
@@ -906,6 +949,14 @@ export default function GroomerDashboard() {
                   </CardContent>
                 </Card>
               </div>
+              
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-3">Request Weekly Payout</h3>
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <p className="text-green-700 mb-2 font-medium">Payouts are processed every Friday</p>
+                  <p className="text-sm text-gray-600">Your weekly earnings will be automatically calculated and you can request a payout each Friday. Make sure you have your bank details updated in the Banking tab.</p>
+                </div>
+              </div>
             </div>
           </TabsContent>
 
@@ -968,6 +1019,44 @@ export default function GroomerDashboard() {
                   <Button onClick={handleSaveTimeSlots} className="w-full">
                     Save Availability
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="banking" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {profile && (
+                <>
+                  <BankDetailsSection 
+                    groomerId={profile.id} 
+                    onBankDetailsUpdated={handleBankDetailsUpdated} 
+                  />
+                  
+                  <PayoutRequestSection 
+                    groomerId={profile.id} 
+                    weeklyRevenue={weeklyRevenue} 
+                  />
+                </>
+              )}
+            </div>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Payout Information</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h3 className="font-medium text-blue-800 mb-2">How Payouts Work</h3>
+                    <ul className="list-disc pl-5 space-y-1 text-sm text-gray-600">
+                      <li>Payouts can be requested every Friday</li>
+                      <li>You must have your bank details added to request a payout</li>
+                      <li>Payouts are processed within 2-3 business days</li>
+                      <li>A platform fee of 5% is deducted from each payout</li>
+                      <li>You can view your payout history in the Banking tab</li>
+                    </ul>
+                  </div>
                 </div>
               </CardContent>
             </Card>
