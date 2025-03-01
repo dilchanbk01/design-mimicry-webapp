@@ -86,8 +86,8 @@ export default function PetGrooming() {
             {/* Title only visible on tablet/desktop */}
             <h2 className="text-2xl font-bold text-white hidden md:block">Available Pet Groomers</h2>
             
-            {/* Filter buttons - full width on mobile, normal on desktop */}
-            <div className="flex space-x-3 justify-end w-full md:w-auto">
+            {/* Filter buttons - centered on mobile, aligned right on desktop */}
+            <div className="flex space-x-3 justify-center md:justify-end w-full md:w-auto">
               <Button 
                 variant="outline" 
                 size="sm"
