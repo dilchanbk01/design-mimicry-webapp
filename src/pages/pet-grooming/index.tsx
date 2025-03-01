@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,11 +7,17 @@ import { GroomingHeader } from "./components/GroomingHeader";
 import { GroomingHeroBanner } from "./components/GroomingHeroBanner";
 import { useInterval } from "@/hooks/use-interval";
 import { partners } from "./data/partners";
+import { Button } from "@/components/ui/button";
+import { CheckSquare, Square } from "lucide-react";
 
 export default function PetGrooming() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [serviceFilters, setServiceFilters] = useState({
+    inSalon: false,
+    atHome: false,
+  });
   
   const { data: groomers = [], isLoading } = useQuery({
     queryKey: ['approvedGroomers'],
@@ -40,10 +45,30 @@ export default function PetGrooming() {
     }
   }, 5000);
   
-  const filteredGroomers = groomers.filter(groomer => 
-    groomer.salon_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    groomer.address?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const toggleServiceFilter = (filter: 'inSalon' | 'atHome') => {
+    setServiceFilters(prev => ({
+      ...prev,
+      [filter]: !prev[filter]
+    }));
+  };
+  
+  const filteredGroomers = groomers.filter(groomer => {
+    // Apply text search filter
+    const matchesSearch = 
+      !searchQuery || 
+      groomer.salon_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      groomer.address?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Apply service type filters
+    const matchesServiceType = 
+      // If no service filters are active, show all groomers
+      (!serviceFilters.inSalon && !serviceFilters.atHome) ||
+      // Otherwise, check if the groomer matches the active filters
+      (serviceFilters.inSalon && groomer.provides_salon_service) ||
+      (serviceFilters.atHome && groomer.provides_home_service);
+    
+    return matchesSearch && matchesServiceType;
+  });
   
   return (
     <div className="flex flex-col min-h-screen" style={{ backgroundColor: "#0dcf6a" }}>
@@ -54,11 +79,41 @@ export default function PetGrooming() {
         setCurrentSlide={setCurrentSlide} 
       />
       
-      <GroomingHeader />
-      
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-8">
-          <h2 className="text-2xl font-bold mb-6 text-white">Available Pet Groomers</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-white">Available Pet Groomers</h2>
+            
+            <div className="flex space-x-3">
+              <Button 
+                variant="outline" 
+                size="sm"
+                className={`flex items-center gap-2 ${serviceFilters.inSalon ? 'bg-white text-green-600' : 'bg-white/20 text-white'}`}
+                onClick={() => toggleServiceFilter('inSalon')}
+              >
+                {serviceFilters.inSalon ? (
+                  <CheckSquare className="h-4 w-4" />
+                ) : (
+                  <Square className="h-4 w-4" />
+                )}
+                In Salon
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="sm"
+                className={`flex items-center gap-2 ${serviceFilters.atHome ? 'bg-white text-green-600' : 'bg-white/20 text-white'}`}
+                onClick={() => toggleServiceFilter('atHome')}
+              >
+                {serviceFilters.atHome ? (
+                  <CheckSquare className="h-4 w-4" />
+                ) : (
+                  <Square className="h-4 w-4" />
+                )}
+                At Home
+              </Button>
+            </div>
+          </div>
           
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -95,8 +150,8 @@ export default function PetGrooming() {
             </div>
           ) : (
             <div className="text-center py-12 text-white">
-              <p className="mb-4">No pet groomers available in your area yet.</p>
-              <p>We're expanding our network! Check back soon.</p>
+              <p className="mb-4">No pet groomers available matching your filters.</p>
+              <p>Try adjusting your filters or check back later.</p>
             </div>
           )}
         </div>
