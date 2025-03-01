@@ -73,9 +73,9 @@ export function SignUpForm({ auth }) {
       <Button
         type="submit"
         className="w-full bg-green-600 hover:bg-green-700"
-        disabled={state.loading || state.emailCheckLoading}
+        disabled={state.loading}
       >
-        {state.loading || state.emailCheckLoading ? "Creating account..." : "Create Account"}
+        {state.loading ? "Creating account..." : "Create Account"}
       </Button>
     </form>
   );

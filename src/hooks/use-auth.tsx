@@ -11,7 +11,6 @@ interface AuthState {
   fullName: string;
   phoneNumber: string;
   loading: boolean;
-  emailCheckLoading: boolean;
   activeTab: "sign-in" | "sign-up";
 }
 
@@ -31,7 +30,6 @@ export function useAuth(options: UseAuthOptions = {}) {
     fullName: "",
     phoneNumber: "",
     loading: false,
-    emailCheckLoading: false,
     activeTab: "sign-in"
   });
 
@@ -73,25 +71,6 @@ export function useAuth(options: UseAuthOptions = {}) {
       } else if (state.activeTab === "sign-up" && options.onSignUpSuccess) {
         options.onSignUpSuccess(userId);
       }
-    }
-  };
-
-  const checkEmailExists = async (email: string) => {
-    updateField("emailCheckLoading", true);
-    try {
-      // Simplified query to avoid deep type instantiation
-      const { data } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', email)
-        .limit(1);
-      
-      return data && data.length > 0;
-    } catch (error) {
-      console.error("Error checking email:", error);
-      return false;
-    } finally {
-      updateField("emailCheckLoading", false);
     }
   };
 
@@ -140,17 +119,6 @@ export function useAuth(options: UseAuthOptions = {}) {
     }
 
     try {
-      const emailExists = await checkEmailExists(state.email);
-      if (emailExists) {
-        toast({
-          title: "Email already in use",
-          description: "This email is already registered. Please sign in or use a different email.",
-          variant: "destructive",
-        });
-        updateField("loading", false);
-        return;
-      }
-
       const { data, error } = await supabase.auth.signUp({
         email: state.email,
         password: state.password,
