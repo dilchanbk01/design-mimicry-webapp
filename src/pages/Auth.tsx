@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -47,19 +46,13 @@ export default function Auth() {
   const checkEmailExists = async (email: string) => {
     setEmailCheckLoading(true);
     try {
-      // Simplify the query to avoid type instantiation issues
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('id')
         .eq('email', email)
         .limit(1);
       
-      if (error) {
-        console.error("Error checking email:", error);
-        return false;
-      }
-      
-      return data && data.length > 0;
+      return Array.isArray(data) && data.length > 0;
     } catch (error) {
       console.error("Error checking email:", error);
       return false;
@@ -191,7 +184,6 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-green-50 flex flex-col">
-      {/* Back button */}
       <div className="container p-4">
         <Button
           variant="ghost"
@@ -204,7 +196,6 @@ export default function Auth() {
       </div>
 
       <div className="flex-1 flex flex-col justify-center items-center p-4">
-        {/* Logo */}
         <div className="mb-8 flex flex-col items-center">
           <img 
             src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 

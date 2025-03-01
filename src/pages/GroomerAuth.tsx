@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -69,19 +68,13 @@ export default function GroomerAuth() {
   const checkEmailExists = async (email: string) => {
     setEmailCheckLoading(true);
     try {
-      // Simplify the query to avoid type instantiation issues
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('id')
         .eq('email', email)
         .limit(1);
       
-      if (error) {
-        console.error("Error checking email:", error);
-        return false;
-      }
-      
-      return data && data.length > 0;
+      return Array.isArray(data) && data.length > 0;
     } catch (error) {
       console.error("Error checking email:", error);
       return false;
