@@ -46,6 +46,10 @@ export function Header({ isScrolled, selectedCity, onCitySelect, transparent = f
     checkAuthStatus();
   }, []);
 
+  const handleProfileClick = () => {
+    navigate(isLoggedIn ? "/profile" : "/auth");
+  };
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -141,15 +145,14 @@ export function Header({ isScrolled, selectedCity, onCitySelect, transparent = f
 
         {/* Right side with profile icon */}
         <div className="flex items-center gap-2">
-          <Link to={isLoggedIn ? "/profile" : "/auth"}>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className={`${!isOpaque && transparent ? "text-white hover:bg-white/10" : "text-gray-600"}`}
-            >
-              <User className="h-5 w-5" />
-            </Button>
-          </Link>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={`${!isOpaque && transparent ? "text-white hover:bg-white/10" : "text-gray-600"}`}
+            onClick={handleProfileClick}
+          >
+            <User className="h-5 w-5" />
+          </Button>
         </div>
       </div>
     </header>
