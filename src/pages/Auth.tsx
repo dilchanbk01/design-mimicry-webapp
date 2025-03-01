@@ -47,7 +47,7 @@ export default function Auth() {
   const checkEmailExists = async (email: string) => {
     setEmailCheckLoading(true);
     try {
-      // Use a much simpler query to avoid the type instantiation error
+      // Use a simplified query to avoid the type instantiation error
       const { data, error } = await supabase
         .from('profiles')
         .select('id')
