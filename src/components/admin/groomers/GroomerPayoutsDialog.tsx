@@ -1,3 +1,4 @@
+
 import React from "react";
 import { format } from "date-fns";
 import { Calendar, Clock } from "lucide-react";
@@ -9,29 +10,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
-interface Groomer {
-  id: string;
-  salon_name: string;
-  // other properties
-}
-
-interface PayoutItem {
-  id: string;
-  amount: number;
-  status: string;
-  created_at: string;
-  processed_at: string | null;
-  week_start: string | null;
-  week_end: string | null;
-  notes: string | null;
-}
+import { Groomer, PayoutHistoryItem } from "./types";
 
 interface GroomerPayoutsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedGroomer: Groomer | null;
-  payoutHistory: PayoutItem[];
+  payoutHistory: PayoutHistoryItem[];
   getStatusBadge: (status: string) => React.ReactNode;
 }
 

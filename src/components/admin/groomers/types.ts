@@ -30,5 +30,8 @@ export interface PayoutHistoryItem {
   created_at: string;
   amount: number;
   status: string;
-  [key: string]: any;
+  processed_at: string | null;
+  week_start: string | null;
+  week_end: string | null;
+  notes: string | null;
 }
