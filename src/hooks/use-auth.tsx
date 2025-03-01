@@ -12,6 +12,7 @@ interface AuthState {
   phoneNumber: string;
   loading: boolean;
   emailCheckLoading: boolean;
+  activeTab: "sign-in" | "sign-up";
 }
 
 interface UseAuthOptions {
@@ -31,9 +32,10 @@ export function useAuth(options: UseAuthOptions = {}) {
     phoneNumber: "",
     loading: false,
     emailCheckLoading: false,
+    activeTab: "sign-in"
   });
 
-  const updateField = (field: keyof AuthState, value: string | boolean) => {
+  const updateField = (field: keyof AuthState, value: string | boolean | "sign-in" | "sign-up") => {
     setState((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -66,9 +68,9 @@ export function useAuth(options: UseAuthOptions = {}) {
     }
 
     if (userId) {
-      if (state.loading && options.onLoginSuccess) {
+      if (state.activeTab === "sign-in" && options.onLoginSuccess) {
         options.onLoginSuccess(userId);
-      } else if (options.onSignUpSuccess) {
+      } else if (state.activeTab === "sign-up" && options.onSignUpSuccess) {
         options.onSignUpSuccess(userId);
       }
     }
@@ -77,12 +79,14 @@ export function useAuth(options: UseAuthOptions = {}) {
   const checkEmailExists = async (email: string) => {
     updateField("emailCheckLoading", true);
     try {
-      const { count } = await supabase
+      // Simplified query to avoid deep type instantiation
+      const { data } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('email', email);
+        .select('id')
+        .eq('email', email)
+        .limit(1);
       
-      return count ? count > 0 : false;
+      return data && data.length > 0;
     } catch (error) {
       console.error("Error checking email:", error);
       return false;

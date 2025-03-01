@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { AuthButton } from "@/components/AuthButton";
@@ -19,9 +19,12 @@ export function AuthForm({
   onLoginSuccess,
   onSignUpSuccess
 }: AuthFormProps) {
-  const [activeTab, setActiveTab] = useState<"sign-in" | "sign-up">("sign-in");
   const { toast } = useToast();
   const auth = useAuth({ redirectPath, onLoginSuccess, onSignUpSuccess });
+
+  const handleTabChange = (value: string) => {
+    auth.updateField("activeTab", value as "sign-in" | "sign-up");
+  };
 
   const handleSocialAuthSuccess = () => {
     if (redirectPath) {
@@ -33,8 +36,8 @@ export function AuthForm({
   return (
     <Tabs
       defaultValue="sign-in"
-      value={activeTab}
-      onValueChange={(v) => setActiveTab(v as "sign-in" | "sign-up")}
+      value={auth.state.activeTab}
+      onValueChange={handleTabChange}
       className="w-full"
     >
       <TabsList className="grid grid-cols-2 w-full mb-4">
