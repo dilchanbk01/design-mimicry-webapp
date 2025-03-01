@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -20,13 +19,11 @@ export default function GroomerAuth() {
     checkExistingSession();
   }, []);
 
-  // Check if user is already authenticated and redirect appropriately
   const checkExistingSession = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return; // No user session exists, stay on auth page
 
-      // User is already authenticated, check if they have a groomer profile
       const { data: profile, error } = await supabase
         .from("groomer_profiles")
         .select("*")
@@ -39,10 +36,8 @@ export default function GroomerAuth() {
       }
 
       if (profile) {
-        // Profile exists, check status and redirect accordingly
         handleProfileStatus(profile.application_status);
       } else {
-        // No profile exists, redirect to onboarding
         navigate("/groomer-onboarding");
       }
     } catch (error) {
@@ -73,19 +68,15 @@ export default function GroomerAuth() {
   const checkEmailExists = async (email: string) => {
     setEmailCheckLoading(true);
     try {
-      // Use a simplified query to avoid type instantiation issues
       const { data, error } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', email)
-        .limit(1);
+        .rpc('check_email_exists', { email_to_check: email });
       
       if (error) {
         console.error("Error checking email:", error);
         return false;
       }
       
-      return data && data.length > 0;
+      return data || false;
     } catch (error) {
       console.error("Error checking email:", error);
       return false;
@@ -104,7 +95,6 @@ export default function GroomerAuth() {
           throw new Error("Passwords do not match");
         }
 
-        // Check if email already exists
         const emailExists = await checkEmailExists(email);
         if (emailExists) {
           toast({
@@ -131,7 +121,6 @@ export default function GroomerAuth() {
           });
         }
       } else {
-        // Sign in
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -139,7 +128,6 @@ export default function GroomerAuth() {
         
         if (error) throw error;
 
-        // After successful login, check profile status
         const { data: { user } } = await supabase.auth.getUser();
         const { data: profile, error: profileError } = await supabase
           .from("groomer_profiles")
@@ -153,10 +141,8 @@ export default function GroomerAuth() {
         }
 
         if (profile) {
-          // Profile exists, check status and redirect accordingly
           handleProfileStatus(profile.application_status);
         } else {
-          // No profile exists, redirect to onboarding
           navigate("/groomer-onboarding");
         }
       }

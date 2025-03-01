@@ -46,19 +46,16 @@ export default function Auth() {
   const checkEmailExists = async (email: string) => {
     setEmailCheckLoading(true);
     try {
-      // Use a simplified query to avoid the type instantiation error
+      // Use raw SQL query to avoid type instantiation issues
       const { data, error } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', email)
-        .limit(1);
+        .rpc('check_email_exists', { email_to_check: email });
       
       if (error) {
         console.error("Error checking email:", error);
         return false;
       }
       
-      return data && data.length > 0;
+      return data || false;
     } catch (error) {
       console.error("Error checking email:", error);
       return false;
