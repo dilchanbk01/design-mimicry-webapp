@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -5,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { GroomerFormFields } from "@/components/groomer-onboarding/GroomerFormFields";
 import { GroomerFormData, initialFormData } from "@/components/groomer-onboarding/schema";
+import { compressImage } from "@/utils/imageCompression";
 
 export default function GroomerOnboarding() {
   const navigate = useNavigate();
@@ -87,10 +89,27 @@ export default function GroomerOnboarding() {
     }));
   };
 
-  const handleImageChange = (file: File) => {
+  const handleImageChange = async (file: File) => {
+    try {
+      const compressedFile = await compressImage(file);
+      setFormData(prev => ({
+        ...prev,
+        profileImage: compressedFile
+      }));
+    } catch (error) {
+      console.error("Error compressing main profile image:", error);
+      toast({
+        title: "Error processing image",
+        description: "There was a problem compressing your image. Please try again with a different image.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleImagesChange = (images: (File | string)[]) => {
     setFormData(prev => ({
       ...prev,
-      profileImage: file
+      profileImages: images
     }));
   };
 
@@ -118,10 +137,12 @@ export default function GroomerOnboarding() {
       }
 
       let profileImageUrl = null;
+      let profileImagesUrls: string[] = [];
 
+      // Upload main profile image
       if (formData.profileImage) {
         const fileExt = formData.profileImage.name.split('.').pop();
-        const filePath = `${user.id}-${Date.now()}.${fileExt}`;
+        const filePath = `${user.id}-main-${Date.now()}.${fileExt}`;
         
         const { error: uploadError, data: uploadData } = await supabase.storage
           .from('groomer-profiles')
@@ -134,6 +155,34 @@ export default function GroomerOnboarding() {
           .getPublicUrl(filePath);
 
         profileImageUrl = publicUrl;
+      }
+
+      // Upload additional images
+      if (formData.profileImages && formData.profileImages.length > 0) {
+        for (let i = 0; i < formData.profileImages.length; i++) {
+          const image = formData.profileImages[i];
+          
+          // Skip if it's already a URL string
+          if (typeof image === 'string') {
+            profileImagesUrls.push(image);
+            continue;
+          }
+          
+          const fileExt = image.name.split('.').pop();
+          const filePath = `${user.id}-additional-${i}-${Date.now()}.${fileExt}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('groomer-profiles')
+            .upload(filePath, image);
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('groomer-profiles')
+            .getPublicUrl(filePath);
+
+          profileImagesUrls.push(publicUrl);
+        }
       }
 
       // Construct full address from components
@@ -152,6 +201,7 @@ export default function GroomerOnboarding() {
         contact_number: formData.contactNumber,
         bio: formData.bio,
         profile_image_url: profileImageUrl,
+        profile_images: profileImagesUrls,
         provides_home_service: formData.providesHomeService,
         provides_salon_service: formData.providesSalonService,
         application_status: 'pending'
@@ -166,6 +216,7 @@ export default function GroomerOnboarding() {
         contact_number: formData.contactNumber,
         bio: formData.bio,
         profile_image_url: profileImageUrl,
+        profile_images: profileImagesUrls,
         provides_home_service: formData.providesHomeService,
         provides_salon_service: formData.providesSalonService,
         application_status: 'pending'
@@ -221,6 +272,7 @@ export default function GroomerOnboarding() {
               onFormDataChange={handleFormDataChange}
               onSpecializationToggle={handleSpecializationToggle}
               onImageChange={handleImageChange}
+              onImagesChange={handleImagesChange}
             />
             <Button
               type="submit"

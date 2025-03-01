@@ -27,6 +27,7 @@ export interface GroomerProfile {
   created_at: string;
   updated_at: string;
   profile_image_url: string | null;
+  profile_images: string[] | null;
   home_service_cost: number;
   is_available: boolean;
 }

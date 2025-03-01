@@ -5,24 +5,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { GroomerFormData } from "./schema";
 import { SpecializationsSelect } from "./SpecializationsSelect";
+import { MultipleImageUpload } from "./MultipleImageUpload";
 
 interface GroomerFormFieldsProps {
   formData: GroomerFormData;
   onFormDataChange: (updates: Partial<GroomerFormData>) => void;
   onSpecializationToggle: (specialization: string) => void;
   onImageChange: (file: File) => void;
+  onImagesChange: (images: (File | string)[]) => void;
 }
 
 export function GroomerFormFields({
   formData,
   onFormDataChange,
   onSpecializationToggle,
-  onImageChange
+  onImageChange,
+  onImagesChange
 }: GroomerFormFieldsProps) {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="profileImage">Profile Image</Label>
+        <Label htmlFor="profileImage">Profile Image (Main)</Label>
         <Input
           id="profileImage"
           type="file"
@@ -35,6 +38,17 @@ export function GroomerFormFields({
           }}
           className="cursor-pointer"
         />
+        <p className="text-xs text-gray-500">This will be your main profile image</p>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Additional Images (Max 3)</Label>
+        <MultipleImageUpload 
+          images={formData.profileImages || []}
+          onImagesChange={onImagesChange}
+          maxImages={3}
+        />
+        <p className="text-xs text-gray-500">Add up to 3 images of your salon or previous work</p>
       </div>
 
       <div className="space-y-2">
