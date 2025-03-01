@@ -170,10 +170,10 @@ export function PageBannerDialog({ open, onOpenChange, onSave }: PageBannerDialo
             </div>
           </div>
           
-          {/* Debug info */}
+          {/* Status indicator */}
           <div className="text-xs text-gray-500">
             <p>Image upload status: {isUploading ? 'Uploading...' : imageUrl ? 'Complete' : 'Not started'}</p>
-            {imageUrl && <p>Image URL is set</p>}
+            {imageUrl && <p>Image URL is set and ready for submission</p>}
           </div>
         </div>
         
