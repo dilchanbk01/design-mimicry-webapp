@@ -53,9 +53,18 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
         throw new Error("Missing required fields: image_url and page are required");
       }
       
+      // Create a properly typed banner object with required fields
+      const bannerToInsert = {
+        image_url: banner.image_url,
+        page: banner.page,
+        title: banner.title || null,
+        description: banner.description || null,
+        active: banner.active || false
+      };
+      
       const { error } = await supabase
         .from('hero_banners')
-        .insert([banner]);  // Pass as an array to match the expected type
+        .insert([bannerToInsert]);  // Pass as an array
 
       if (error) throw error;
       

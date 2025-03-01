@@ -1,181 +1,162 @@
 
 import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { HeroBanner } from "./types";
-import { 
-  fetchBannersByPage, 
-  createBanner, 
-  deleteBanner, 
-  toggleBannerStatus 
-} from "./bannerApi";
-import { uploadBannerImage } from "./useBannerImageUpload";
+import { useToast } from "@/hooks/use-toast";
+import { useBannerImageUpload } from "./useBannerImageUpload";
 
-export function useBannerManagement(searchQuery: string) {
-  const { toast } = useToast();
+export function useBannerManagement() {
   const [banners, setBanners] = useState<HeroBanner[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isUploading, setIsUploading] = useState(false);
-  const [bannerPage, setBannerPage] = useState<string>("events");
-  const [dialogOpen, setDialogOpen] = useState(false);
-
-  // Form fields
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [active, setActive] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState("");
+  const { toast } = useToast();
+  const { 
+    imagePreview, 
+    isUploading, 
+    uploadProgress, 
+    uploadImage, 
+    resetUpload,
+    imageUrl 
+  } = useBannerImageUpload();
 
   useEffect(() => {
     fetchBanners();
-  }, [bannerPage, searchQuery]);
+  }, []);
 
   const fetchBanners = async () => {
     setLoading(true);
     try {
-      const data = await fetchBannersByPage(bannerPage, searchQuery);
-      setBanners(data);
+      const { data, error } = await supabase
+        .from('hero_banners')
+        .select('*');
+
+      if (error) throw error;
+      setBanners(data || []);
     } catch (error) {
-      console.error("Error fetching hero banners:", error);
+      console.error("Error fetching banners:", error);
       toast({
         title: "Error",
-        description: "Failed to load hero banners",
-        variant: "destructive",
+        description: "Failed to fetch banners",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const resetForm = () => {
-    setTitle("");
-    setDescription("");
-    setActive(false);
-    setPreviewUrl("");
-  };
-
-  const handleSubmit = async (e: React.FormEvent, imageFile: File | null) => {
-    e.preventDefault();
-    
-    // Validate inputs
-    if (!imageFile && !previewUrl) {
-      toast({
-        title: "Error",
-        description: "Please select an image for the banner",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsUploading(true);
-
+  const createBanner = async (banner: Partial<HeroBanner>) => {
     try {
-      let image_url = "";
-
-      // Upload new image if one was selected
-      if (imageFile) {
-        try {
-          image_url = await uploadBannerImage(imageFile);
-          setPreviewUrl(image_url);
-        } catch (error: any) {
-          console.error("Error uploading image:", error);
-          toast({
-            title: "Upload Failed",
-            description: error.message || "Failed to upload image",
-            variant: "destructive",
-          });
-          setIsUploading(false);
-          return;
-        }
+      // Ensure required fields are present
+      if (!banner.image_url || !banner.page) {
+        throw new Error("Missing required fields: image_url and page are required");
       }
+      
+      // Create a properly typed banner object with required fields
+      const bannerToInsert = {
+        image_url: banner.image_url,
+        page: banner.page,
+        title: banner.title || null,
+        description: banner.description || null,
+        active: banner.active || false
+      };
+      
+      const { error } = await supabase
+        .from('hero_banners')
+        .insert([bannerToInsert]);
 
-      // Create new banner
-      await createBanner({
-        title,
-        description,
-        active,
-        image_url,
-        page: bannerPage,
-      });
-
+      if (error) throw error;
+      
+      // Refresh the banner list
+      fetchBanners();
+      
       toast({
         title: "Success",
-        description: "Hero banner created successfully",
+        description: "Banner created successfully"
       });
-
-      setDialogOpen(false);
-      resetForm();
-      fetchBanners();
-    } catch (error: any) {
-      console.error("Error saving banner:", error);
+      
+      return true;
+    } catch (error) {
+      console.error("Error creating banner:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to save hero banner",
-        variant: "destructive",
+        description: "Failed to create banner",
+        variant: "destructive"
       });
-    } finally {
-      setIsUploading(false);
+      return false;
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this banner?")) return;
-
+  const deleteBanner = async (id: string) => {
     try {
-      await deleteBanner(id);
+      const { error } = await supabase
+        .from('hero_banners')
+        .delete()
+        .eq('id', id);
 
+      if (error) throw error;
+      
+      // Update local state
+      setBanners(banners.filter(banner => banner.id !== id));
+      
       toast({
         title: "Success",
-        description: "Hero banner deleted successfully",
+        description: "Banner deleted successfully"
       });
-
-      fetchBanners();
+      
+      return true;
     } catch (error) {
       console.error("Error deleting banner:", error);
       toast({
         title: "Error",
-        description: "Failed to delete hero banner",
-        variant: "destructive",
+        description: "Failed to delete banner",
+        variant: "destructive"
       });
+      return false;
     }
   };
 
-  const handleToggleActive = async (id: string, currentActive: boolean) => {
+  const toggleBannerActive = async (id: string, currentActive: boolean) => {
     try {
-      await toggleBannerStatus(id, currentActive);
+      const { error } = await supabase
+        .from('hero_banners')
+        .update({ active: !currentActive })
+        .eq('id', id);
 
+      if (error) throw error;
+      
+      // Update local state
+      setBanners(banners.map(banner => 
+        banner.id === id ? { ...banner, active: !currentActive } : banner
+      ));
+      
       toast({
         title: "Success",
-        description: `Banner ${!currentActive ? "activated" : "deactivated"} successfully`,
+        description: `Banner ${currentActive ? 'deactivated' : 'activated'} successfully`
       });
-
-      fetchBanners();
+      
+      return true;
     } catch (error) {
       console.error("Error toggling banner status:", error);
       toast({
         title: "Error",
         description: "Failed to update banner status",
-        variant: "destructive",
+        variant: "destructive"
       });
+      return false;
     }
   };
 
   return {
     banners,
     loading,
+    createBanner,
+    deleteBanner,
+    toggleBannerActive,
+    fetchBanners,
+    uploadImage,
     isUploading,
-    bannerPage,
-    setBannerPage,
-    dialogOpen,
-    setDialogOpen,
-    title,
-    setTitle,
-    description,
-    setDescription,
-    active,
-    setActive,
-    previewUrl,
-    handleSubmit,
-    handleDelete,
-    handleToggleActive,
-    resetForm
+    uploadProgress,
+    imagePreview,
+    resetUpload,
+    imageUrl
   };
 }
