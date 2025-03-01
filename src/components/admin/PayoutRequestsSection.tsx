@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PayoutRequest } from "./payout/types";
@@ -9,6 +8,7 @@ import { PaymentHistory } from "./payout/PaymentHistory";
 import { useToast } from "@/hooks/use-toast";
 import { FilterButtons } from "./payout/FilterButtons";
 import { PayoutTable } from "./payout/PayoutTable";
+import { Button } from "@/components/ui/button";
 
 interface PayoutRequestsSectionProps {
   searchQuery: string;
@@ -53,7 +53,6 @@ export function PayoutRequestsSection({ searchQuery }: PayoutRequestsSectionProp
       
       if (error) throw error;
       
-      // Format the data and filter based on search query
       const formattedData = data
         ?.map(item => ({
           ...item,
@@ -110,7 +109,6 @@ export function PayoutRequestsSection({ searchQuery }: PayoutRequestsSectionProp
     
     try {
       if (actionType === "approve") {
-        // First change status to processing
         const { error } = await supabase
           .from('payout_requests')
           .update({ status: 'processing' })
@@ -121,7 +119,6 @@ export function PayoutRequestsSection({ searchQuery }: PayoutRequestsSectionProp
         setIsConfirmingAction(false);
         setIsProcessingPayment(true);
       } else {
-        // Reject the request
         const { error } = await supabase
           .from('payout_requests')
           .update({ 
