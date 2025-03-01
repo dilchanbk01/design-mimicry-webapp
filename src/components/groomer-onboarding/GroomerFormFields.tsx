@@ -6,9 +6,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { GroomerFormData } from "./schema";
 import { SpecializationsSelect } from "./SpecializationsSelect";
 import { MultipleImageUpload } from "./MultipleImageUpload";
+import { AlertCircle } from "lucide-react";
 
 interface GroomerFormFieldsProps {
   formData: GroomerFormData;
+  validationErrors?: Record<string, string>;
   onFormDataChange: (updates: Partial<GroomerFormData>) => void;
   onSpecializationToggle: (specialization: string) => void;
   onImageChange: (file: File) => void;
@@ -17,11 +19,23 @@ interface GroomerFormFieldsProps {
 
 export function GroomerFormFields({
   formData,
+  validationErrors = {},
   onFormDataChange,
   onSpecializationToggle,
   onImageChange,
   onImagesChange
 }: GroomerFormFieldsProps) {
+  // Helper to display error message
+  const ErrorMessage = ({ fieldName }: { fieldName: string }) => {
+    if (!validationErrors[fieldName]) return null;
+    return (
+      <div className="text-red-500 text-xs flex items-center mt-1">
+        <AlertCircle className="h-3 w-3 mr-1" />
+        {validationErrors[fieldName]}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -36,8 +50,9 @@ export function GroomerFormFields({
               onImageChange(file);
             }
           }}
-          className="cursor-pointer"
+          className={`cursor-pointer ${validationErrors.profileImage ? 'border-red-500' : ''}`}
         />
+        <ErrorMessage fieldName="profileImage" />
         <p className="text-xs text-gray-500">This will be your main profile image</p>
       </div>
 
@@ -48,6 +63,7 @@ export function GroomerFormFields({
           onImagesChange={onImagesChange}
           maxImages={3}
         />
+        <ErrorMessage fieldName="profileImages" />
         <p className="text-xs text-gray-500">Add up to 3 images of your salon or previous work</p>
       </div>
 
@@ -58,7 +74,9 @@ export function GroomerFormFields({
           value={formData.salonName}
           onChange={(e) => onFormDataChange({ salonName: e.target.value })}
           required
+          className={validationErrors.salonName ? 'border-red-500' : ''}
         />
+        <ErrorMessage fieldName="salonName" />
       </div>
 
       <div className="space-y-2">
@@ -88,6 +106,7 @@ export function GroomerFormFields({
               Salon Service (Appointments at your location)
             </Label>
           </div>
+          <ErrorMessage fieldName="serviceType" />
         </div>
       </div>
 
@@ -100,12 +119,15 @@ export function GroomerFormFields({
           value={formData.experienceYears}
           onChange={(e) => onFormDataChange({ experienceYears: e.target.value })}
           required
+          className={validationErrors.experienceYears ? 'border-red-500' : ''}
         />
+        <ErrorMessage fieldName="experienceYears" />
       </div>
 
       <SpecializationsSelect
         selectedSpecializations={formData.specializations}
         onToggleSpecialization={onSpecializationToggle}
+        error={validationErrors.specializations}
       />
 
       <div className="grid gap-4">
@@ -117,7 +139,9 @@ export function GroomerFormFields({
             onChange={(e) => onFormDataChange({ streetAddress: e.target.value })}
             placeholder="Building name, Street name"
             required
+            className={validationErrors.streetAddress ? 'border-red-500' : ''}
           />
+          <ErrorMessage fieldName="streetAddress" />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -128,7 +152,9 @@ export function GroomerFormFields({
               value={formData.city}
               onChange={(e) => onFormDataChange({ city: e.target.value })}
               required
+              className={validationErrors.city ? 'border-red-500' : ''}
             />
+            <ErrorMessage fieldName="city" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="pincode">Pincode</Label>
@@ -141,7 +167,9 @@ export function GroomerFormFields({
               }}
               maxLength={6}
               required
+              className={validationErrors.pincode ? 'border-red-500' : ''}
             />
+            <ErrorMessage fieldName="pincode" />
           </div>
         </div>
       </div>
@@ -154,7 +182,9 @@ export function GroomerFormFields({
           value={formData.contactNumber}
           onChange={(e) => onFormDataChange({ contactNumber: e.target.value })}
           required
+          className={validationErrors.contactNumber ? 'border-red-500' : ''}
         />
+        <ErrorMessage fieldName="contactNumber" />
       </div>
 
       <div className="space-y-2">
@@ -164,8 +194,9 @@ export function GroomerFormFields({
           value={formData.bio}
           onChange={(e) => onFormDataChange({ bio: e.target.value })}
           placeholder="Tell us about your grooming experience and services..."
-          className="h-32"
+          className={`h-32 ${validationErrors.bio ? 'border-red-500' : ''}`}
         />
+        <ErrorMessage fieldName="bio" />
       </div>
     </div>
   );

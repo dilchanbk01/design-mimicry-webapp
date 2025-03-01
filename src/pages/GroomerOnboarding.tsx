@@ -10,6 +10,7 @@ export default function GroomerOnboarding() {
   const {
     formData,
     loading,
+    validationErrors,
     handleFormDataChange,
     handleSpecializationToggle,
     handleImageChange,
@@ -35,6 +36,7 @@ export default function GroomerOnboarding() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <GroomerFormFields
               formData={formData}
+              validationErrors={validationErrors}
               onFormDataChange={handleFormDataChange}
               onSpecializationToggle={handleSpecializationToggle}
               onImageChange={handleImageChange}

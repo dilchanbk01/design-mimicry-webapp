@@ -11,9 +11,22 @@ export function useGroomerForm() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<GroomerFormData>(initialFormData);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const handleFormDataChange = (updates: Partial<GroomerFormData>) => {
     setFormData(prev => ({ ...prev, ...updates }));
+    
+    // Clear validation errors for fields that are being updated
+    const fieldsBeingUpdated = Object.keys(updates);
+    if (fieldsBeingUpdated.length > 0) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        fieldsBeingUpdated.forEach(field => {
+          delete newErrors[field];
+        });
+        return newErrors;
+      });
+    }
   };
 
   const handleSpecializationToggle = (specialization: string) => {
@@ -23,6 +36,15 @@ export function useGroomerForm() {
         ? prev.specializations.filter(s => s !== specialization)
         : [...prev.specializations, specialization]
     }));
+    
+    // Clear specializations validation error when user selects any specialization
+    if (validationErrors.specializations) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.specializations;
+        return newErrors;
+      });
+    }
   };
 
   const handleImageChange = async (file: File) => {
@@ -32,6 +54,15 @@ export function useGroomerForm() {
         ...prev,
         profileImage: compressedFile
       }));
+      
+      // Clear profile image validation error
+      if (validationErrors.profileImage) {
+        setValidationErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.profileImage;
+          return newErrors;
+        });
+      }
     } catch (error) {
       console.error("Error compressing main profile image:", error);
       toast({
@@ -47,10 +78,90 @@ export function useGroomerForm() {
       ...prev,
       profileImages: images
     }));
+    
+    // Clear profile images validation error
+    if (validationErrors.profileImages) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.profileImages;
+        return newErrors;
+      });
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    
+    // Salon name validation
+    if (!formData.salonName.trim()) {
+      errors.salonName = "Salon name is required";
+    } else if (formData.salonName.trim().length < 3) {
+      errors.salonName = "Salon name must be at least 3 characters";
+    }
+    
+    // Experience validation
+    if (!formData.experienceYears) {
+      errors.experienceYears = "Years of experience is required";
+    } else if (parseInt(formData.experienceYears) < 0) {
+      errors.experienceYears = "Experience years cannot be negative";
+    }
+    
+    // Specializations validation
+    if (formData.specializations.length === 0) {
+      errors.specializations = "Please select at least one specialization";
+    }
+    
+    // Address validation
+    if (!formData.streetAddress.trim()) {
+      errors.streetAddress = "Street address is required";
+    }
+    
+    if (!formData.city.trim()) {
+      errors.city = "City is required";
+    }
+    
+    if (!formData.pincode.trim()) {
+      errors.pincode = "Pincode is required";
+    } else if (!/^\d{6}$/.test(formData.pincode)) {
+      errors.pincode = "Pincode must be a 6-digit number";
+    }
+    
+    // Contact number validation
+    if (!formData.contactNumber.trim()) {
+      errors.contactNumber = "Contact number is required";
+    } else if (!/^\d{10}$/.test(formData.contactNumber.replace(/[^0-9]/g, ''))) {
+      errors.contactNumber = "Please enter a valid 10-digit phone number";
+    }
+    
+    // Bio validation
+    if (formData.bio.trim() && formData.bio.trim().length < 20) {
+      errors.bio = "Bio should be at least 20 characters if provided";
+    }
+    
+    // Service type validation
+    if (!formData.providesHomeService && !formData.providesSalonService) {
+      errors.serviceType = "Please select at least one service type";
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate the form
+    if (!validateForm()) {
+      // Show toast with error count
+      const errorCount = Object.keys(validationErrors).length;
+      toast({
+        title: `Form has ${errorCount} ${errorCount === 1 ? 'error' : 'errors'}`,
+        description: "Please correct the highlighted fields and try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -64,12 +175,6 @@ export function useGroomerForm() {
         });
         navigate("/groomer-auth");
         return;
-      }
-
-      // Validate required fields
-      if (!formData.salonName || !formData.experienceYears || formData.specializations.length === 0 ||
-          !formData.streetAddress || !formData.city || !formData.pincode || !formData.contactNumber) {
-        throw new Error("Please fill out all required fields");
       }
 
       let profileImageUrl = null;
@@ -186,6 +291,7 @@ export function useGroomerForm() {
   return {
     formData,
     loading,
+    validationErrors,
     handleFormDataChange,
     handleSpecializationToggle,
     handleImageChange,
