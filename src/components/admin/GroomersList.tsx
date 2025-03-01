@@ -87,6 +87,7 @@ export function GroomersList({ searchQuery }: GroomersListProps) {
 
       // Fetch user emails for each groomer
       if (data) {
+        console.log("Fetched groomer profiles:", data); // Debug log to check what's being fetched
         const groomersWithEmail = await Promise.all(
           data.map(async (groomer) => {
             const { data: userData, error: userError } = await supabase
@@ -132,12 +133,17 @@ export function GroomersList({ searchQuery }: GroomersListProps) {
   };
 
   const applyStatusFilter = (filter: string) => {
+    console.log("Applying filter:", filter); // Debug log to check filter application
+    console.log("Available groomers:", groomers); // Debug log to see all groomers
+
     let filtered;
     if (filter === "all") {
       filtered = groomers;
     } else {
       filtered = groomers.filter(g => g.application_status === filter);
     }
+
+    console.log("Filtered groomers:", filtered); // Debug log to see filtered results
 
     // Apply search filter if there's a query
     if (searchQuery) {

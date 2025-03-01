@@ -1,11 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import {
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BannerList } from "./banner/BannerList";
 import { BannerDialog } from "./banner/BannerDialog";
@@ -212,7 +209,7 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
         <h2 className="text-xl font-semibold">Hero Banner Management</h2>
-        <DialogTrigger asChild>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <Button 
             onClick={() => {
               resetForm();
@@ -221,7 +218,7 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
           >
             Add New Banner
           </Button>
-        </DialogTrigger>
+        </Dialog>
       </div>
 
       <Tabs defaultValue="events" onValueChange={(value) => setBannerPage(value)}>

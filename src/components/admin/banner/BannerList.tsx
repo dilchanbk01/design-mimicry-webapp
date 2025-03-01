@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { BannerCard } from "./BannerCard";
+import { Dialog } from "@/components/ui/dialog";
 
 interface HeroBanner {
   id: string;
@@ -43,16 +44,18 @@ export function BannerList({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {banners.map((banner) => (
-        <BannerCard
-          key={banner.id}
-          banner={banner}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onToggleActive={onToggleActive}
-        />
-      ))}
-    </div>
+    <Dialog>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {banners.map((banner) => (
+          <BannerCard
+            key={banner.id}
+            banner={banner}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onToggleActive={onToggleActive}
+          />
+        ))}
+      </div>
+    </Dialog>
   );
 }
