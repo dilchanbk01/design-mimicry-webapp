@@ -53,12 +53,14 @@ export function BannerDialog({
 }: BannerDialogProps) {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Reset image file when dialog opens/closes
+  // Reset image file and error when dialog opens/closes
   useEffect(() => {
     if (!open) {
       setImageFile(null);
       setImageError(null);
+      setSubmitting(false);
     }
   }, [open]);
 
@@ -81,19 +83,22 @@ export function BannerDialog({
       }
       
       setImageFile(file);
-      const objectUrl = URL.createObjectURL(file);
-      // We don't set previewUrl here as it's managed by the parent component
     }
   };
 
   const handleSubmitWithValidation = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Prevent multiple submissions
+    if (submitting || isUploading) return;
+    
     // Validate inputs before submission
     if (!editingBanner && !imageFile && !previewUrl) {
       setImageError("Please select an image for the banner");
-      e.preventDefault();
       return;
     }
     
+    setSubmitting(true);
     onSubmit(e, imageFile);
   };
 
@@ -129,9 +134,10 @@ export function BannerDialog({
             <Input
               id="image"
               type="file"
-              accept="image/*"
+              accept="image/jpeg, image/png, image/gif, image/webp"
               onChange={handleFileChange}
               className="cursor-pointer"
+              disabled={isUploading}
             />
             {imageError && <p className="text-sm text-red-500">{imageError}</p>}
             {previewUrl && (
@@ -152,6 +158,7 @@ export function BannerDialog({
               checked={active}
               onChange={(e) => setActive(e.target.checked)}
               className="h-4 w-4 rounded border-gray-300"
+              disabled={isUploading}
             />
             <Label htmlFor="active">Active</Label>
           </div>
@@ -164,6 +171,7 @@ export function BannerDialog({
                 resetForm();
                 onOpenChange(false);
               }}
+              disabled={isUploading}
             >
               Cancel
             </Button>
