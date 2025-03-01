@@ -8,10 +8,11 @@ import { AdminAnalytics } from "@/components/admin/AdminAnalytics";
 import { EventsList } from "@/components/admin/EventsList";
 import { GroomersList } from "@/components/admin/GroomersList";
 import { SearchBar } from "@/components/admin/SearchBar";
+import { HeroBannerManagement } from "@/components/admin/HeroBannerManagement";
 import { PayoutRequestsSection } from "@/components/admin/PayoutRequestsSection";
 import { GroomerPayoutsSection } from "@/components/admin/GroomerPayoutsSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarDays, Users, CircleDollarSign } from "lucide-react";
+import { CalendarDays, Users, CircleDollarSign, Image } from "lucide-react";
 
 interface Analytics {
   total_events: number;
@@ -142,7 +143,7 @@ export default function AdminDashboard() {
             onValueChange={(value) => setActiveTab(value)}
             className="space-y-4"
           >
-            <TabsList className="w-full sm:w-auto grid grid-cols-3 md:flex">
+            <TabsList className="w-full sm:w-auto grid grid-cols-4 md:flex">
               <TabsTrigger value="events" className="flex items-center">
                 <CalendarDays className="h-4 w-4 mr-2" />
                 Events
@@ -154,6 +155,10 @@ export default function AdminDashboard() {
               <TabsTrigger value="groomers" className="flex items-center">
                 <Users className="h-4 w-4 mr-2" />
                 Groomers
+              </TabsTrigger>
+              <TabsTrigger value="banners" className="flex items-center">
+                <Image className="h-4 w-4 mr-2" />
+                Banners
               </TabsTrigger>
             </TabsList>
 
@@ -195,6 +200,10 @@ export default function AdminDashboard() {
 
             <TabsContent value="groomers">
               <GroomersList searchQuery={searchQuery} />
+            </TabsContent>
+
+            <TabsContent value="banners">
+              <HeroBannerManagement searchQuery={searchQuery} />
             </TabsContent>
           </Tabs>
         </div>
