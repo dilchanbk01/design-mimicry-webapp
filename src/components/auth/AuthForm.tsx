@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { AuthButton } from "@/components/AuthButton";
@@ -20,13 +20,35 @@ export function AuthForm({
   onSignUpSuccess
 }: AuthFormProps) {
   const { toast } = useToast();
-  const auth = useAuth({ redirectPath, onLoginSuccess, onSignUpSuccess });
+  const [isLoading, setIsLoading] = useState(false);
+  const auth = useAuth({ 
+    redirectPath, 
+    onLoginSuccess, 
+    onSignUpSuccess,
+    onLoginError: (error) => {
+      toast({
+        title: "Sign in failed",
+        description: error.message || "There was a problem signing in. Please try again.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    },
+    onSignUpError: (error) => {
+      toast({
+        title: "Sign up failed",
+        description: error.message || "There was a problem creating your account. Please try again.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    }
+  });
 
   const handleTabChange = (value: string) => {
     auth.updateField("activeTab", value as "sign-in" | "sign-up");
   };
 
   const handleSocialAuthSuccess = () => {
+    setIsLoading(true);
     if (redirectPath) {
       localStorage.setItem("redirectAfterAuth", redirectPath);
     }
@@ -48,6 +70,8 @@ export function AuthForm({
       <TabsContent value="sign-in">
         <SignInForm 
           auth={auth}
+          isLoading={isLoading}
+          setIsLoading={setIsLoading}
         />
 
         <Separator className="my-6" />
@@ -70,6 +94,8 @@ export function AuthForm({
       <TabsContent value="sign-up">
         <SignUpForm 
           auth={auth}
+          isLoading={isLoading}
+          setIsLoading={setIsLoading}
         />
 
         <Separator className="my-6" />
