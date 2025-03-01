@@ -10,9 +10,10 @@ interface SignUpFormProps {
   auth: any;
   isLoading?: boolean;
   setIsLoading?: (loading: boolean) => void;
+  isGroomerAuth?: boolean;
 }
 
-export function SignUpForm({ auth, isLoading, setIsLoading }: SignUpFormProps) {
+export function SignUpForm({ auth, isLoading, setIsLoading, isGroomerAuth = false }: SignUpFormProps) {
   const { state, updateField, handleSignUp } = auth;
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -124,7 +125,7 @@ export function SignUpForm({ auth, isLoading, setIsLoading }: SignUpFormProps) {
         className="w-full bg-green-600 hover:bg-green-700"
         disabled={isLoading}
       >
-        {isLoading ? "Creating account..." : "Create Account"}
+        {isLoading ? "Creating account..." : isGroomerAuth ? "Create Groomer Account" : "Create Account"}
       </Button>
     </form>
   );

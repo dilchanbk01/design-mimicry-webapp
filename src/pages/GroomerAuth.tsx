@@ -8,7 +8,11 @@ import { AuthForm } from "@/components/auth/AuthForm";
 
 export default function GroomerAuth() {
   const { toast } = useToast();
-  const auth = useAuth();
+  const auth = useAuth({
+    redirectPath: "/groomer-onboarding", // Set default redirect for groomers
+    onLoginSuccess: handleGroomerSignInSuccess,
+    onSignUpSuccess: handleGroomerSignUpSuccess
+  });
   
   useEffect(() => {
     checkExistingGroomerSession();
@@ -60,11 +64,12 @@ export default function GroomerAuth() {
     }
   };
 
-  const handleGroomerSignUpSuccess = async (userId: string) => {
+  async function handleGroomerSignUpSuccess(userId: string) {
+    // For groomers, always redirect to onboarding after signup
     auth.navigateAfterAuth("/groomer-onboarding");
-  };
+  }
 
-  const handleGroomerSignInSuccess = async (userId: string) => {
+  async function handleGroomerSignInSuccess(userId: string) {
     try {
       const { data: profile, error } = await supabase
         .from("groomer_profiles")
@@ -85,7 +90,7 @@ export default function GroomerAuth() {
     } catch (error) {
       console.error("Error checking profile:", error);
     }
-  };
+  }
 
   return (
     <AuthContainer 
@@ -95,6 +100,7 @@ export default function GroomerAuth() {
       <AuthForm
         onSignUpSuccess={handleGroomerSignUpSuccess}
         onLoginSuccess={handleGroomerSignInSuccess}
+        isGroomerAuth={true}
       />
     </AuthContainer>
   );

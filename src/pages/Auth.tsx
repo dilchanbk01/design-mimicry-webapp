@@ -5,7 +5,9 @@ import { AuthForm } from "@/components/auth/AuthForm";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function Auth() {
-  const auth = useAuth();
+  const auth = useAuth({
+    redirectPath: "/" // Set default redirect for regular users to home page
+  });
 
   useEffect(() => {
     auth.checkExistingSession();

@@ -12,12 +12,14 @@ interface AuthFormProps {
   redirectPath?: string;
   onLoginSuccess?: (userId: string) => void;
   onSignUpSuccess?: (userId: string) => void;
+  isGroomerAuth?: boolean;
 }
 
 export function AuthForm({
   redirectPath,
   onLoginSuccess,
-  onSignUpSuccess
+  onSignUpSuccess,
+  isGroomerAuth = false
 }: AuthFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -96,6 +98,7 @@ export function AuthForm({
           auth={auth}
           isLoading={isLoading}
           setIsLoading={setIsLoading}
+          isGroomerAuth={isGroomerAuth}
         />
 
         <Separator className="my-6" />
