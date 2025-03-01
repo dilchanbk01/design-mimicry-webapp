@@ -73,18 +73,18 @@ export default function GroomerAuth() {
   const checkEmailExists = async (email: string) => {
     setEmailCheckLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: false,
-        }
-      });
-
-      // If there's no error with code 'user_not_found', the email exists
-      if (error && error.message.includes('user not found')) {
-        return false; // Email doesn't exist
+      // Use admin API to check if user exists
+      const { count, error } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('email', email);
+      
+      if (error) {
+        console.error("Error checking email:", error);
+        return false;
       }
-      return true; // Email exists
+      
+      return count > 0;
     } catch (error) {
       console.error("Error checking email:", error);
       return false;
@@ -106,7 +106,13 @@ export default function GroomerAuth() {
         // Check if email already exists
         const emailExists = await checkEmailExists(email);
         if (emailExists) {
-          throw new Error("This email is already registered. Please sign in or use a different email.");
+          toast({
+            title: "Email already in use",
+            description: "This email is already registered. Please sign in or use a different email.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
         }
 
         const { data, error } = await supabase.auth.signUp({

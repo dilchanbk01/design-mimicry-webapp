@@ -47,18 +47,18 @@ export default function Auth() {
   const checkEmailExists = async (email: string) => {
     setEmailCheckLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: false,
-        }
-      });
-
-      // If there's no error with code 'user_not_found', the email exists
-      if (error && error.message.includes('user not found')) {
-        return false; // Email doesn't exist
+      // Use profiles table to check if user exists
+      const { count, error } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('email', email);
+      
+      if (error) {
+        console.error("Error checking email:", error);
+        return false;
       }
-      return true; // Email exists
+      
+      return count > 0;
     } catch (error) {
       console.error("Error checking email:", error);
       return false;
