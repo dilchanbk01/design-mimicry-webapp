@@ -23,6 +23,7 @@ export function BannerList({
   onDeleteBanner,
   onEditBanner
 }: BannerListProps) {
+  // Filter banners based on active tab and search query
   const filteredBanners = banners.filter(banner => 
     (activeTab === 'all' || banner.page === activeTab) &&
     (!searchQuery || 
@@ -30,6 +31,7 @@ export function BannerList({
        banner.description?.toLowerCase().includes(searchQuery.toLowerCase())))
   );
 
+  // Get active banners from the filtered list
   const activeBanners = filteredBanners.filter(banner => banner.active);
 
   console.log("Filtered banners:", filteredBanners);

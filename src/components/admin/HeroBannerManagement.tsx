@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -38,12 +39,8 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
   const { toast } = useToast();
   const { uploadImageFromUrl } = useBannerImageUpload();
 
-  useEffect(() => {
-    console.log("HeroBannerManagement component mounted, fetching banners");
-    fetchBanners();
-  }, []);
-
-  const fetchBanners = async () => {
+  // Fetch banners on component mount and when needed
+  const fetchBanners = useCallback(async () => {
     setLoading(true);
     try {
       console.log("Fetching banners...");
@@ -60,12 +57,18 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
+  useEffect(() => {
+    console.log("HeroBannerManagement component mounted, fetching banners");
+    fetchBanners();
+  }, [fetchBanners]);
+
+  // Banner creation handler
   const handleCreateBanner = async (banner: Partial<HeroBanner>) => {
     try {
       await BannerService.createBanner(banner);
-      fetchBanners();
+      await fetchBanners();
       toast({
         title: "Success",
         description: "Banner created successfully",
@@ -81,10 +84,11 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
     }
   };
 
+  // Banner update handler
   const handleUpdateBanner = async (id: string, banner: Partial<HeroBanner>) => {
     try {
       await BannerService.updateBanner(id, banner);
-      fetchBanners();
+      await fetchBanners();
       toast({
         title: "Success",
         description: "Banner updated successfully",
@@ -100,19 +104,18 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
     }
   };
 
+  // Banner delete confirmation handler
   const confirmDeleteBanner = (id: string) => {
     setBannerIdToDelete(id);
     setShowDeleteDialog(true);
   };
 
+  // Banner delete handler
   const handleDeleteBanner = async () => {
     if (!bannerIdToDelete) return;
     
     try {
       await BannerService.deleteBanner(bannerIdToDelete);
-      
-      const bannerToDelete = banners.find(b => b.id === bannerIdToDelete);
-      
       setBanners(banners.filter(banner => banner.id !== bannerIdToDelete));
       
       toast({
@@ -132,11 +135,13 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
     }
   };
 
+  // Banner active status toggle handler
   const handleToggleActive = async (banner: HeroBanner) => {
     try {
       console.log(`Toggling banner ${banner.id} from ${banner.active} to ${!banner.active}`);
       await BannerService.toggleActive(banner.id, !banner.active);
       
+      // Update local state
       setBanners(banners.map(b => 
         b.id === banner.id ? { ...b, active: !b.active } : b
       ));
@@ -155,11 +160,13 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
     }
   };
 
+  // Banner edit handler
   const handleEditBanner = (banner: HeroBanner) => {
     setSelectedBanner(banner);
     setShowEditDialog(true);
   };
 
+  // Predefined banners upload handler
   const uploadPredefinedBanners = async () => {
     try {
       setLoading(true);
@@ -234,12 +241,14 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
         </TabsContent>
       </CardContent>
 
+      {/* Add Banner Dialog */}
       <PageBannerDialog
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         onSave={handleCreateBanner}
       />
 
+      {/* Edit Banner Dialog */}
       <EditBannerDialog
         open={showEditDialog}
         onOpenChange={setShowEditDialog}
@@ -247,6 +256,7 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
         banner={selectedBanner}
       />
 
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

@@ -8,7 +8,8 @@ export const BannerService = {
       console.log("Fetching banners from Supabase");
       const { data, error } = await supabase
         .from('hero_banners')
-        .select('*');
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error("Error fetching banners:", error);
@@ -54,6 +55,7 @@ export const BannerService = {
 
   updateBanner: async (id: string, banner: Partial<HeroBanner>): Promise<void> => {
     try {
+      console.log(`Updating banner ${id} with data:`, banner);
       const { error } = await supabase
         .from('hero_banners')
         .update(banner)
@@ -68,6 +70,7 @@ export const BannerService = {
 
   deleteBanner: async (id: string): Promise<void> => {
     try {
+      console.log(`Deleting banner ${id}`);
       const { error } = await supabase
         .from('hero_banners')
         .delete()
