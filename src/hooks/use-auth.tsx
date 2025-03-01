@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -12,12 +11,15 @@ interface AuthState {
   phoneNumber: string;
   loading: boolean;
   activeTab: "sign-in" | "sign-up";
+  error?: string;
 }
 
 interface UseAuthOptions {
   redirectPath?: string;
   onLoginSuccess?: (userId: string) => void;
   onSignUpSuccess?: (userId: string) => void;
+  onLoginError?: (error: Error) => void;
+  onSignUpError?: (error: Error) => void;
 }
 
 export function useAuth(options: UseAuthOptions = {}) {
@@ -30,7 +32,8 @@ export function useAuth(options: UseAuthOptions = {}) {
     fullName: "",
     phoneNumber: "",
     loading: false,
-    activeTab: "sign-in"
+    activeTab: "sign-in",
+    error: ""
   });
 
   const updateField = (field: keyof AuthState, value: string | boolean | "sign-in" | "sign-up") => {
@@ -77,6 +80,7 @@ export function useAuth(options: UseAuthOptions = {}) {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     updateField("loading", true);
+    updateField("error", "");
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -94,11 +98,17 @@ export function useAuth(options: UseAuthOptions = {}) {
       navigateAfterAuth(data.user?.id);
     } catch (error) {
       console.error("Error signing in:", error);
-      toast({
-        title: "Sign in failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      updateField("error", error.message);
+      
+      if (options.onLoginError) {
+        options.onLoginError(error);
+      } else {
+        toast({
+          title: "Sign in failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     } finally {
       updateField("loading", false);
     }
@@ -107,13 +117,10 @@ export function useAuth(options: UseAuthOptions = {}) {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     updateField("loading", true);
+    updateField("error", "");
 
     if (state.password !== state.confirmPassword) {
-      toast({
-        title: "Passwords do not match",
-        description: "Please ensure both passwords match.",
-        variant: "destructive",
-      });
+      updateField("error", "Passwords do not match");
       updateField("loading", false);
       return;
     }
@@ -140,11 +147,17 @@ export function useAuth(options: UseAuthOptions = {}) {
       navigateAfterAuth(data.user?.id);
     } catch (error) {
       console.error("Error signing up:", error);
-      toast({
-        title: "Registration failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      updateField("error", error.message);
+      
+      if (options.onSignUpError) {
+        options.onSignUpError(error);
+      } else {
+        toast({
+          title: "Registration failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     } finally {
       updateField("loading", false);
     }
