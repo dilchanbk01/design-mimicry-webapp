@@ -706,6 +706,12 @@ export type Database = {
       }
     }
     Functions: {
+      check_email_exists: {
+        Args: {
+          email_to_check: string
+        }
+        Returns: boolean
+      }
       cleanup_orphaned_images: {
         Args: Record<PropertyKey, never>
         Returns: undefined
