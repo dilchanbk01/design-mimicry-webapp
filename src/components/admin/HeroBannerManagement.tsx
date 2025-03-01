@@ -9,6 +9,7 @@ import { HeroBanner } from "./banner/types";
 import { BannerList } from "./banner/BannerList";
 import { BannerTabsBar } from "./banner/BannerTabsBar";
 import { BannerHeader } from "./banner/BannerHeader";
+import { useBannerImageUpload } from "./banner/useBannerImageUpload";
 
 interface HeroBannerManagementProps {
   searchQuery: string;
@@ -20,6 +21,7 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
   const [activeTab, setActiveTab] = useState("events");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const { toast } = useToast();
+  const { uploadImageFromUrl } = useBannerImageUpload();
 
   useEffect(() => {
     fetchBanners();
@@ -155,10 +157,65 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
     }
   };
 
+  // Function to upload predefined banners
+  const uploadPredefinedBanners = async () => {
+    try {
+      setLoading(true);
+      
+      // Upload event banner image
+      const eventBannerUrl = "/lovable-uploads/ae5772e4-e5b8-4b95-8052-0747161147db.png";
+      const eventImageUrl = await uploadImageFromUrl(eventBannerUrl, "events");
+      
+      if (eventImageUrl) {
+        // Create the events banner
+        await handleCreateBanner({
+          page: "events",
+          image_url: eventImageUrl,
+          title: "Welcome to Petsu Events",
+          description: "Find pet-friendly events near you",
+          active: true
+        });
+      }
+      
+      // Upload groomer banner image
+      const groomerBannerUrl = "/lovable-uploads/db661ae8-128e-451b-9079-f53934630548.png";
+      const groomerImageUrl = await uploadImageFromUrl(groomerBannerUrl, "pet-grooming");
+      
+      if (groomerImageUrl) {
+        // Create the grooming banner
+        await handleCreateBanner({
+          page: "pet-grooming",
+          image_url: groomerImageUrl,
+          title: "Professional Pet Grooming",
+          description: "Find the best groomers for your pets",
+          active: true
+        });
+      }
+      
+      toast({
+        title: "Success",
+        description: "Predefined banners uploaded successfully",
+      });
+      
+    } catch (error) {
+      console.error("Error uploading predefined banners:", error);
+      toast({
+        title: "Error",
+        description: "Failed to upload predefined banners",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
-        <BannerHeader onAddBanner={() => setShowAddDialog(true)} />
+        <BannerHeader 
+          onAddBanner={() => setShowAddDialog(true)} 
+          onUploadPredefined={uploadPredefinedBanners}
+        />
       </CardHeader>
       <CardContent>
         <BannerTabsBar 
