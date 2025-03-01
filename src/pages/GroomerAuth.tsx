@@ -61,7 +61,7 @@ export default function GroomerAuth() {
       case 'rejected':
         toast({
           title: "Application Rejected",
-          description: "Your application has been rejected. Please contact support for more information.",
+          description: "Your application has been rejected. Please contact care@petsu.in for more information.",
           variant: "destructive"
         });
         break;

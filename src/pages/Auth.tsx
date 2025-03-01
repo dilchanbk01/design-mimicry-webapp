@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -59,7 +58,6 @@ export default function Auth() {
         return false;
       }
       
-      // Check if we got any results
       return data && data.length > 0;
     } catch (error) {
       console.error("Error checking email:", error);
