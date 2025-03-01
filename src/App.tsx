@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { Routes, Route, useLocation, Navigate, useParams } from "react-router-dom";
 import "./App.css";
@@ -111,6 +110,7 @@ function App() {
       {/* Pet Grooming Routes */}
       <Route path="/pet-grooming" element={<PetGrooming />} />
       <Route path="/pet-grooming/:id" element={<GroomerDetail />} />
+      <Route path="/pet-grooming/groomer/:id" element={<GroomerDetail />} />
       <Route path="/pet-grooming/:id/booking" element={<GroomerBooking />} />
       
       {/* Redirect groomer links to pet-grooming */}

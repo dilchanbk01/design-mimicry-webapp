@@ -87,8 +87,8 @@ export default function PetGrooming() {
                     rating: 4.5 // Default rating or we could calculate this from reviews
                   }}
                   onViewDetails={() => {
-                    // Navigate to the groomer details page
-                    window.location.href = `/pet-grooming/groomer/${groomer.id}`;
+                    // Navigate to the groomer details page - using correct URL format
+                    window.location.href = `/pet-grooming/${groomer.id}`;
                   }}
                 />
               ))}
