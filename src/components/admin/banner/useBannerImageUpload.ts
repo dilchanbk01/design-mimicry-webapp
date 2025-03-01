@@ -14,6 +14,7 @@ export function useBannerImageUpload() {
     
     setIsUploading(true);
     setUploadProgress(10);
+    console.log("Starting image upload");
     
     try {
       // Create a local preview
@@ -36,23 +37,34 @@ export function useBannerImageUpload() {
       // Check if banners bucket exists, create if not
       const { data: buckets } = await supabase.storage.listBuckets();
       if (!buckets?.find(bucket => bucket.name === 'banners')) {
-        await supabase.storage.createBucket('banners', {
-          public: true
-        });
+        console.log("Creating banners bucket");
+        try {
+          await supabase.storage.createBucket('banners', {
+            public: true
+          });
+        } catch (bucketError) {
+          console.error("Error creating bucket:", bucketError);
+        }
       }
       
       // Upload to Supabase storage
+      console.log("Uploading to storage");
       const { data, error } = await supabase.storage
         .from('banners')
         .upload(filePath, compressedFile);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Storage upload error:", error);
+        throw error;
+      }
       
       // Get the public URL
+      console.log("Getting public URL");
       const { data: { publicUrl } } = supabase.storage
         .from('banners')
         .getPublicUrl(filePath);
       
+      console.log("Public URL:", publicUrl);
       setImageUrl(publicUrl);
       setUploadProgress(100);
       
@@ -61,6 +73,7 @@ export function useBannerImageUpload() {
       console.error("Error uploading image:", error);
     } finally {
       setIsUploading(false);
+      console.log("Upload complete. imageUrl:", imageUrl);
     }
   };
 
@@ -80,41 +93,3 @@ export function useBannerImageUpload() {
     imageUrl
   };
 }
-
-// Export the function for direct import in other files
-export const uploadBannerImage = async (file: File): Promise<string> => {
-  try {
-    // Compress the image
-    const compressedFile = await compressImage(file);
-    
-    // Generate a unique file name
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-    const filePath = `banners/${fileName}`;
-    
-    // Check if banners bucket exists, create if not
-    const { data: buckets } = await supabase.storage.listBuckets();
-    if (!buckets?.find(bucket => bucket.name === 'banners')) {
-      await supabase.storage.createBucket('banners', {
-        public: true
-      });
-    }
-    
-    // Upload to Supabase storage
-    const { data, error } = await supabase.storage
-      .from('banners')
-      .upload(filePath, compressedFile);
-    
-    if (error) throw error;
-    
-    // Get the public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('banners')
-      .getPublicUrl(filePath);
-    
-    return publicUrl;
-  } catch (error) {
-    console.error("Error in uploadBannerImage:", error);
-    throw error;
-  }
-};

@@ -32,6 +32,11 @@ export function PageBannerDialog({ open, onOpenChange, onSave }: PageBannerDialo
     imageUrl
   } = useBannerImageUpload();
 
+  // Debug logging
+  useEffect(() => {
+    console.log("Image URL status:", { imageUrl, isUploading });
+  }, [imageUrl, isUploading]);
+
   useEffect(() => {
     if (!open) {
       // Reset form when dialog closes
@@ -163,6 +168,12 @@ export function PageBannerDialog({ open, onOpenChange, onSave }: PageBannerDialo
                 }}
               />
             </div>
+          </div>
+          
+          {/* Debug info */}
+          <div className="text-xs text-gray-500">
+            <p>Image upload status: {isUploading ? 'Uploading...' : imageUrl ? 'Complete' : 'Not started'}</p>
+            {imageUrl && <p>Image URL is set</p>}
           </div>
         </div>
         

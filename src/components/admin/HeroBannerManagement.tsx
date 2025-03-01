@@ -49,6 +49,8 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
 
   const handleCreateBanner = async (banner: Partial<HeroBanner>) => {
     try {
+      console.log("Creating banner with data:", banner);
+      
       // Ensure required fields are present
       if (!banner.image_url || !banner.page) {
         throw new Error("Missing required fields: image_url and page are required");
@@ -63,12 +65,19 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
         active: banner.active || false
       };
       
-      // Pass an array to the insert method
+      console.log("Inserting banner:", bannerToInsert);
+      
+      // Insert a single object rather than an array
       const { error } = await supabase
         .from('hero_banners')
-        .insert([bannerToInsert]);
+        .insert(bannerToInsert);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Insert error:", error);
+        throw error;
+      }
+      
+      console.log("Banner created successfully");
       
       // Refresh the banner list
       fetchBanners();
