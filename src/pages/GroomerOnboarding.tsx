@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -26,6 +25,10 @@ export default function GroomerOnboarding() {
       
       if (!user) {
         // User is not authenticated, redirect to auth page
+        toast({
+          title: "Authentication Required",
+          description: "Please sign up or sign in before completing your groomer profile.",
+        });
         navigate("/groomer-auth");
         return;
       }
@@ -99,6 +102,11 @@ export default function GroomerOnboarding() {
       const { data: { user }} = await supabase.auth.getUser();
       
       if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "Please sign up or sign in before submitting your application.",
+          variant: "destructive"
+        });
         navigate("/groomer-auth");
         return;
       }
