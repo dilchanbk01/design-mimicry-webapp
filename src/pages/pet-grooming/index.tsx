@@ -47,18 +47,7 @@ export default function PetGrooming() {
   
   return (
     <div className="flex flex-col min-h-screen" style={{ backgroundColor: "#0dcf6a" }}>
-      {/* Custom header with centered logo */}
-      <header className="bg-transparent absolute top-0 left-0 right-0 z-50">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-center">
-            <img 
-              src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
-              alt="Petsu"
-              className="h-10"
-            />
-          </div>
-        </div>
-      </header>
+      <GroomingHeader />
       
       <GroomingHeroBanner 
         currentSlide={currentSlide} 

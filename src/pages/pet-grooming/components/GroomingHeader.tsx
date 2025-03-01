@@ -6,15 +6,19 @@ import { ArrowLeft, UserCircle2 } from "lucide-react";
 export function GroomingHeader() {
   const navigate = useNavigate();
   
+  const handleBackClick = () => {
+    navigate("/");
+  };
+  
   return (
     <header className="bg-transparent absolute top-0 left-0 right-0 z-10">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        {/* Back Button - Text removed, only icon */}
+        {/* Back Button */}
         <Button 
           variant="ghost" 
           size="icon" 
           className="text-white hover:bg-white/20"
-          onClick={() => navigate("/pet-grooming")}
+          onClick={handleBackClick}
         >
           <ArrowLeft className="h-6 w-6" />
         </Button>
