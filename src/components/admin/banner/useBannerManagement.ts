@@ -66,6 +66,17 @@ export function useBannerManagement(searchQuery: string) {
 
   const handleSubmit = async (e: React.FormEvent, imageFile: File | null) => {
     e.preventDefault();
+    
+    // Validate inputs
+    if (!editingBanner && !imageFile && !previewUrl) {
+      toast({
+        title: "Error",
+        description: "Please select an image for the banner",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsUploading(true);
 
     try {
@@ -78,12 +89,14 @@ export function useBannerManagement(searchQuery: string) {
           setPreviewUrl(image_url);
         } catch (error: any) {
           console.error("Error uploading image:", error);
-          throw new Error(`Failed to upload image: ${error.message}`);
+          toast({
+            title: "Upload Failed",
+            description: error.message || "Failed to upload image",
+            variant: "destructive",
+          });
+          setIsUploading(false);
+          return;
         }
-      }
-
-      if (!image_url && !editingBanner) {
-        throw new Error("An image is required for new banners");
       }
 
       if (editingBanner) {
@@ -101,10 +114,6 @@ export function useBannerManagement(searchQuery: string) {
         });
       } else {
         // Create new banner
-        if (!image_url) {
-          throw new Error("An image is required for new banners");
-        }
-        
         await createBanner({
           title,
           description,

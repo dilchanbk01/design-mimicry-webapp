@@ -1,62 +1,39 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { compressImage } from "@/utils/imageCompression";
 
 export async function uploadBannerImage(imageFile: File): Promise<string> {
   if (!imageFile) {
     throw new Error("No image file provided");
   }
 
-  const fileExt = imageFile.name.split(".").pop();
-  const fileName = `${crypto.randomUUID()}.${fileExt}`;
-  const filePath = `banners/${fileName}`;
-
-  // Check if the storage bucket exists
-  const { data: bucketData, error: bucketError } = await supabase
-    .storage
-    .getBucket('images');
-
-  if (bucketError && bucketError.message.includes('does not exist')) {
-    // Create the bucket if it doesn't exist
-    const { error: createBucketError } = await supabase
-      .storage
-      .createBucket('images', { public: true });
+  try {
+    // Compress the image before uploading
+    const compressedFile = await compressImage(imageFile);
     
-    if (createBucketError) {
-      throw new Error(`Failed to create storage bucket: ${createBucketError.message}`);
-    }
-  }
+    const fileExt = compressedFile.name.split(".").pop();
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
+    const filePath = `banners/${fileName}`;
+    
+    // Upload the file
+    const { data, error } = await supabase.storage
+      .from("images")
+      .upload(filePath, compressedFile, {
+        cacheControl: '3600',
+        upsert: true
+      });
 
-  const { error: uploadError } = await supabase.storage
-    .from("images")
-    .upload(filePath, imageFile, {
-      cacheControl: '3600',
-      upsert: false
-    });
-
-  if (uploadError) {
-    console.error("Upload error:", uploadError);
-    if (uploadError.message.includes("already exists")) {
-      // Handle file already exists error by generating a new name
-      const newFileName = `${crypto.randomUUID()}-${Date.now()}.${fileExt}`;
-      const newFilePath = `banners/${newFileName}`;
-      
-      const { error: retryUploadError } = await supabase.storage
-        .from("images")
-        .upload(newFilePath, imageFile, {
-          cacheControl: '3600',
-          upsert: false
-        });
-      
-      if (retryUploadError) throw retryUploadError;
-      
-      const { data } = supabase.storage.from("images").getPublicUrl(newFilePath);
-      return data.publicUrl;
-    } else {
-      throw uploadError;
+    if (error) {
+      console.error("Upload error:", error);
+      throw new Error(`Failed to upload image: ${error.message}`);
     }
-  } else {
-    // Get the public URL of the uploaded image
-    const { data } = supabase.storage.from("images").getPublicUrl(filePath);
-    return data.publicUrl;
+    
+    // Get the public URL
+    const { data: urlData } = supabase.storage.from("images").getPublicUrl(filePath);
+    
+    return urlData.publicUrl;
+  } catch (error: any) {
+    console.error("Error in uploadBannerImage:", error);
+    throw new Error(`Image upload failed: ${error.message}`);
   }
 }

@@ -10,15 +10,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-
-interface HeroBanner {
-  id: string;
-  image_url: string;
-  title: string | null;
-  description: string | null;
-  active: boolean;
-  page: string;
-}
+import { HeroBanner } from "./types";
 
 interface BannerDialogProps {
   open: boolean;
@@ -53,14 +45,14 @@ export function BannerDialog({
 }: BannerDialogProps) {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [localPreview, setLocalPreview] = useState<string | null>(null);
 
-  // Reset image file and error when dialog opens/closes
+  // Reset state when dialog opens/closes
   useEffect(() => {
     if (!open) {
       setImageFile(null);
       setImageError(null);
-      setSubmitting(false);
+      setLocalPreview(null);
     }
   }, [open]);
 
@@ -82,6 +74,13 @@ export function BannerDialog({
         return;
       }
       
+      // Create local preview
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setLocalPreview(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+      
       setImageFile(file);
     }
   };
@@ -89,16 +88,12 @@ export function BannerDialog({
   const handleSubmitWithValidation = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Prevent multiple submissions
-    if (submitting || isUploading) return;
-    
     // Validate inputs before submission
     if (!editingBanner && !imageFile && !previewUrl) {
       setImageError("Please select an image for the banner");
       return;
     }
     
-    setSubmitting(true);
     onSubmit(e, imageFile);
   };
 
@@ -140,10 +135,12 @@ export function BannerDialog({
               disabled={isUploading}
             />
             {imageError && <p className="text-sm text-red-500">{imageError}</p>}
-            {previewUrl && (
+            
+            {/* Show either local preview or existing image */}
+            {(localPreview || previewUrl) && (
               <div className="mt-2 relative">
                 <img
-                  src={previewUrl}
+                  src={localPreview || previewUrl}
                   alt="Preview"
                   className="w-full h-40 object-cover rounded-md"
                 />
