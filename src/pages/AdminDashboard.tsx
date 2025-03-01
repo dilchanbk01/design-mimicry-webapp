@@ -10,10 +10,8 @@ import { GroomersList } from "@/components/admin/GroomersList";
 import { SearchBar } from "@/components/admin/SearchBar";
 import { PayoutRequestsSection } from "@/components/admin/PayoutRequestsSection";
 import { GroomerPayoutsSection } from "@/components/admin/GroomerPayoutsSection";
-import { AdminDashboardTabs } from "@/components/admin/AdminDashboardTabs";
-import { PayoutsTabs } from "@/components/admin/PayoutsTabs";
-import { AdminAuthGuard } from "@/components/admin/AdminAuthGuard";
-import { Plus } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CalendarDays, Users, CircleDollarSign } from "lucide-react";
 
 interface Analytics {
   total_events: number;
@@ -25,6 +23,7 @@ interface Analytics {
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState<Analytics>({
     total_events: 0,
     pending_events: 0,
@@ -36,17 +35,43 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
+    checkAdminStatus();
     fetchDashboardData();
   }, []);
 
+  const checkAdminStatus = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      navigate("/admin/auth");
+      return;
+    }
+
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .single();
+
+    if (!roleData) {
+      navigate("/");
+      return;
+    }
+
+    setLoading(false);
+  };
+
   const fetchDashboardData = async () => {
     try {
+      // Fetch analytics data
       const { data: analyticsData, error: analyticsError } = await supabase
         .from('event_analytics')
         .select('tickets_sold, total_amount');
 
       if (analyticsError) throw analyticsError;
 
+      // Get total events and pending events count
       const { data: eventsData, error: eventsError } = await supabase
         .from('events')
         .select('status');
@@ -68,73 +93,112 @@ export default function AdminDashboard() {
         description: "Failed to fetch dashboard data",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleCreateEvent = () => {
-    navigate("/create-event");
+  // For debugging - force fetch data
+  const handleRefreshData = () => {
+    console.log("Manual refresh of data requested");
+    fetchDashboardData();
   };
 
-  const renderEventsContent = () => (
-    <>
-      <div className="flex justify-between items-center mb-4">
-        <AdminAnalytics analytics={analytics} />
-        <Button 
-          onClick={handleCreateEvent}
-          className="ml-auto bg-green-600 hover:bg-green-700"
-        >
-          <Plus className="h-4 w-4 mr-2" /> Create Event
-        </Button>
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700"></div>
       </div>
-      <EventsList searchQuery={searchQuery} />
-    </>
-  );
-
-  const renderPayoutsContent = () => (
-    <PayoutsTabs
-      activeTab={activePayoutTab}
-      setActiveTab={setActivePayoutTab}
-      eventsPayoutsContent={<PayoutRequestsSection searchQuery={searchQuery} />}
-      groomersPayoutsContent={<GroomerPayoutsSection searchQuery={searchQuery} />}
-    />
-  );
+    );
+  }
 
   return (
-    <AdminAuthGuard>
-      <div className="min-h-screen bg-gray-100 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-              <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-              <Button
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  navigate("/admin/auth");
-                }}
-                variant="outline"
-              >
-                Sign Out
-              </Button>
-            </div>
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+            <Button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate("/admin/auth");
+              }}
+              variant="outline"
+            >
+              Sign Out
+            </Button>
+          </div>
 
-            <div className="mb-6">
-              <SearchBar 
-                searchQuery={searchQuery} 
-                setSearchQuery={setSearchQuery} 
-                placeholder="Search by name, email, location, account details..."
-              />
-            </div>
-
-            <AdminDashboardTabs
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-              eventsContent={renderEventsContent()}
-              payoutsContent={renderPayoutsContent()}
-              groomersContent={<GroomersList searchQuery={searchQuery} />}
+          <div className="mb-6">
+            <SearchBar 
+              searchQuery={searchQuery} 
+              setSearchQuery={setSearchQuery} 
+              placeholder="Search by name, email, location, account details..."
             />
           </div>
+
+          <Tabs 
+            defaultValue="events" 
+            onValueChange={(value) => setActiveTab(value)}
+            className="space-y-4"
+          >
+            <TabsList className="w-full sm:w-auto grid grid-cols-3 md:flex">
+              <TabsTrigger value="events" className="flex items-center">
+                <CalendarDays className="h-4 w-4 mr-2" />
+                Events
+              </TabsTrigger>
+              <TabsTrigger value="payouts" className="flex items-center">
+                <CircleDollarSign className="h-4 w-4 mr-2" />
+                Payouts
+              </TabsTrigger>
+              <TabsTrigger value="groomers" className="flex items-center">
+                <Users className="h-4 w-4 mr-2" />
+                Groomers
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="events" className="space-y-4">
+              <AdminAnalytics analytics={analytics} />
+              <EventsList searchQuery={searchQuery} />
+            </TabsContent>
+
+            <TabsContent value="payouts">
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold mb-4 flex items-center">
+                  <CircleDollarSign className="h-5 w-5 mr-2 text-blue-600" />
+                  Payout Management
+                </h2>
+                <p className="text-gray-600 mb-4">
+                  Manage payout requests from event organizers and grooming service providers.
+                </p>
+                
+                <Tabs 
+                  defaultValue="events" 
+                  onValueChange={(value) => setActivePayoutTab(value)}
+                  className="mt-4"
+                >
+                  <TabsList>
+                    <TabsTrigger value="events">Event Payouts</TabsTrigger>
+                    <TabsTrigger value="groomers">Groomer Payouts</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="events">
+                    <PayoutRequestsSection searchQuery={searchQuery} />
+                  </TabsContent>
+                  
+                  <TabsContent value="groomers">
+                    <GroomerPayoutsSection searchQuery={searchQuery} />
+                  </TabsContent>
+                </Tabs>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="groomers">
+              <GroomersList searchQuery={searchQuery} />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
-    </AdminAuthGuard>
+    </div>
   );
 }

@@ -1,163 +1,156 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
+import { GroomingHeader } from "./components/GroomingHeader";
+import { GroomerCard } from "./components/GroomerCard";
+import { BookingDialog } from "./components/BookingDialog";
+import { GroomingHeroBanner } from "./components/GroomingHeroBanner";
+import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Home, Store, Info } from "lucide-react";
 import { Footer } from "@/components/layout/Footer";
-import { GroomerCard } from "./components/GroomerCard";
-import { GroomingHeader } from "./components/GroomingHeader";
-import { GroomingHeroBanner } from "./components/GroomingHeroBanner";
-import { useInterval } from "@/hooks/use-interval";
-import { partners } from "./data/partners";
-import { Button } from "@/components/ui/button";
-import { CheckSquare, Square } from "lucide-react";
+import type { GroomingPartner, GroomerProfile } from "./types";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function PetGrooming() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [serviceFilters, setServiceFilters] = useState({
-    inSalon: false,
-    atHome: false,
-  });
-  
-  const { data: groomers = [], isLoading } = useQuery({
-    queryKey: ['approvedGroomers'],
+  const [serviceType, setServiceType] = useState<'salon' | 'home'>('salon');
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['groomers'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('groomer_profiles')
         .select('*')
-        .eq('application_status', 'approved');
-        
+        .eq('application_status', 'approved')
+        .eq('is_available', true); // Only show available groomers
+
       if (error) {
-        console.error('Error fetching groomers:', error);
-        return [];
+        console.error("Error fetching groomers:", error);
+        throw error;
       }
-      
-      return data;
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-  
-  // Automatic slideshow for hero banner
-  useInterval(() => {
-    const heroBanners = document.querySelectorAll('[data-hero-banner]');
-    if (heroBanners.length > 0) {
-      setCurrentSlide((prev) => (prev + 1) % heroBanners.length);
+      return data || [];
     }
-  }, 5000);
-  
-  const toggleServiceFilter = (filter: 'inSalon' | 'atHome') => {
-    setServiceFilters(prev => ({
-      ...prev,
-      [filter]: !prev[filter]
-    }));
-  };
-  
-  const filteredGroomers = groomers.filter(groomer => {
-    // Apply text search filter
-    const matchesSearch = 
-      !searchQuery || 
-      groomer.salon_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      groomer.address?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    // Apply service type filters
-    const matchesServiceType = 
-      // If no service filters are active, show all groomers
-      (!serviceFilters.inSalon && !serviceFilters.atHome) ||
-      // Otherwise, check if the groomer matches the active filters
-      (serviceFilters.inSalon && groomer.provides_salon_service) ||
-      (serviceFilters.atHome && groomer.provides_home_service);
-    
-    return matchesSearch && matchesServiceType;
   });
-  
+
+  // Ensure data is treated as an array
+  const groomers = Array.isArray(data) ? data : [];
+
+  const filteredGroomers = groomers.filter(groomer => {
+    let matches = true;
+    
+    if (serviceType === 'salon') {
+      matches = matches && groomer.provides_salon_service;
+    } else if (serviceType === 'home') {
+      matches = matches && groomer.provides_home_service;
+    }
+
+    return matches;
+  });
+
   return (
-    <div className="flex flex-col min-h-screen" style={{ backgroundColor: "#0dcf6a" }}>
+    <div className="min-h-screen flex flex-col bg-[#00D26A]">
       <GroomingHeader />
       
       <GroomingHeroBanner 
         currentSlide={currentSlide} 
         setCurrentSlide={setCurrentSlide} 
       />
-      
-      <main className="flex-grow">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
-            {/* Title only visible on tablet/desktop */}
-            <h2 className="text-2xl font-bold text-white hidden md:block">Available Pet Groomers</h2>
+
+      <main className="container mx-auto px-4 py-8 flex-grow">
+        <div className="mb-8">
+          <div className="grid grid-cols-2 gap-4 items-center">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={serviceType === 'salon' ? "default" : "outline"}
+                    onClick={() => setServiceType('salon')}
+                    className={`bg-white text-primary hover:bg-white/90 w-full ${
+                      serviceType === 'salon' ? 'border-4 border-[#00D26A] text-[#00D26A] font-bold' : ''
+                    }`}
+                  >
+                    <Store className="h-4 w-4 mr-2" />
+                    At Salon
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Visit the groomer's salon for service</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             
-            {/* Filter buttons - centered on mobile, aligned right on desktop */}
-            <div className="flex space-x-3 justify-center md:justify-end w-full md:w-auto">
-              <Button 
-                variant="outline" 
-                size="sm"
-                className={`flex items-center gap-2 ${serviceFilters.inSalon ? 'bg-white text-green-600' : 'bg-white/20 text-white'}`}
-                onClick={() => toggleServiceFilter('inSalon')}
-              >
-                {serviceFilters.inSalon ? (
-                  <CheckSquare className="h-4 w-4" />
-                ) : (
-                  <Square className="h-4 w-4" />
-                )}
-                In Salon
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="sm"
-                className={`flex items-center gap-2 ${serviceFilters.atHome ? 'bg-white text-green-600' : 'bg-white/20 text-white'}`}
-                onClick={() => toggleServiceFilter('atHome')}
-              >
-                {serviceFilters.atHome ? (
-                  <CheckSquare className="h-4 w-4" />
-                ) : (
-                  <Square className="h-4 w-4" />
-                )}
-                At Home
-              </Button>
-            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={serviceType === 'home' ? "default" : "outline"}
+                    onClick={() => setServiceType('home')}
+                    className={`bg-white text-primary hover:bg-white/90 w-full ${
+                      serviceType === 'home' ? 'border-4 border-[#00D26A] text-[#00D26A] font-bold' : ''
+                    }`}
+                  >
+                    <Home className="h-4 w-4 mr-2" />
+                    Home Visit
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Groomer will come to your home</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4].map((_, i) => (
-                <div key={i} className="bg-white rounded-lg p-4 h-64 animate-pulse">
-                  <div className="h-32 bg-gray-200 rounded mb-4"></div>
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                </div>
-              ))}
-            </div>
-          ) : filteredGroomers.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredGroomers.map(groomer => (
-                <GroomerCard 
-                  key={groomer.id} 
+          {/* Removed informational section */}
+        </div>
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[1, 2, 3, 4].map((item) => (
+              <div key={item} className="bg-white/20 animate-pulse h-64 rounded-2xl"></div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {filteredGroomers.length > 0 ? (
+              filteredGroomers.map((groomer) => (
+                <GroomerCard
+                  key={groomer.id}
                   partner={{
                     id: groomer.id,
                     name: groomer.salon_name,
+                    rating: 4.5,
                     location: groomer.address,
-                    experience: `${groomer.experience_years} years of experience`,
+                    experience: `${groomer.experience_years}+ years experience`,
                     price: `Starting from ₹${groomer.price}`,
-                    image: groomer.profile_image_url || '/placeholder.svg',
-                    providesHomeService: groomer.provides_home_service || false,
-                    providesSalonService: groomer.provides_salon_service || false,
-                    rating: 4.5 // Default rating or we could calculate this from reviews
+                    image: groomer.profile_image_url || 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?w=800&auto=format&fit=crop&q=60',
+                    providesHomeService: groomer.provides_home_service,
+                    providesSalonService: groomer.provides_salon_service
                   }}
-                  onViewDetails={() => {
-                    // Navigate to the groomer details page - using correct URL format
-                    window.location.href = `/pet-grooming/${groomer.id}`;
-                  }}
+                  onViewDetails={() => navigate(`/groomer/${groomer.id}`)}
                 />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 text-white">
-              <p className="mb-4">No pet groomers available matching your filters.</p>
-              <p>Try adjusting your filters or check back later.</p>
-            </div>
-          )}
-        </div>
+              ))
+            ) : (
+              <div className="col-span-2 text-center py-10 bg-white/10 rounded-lg">
+                <h3 className="text-white text-lg font-medium mb-2">No groomers available</h3>
+                <p className="text-white/80">
+                  {serviceType === 'home' 
+                    ? "No groomers currently offer home visits in your area. Try the salon option instead." 
+                    : "No salon services available right now. Try the home visit option."}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </main>
       
       <Footer />

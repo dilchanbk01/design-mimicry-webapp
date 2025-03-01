@@ -38,7 +38,6 @@ const Index = () => {
   };
 
   const handleGroomerPartnerClick = () => {
-    // Navigate to groomer auth page instead of directly to onboarding
     navigate("/groomer-auth");
   };
 

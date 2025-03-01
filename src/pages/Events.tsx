@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapPin, Plus } from "lucide-react";
@@ -72,6 +73,7 @@ export default function Events() {
 
       if (error) throw error;
       
+      // Filter out past events
       const now = new Date();
       const futureEvents = data.filter(event => {
         const eventDate = new Date(event.date);
@@ -138,10 +140,6 @@ export default function Events() {
     return userBookings.some(booking => booking.event_id === eventId);
   };
 
-  const handleCreateEventClick = () => {
-    navigate('/create-event');
-  };
-
   return (
     <div className="min-h-screen bg-[#00D26A] flex flex-col">
       <HeroBanner currentSlide={currentSlide} setCurrentSlide={setCurrentSlide} />
@@ -164,7 +162,7 @@ export default function Events() {
             {showNearbyOnly ? 'All Events' : 'Near me'}
           </Button>
           <Button
-            onClick={handleCreateEventClick}
+            onClick={() => navigate('/events/create')}
             className="bg-white text-primary hover:bg-white/90"
           >
             <Plus className="h-4 w-4 mr-2" />

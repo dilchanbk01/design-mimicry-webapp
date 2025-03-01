@@ -11,7 +11,6 @@ export interface GroomerFormData {
   providesHomeService: boolean;
   providesSalonService: boolean;
   profileImage?: File;
-  profileImages: (File | string)[];
 }
 
 export const initialFormData: GroomerFormData = {
@@ -25,5 +24,4 @@ export const initialFormData: GroomerFormData = {
   bio: "",
   providesHomeService: false,
   providesSalonService: true,
-  profileImages: [],
 };
