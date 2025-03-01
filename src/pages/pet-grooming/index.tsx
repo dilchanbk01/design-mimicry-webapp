@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -81,10 +82,12 @@ export default function PetGrooming() {
       
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-white">Available Pet Groomers</h2>
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
+            {/* Title only visible on tablet/desktop */}
+            <h2 className="text-2xl font-bold text-white hidden md:block">Available Pet Groomers</h2>
             
-            <div className="flex space-x-3">
+            {/* Filter buttons - full width on mobile, normal on desktop */}
+            <div className="flex space-x-3 justify-end w-full md:w-auto">
               <Button 
                 variant="outline" 
                 size="sm"
