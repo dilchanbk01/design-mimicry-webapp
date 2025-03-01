@@ -18,12 +18,16 @@ export function useFetchGroomers(toast: any): UseFetchGroomersReturn {
   const fetchGroomers = async () => {
     setLoading(true);
     try {
+      console.log("Fetching groomer profiles...");
       const { data, error } = await supabase
         .from('groomer_profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error fetching groomers:', error);
+        throw error;
+      }
 
       // Fetch user emails for each groomer
       if (data) {
@@ -34,7 +38,7 @@ export function useFetchGroomers(toast: any): UseFetchGroomersReturn {
               .from('profiles')
               .select('full_name')
               .eq('id', groomer.user_id)
-              .single();
+              .maybeSingle();
 
             if (userError && userError.code !== 'PGRST116') {
               console.error('Error fetching user data:', userError);

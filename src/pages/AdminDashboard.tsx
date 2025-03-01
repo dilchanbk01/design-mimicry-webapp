@@ -13,6 +13,7 @@ import { GroomerPayoutsSection } from "@/components/admin/GroomerPayoutsSection"
 import { AdminDashboardTabs } from "@/components/admin/AdminDashboardTabs";
 import { PayoutsTabs } from "@/components/admin/PayoutsTabs";
 import { AdminAuthGuard } from "@/components/admin/AdminAuthGuard";
+import { Plus } from "lucide-react";
 
 interface Analytics {
   total_events: number;
@@ -70,9 +71,21 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleCreateEvent = () => {
+    navigate("/create-event");
+  };
+
   const renderEventsContent = () => (
     <>
-      <AdminAnalytics analytics={analytics} />
+      <div className="flex justify-between items-center mb-4">
+        <AdminAnalytics analytics={analytics} />
+        <Button 
+          onClick={handleCreateEvent}
+          className="ml-auto bg-green-600 hover:bg-green-700"
+        >
+          <Plus className="h-4 w-4 mr-2" /> Create Event
+        </Button>
+      </div>
       <EventsList searchQuery={searchQuery} />
     </>
   );

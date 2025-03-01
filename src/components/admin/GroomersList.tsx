@@ -1,23 +1,10 @@
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Scissors, MapPin, Phone, Mail, Clock, DollarSign, User, Calendar } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { format } from "date-fns";
+import { Scissors } from "lucide-react";
 import { GroomerListItem } from "./groomers/GroomerListItem";
 import { GroomerBankDetailsDialog } from "./groomers/GroomerBankDetailsDialog";
 import { GroomerStatusDialog } from "./groomers/GroomerStatusDialog";
@@ -57,19 +44,38 @@ export function GroomersList({ searchQuery }: GroomersListProps) {
   } = useGroomersList(searchQuery, toast);
 
   useEffect(() => {
+    console.log("GroomersList component mounted, fetching groomers...");
     fetchGroomers();
+    
+    // Refresh data every 30 seconds
+    const intervalId = setInterval(() => {
+      console.log("Refreshing groomers data...");
+      fetchGroomers();
+    }, 30000);
+    
+    return () => clearInterval(intervalId);
   }, []);
 
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="text-xl flex items-center">
-          <Scissors className="h-5 w-5 mr-2 text-purple-600" />
-          Groomers Management
+        <CardTitle className="text-xl flex items-center justify-between">
+          <div className="flex items-center">
+            <Scissors className="h-5 w-5 mr-2 text-purple-600" />
+            Groomers Management
+          </div>
+          <Button 
+            size="sm" 
+            onClick={fetchGroomers} 
+            variant="outline"
+            className="text-purple-600 hover:bg-purple-50"
+          >
+            Refresh
+          </Button>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="all" onValueChange={setActiveFilter}>
+        <Tabs defaultValue="all" value={activeFilter} onValueChange={setActiveFilter}>
           <TabsList className="mb-4">
             <TabsTrigger value="all">All Groomers</TabsTrigger>
             <TabsTrigger value="pending">Pending</TabsTrigger>
