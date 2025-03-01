@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { TabsContent } from "@/components/ui/tabs";
@@ -40,13 +39,16 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
   const { uploadImageFromUrl } = useBannerImageUpload();
 
   useEffect(() => {
+    console.log("HeroBannerManagement component mounted, fetching banners");
     fetchBanners();
   }, []);
 
   const fetchBanners = async () => {
     setLoading(true);
     try {
+      console.log("Fetching banners...");
       const data = await BannerService.fetchBanners();
+      console.log("Banners fetched successfully:", data);
       setBanners(data);
     } catch (error) {
       console.error("Error fetching banners:", error);
@@ -109,10 +111,8 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
     try {
       await BannerService.deleteBanner(bannerIdToDelete);
       
-      // Find the banner to get its image URL
       const bannerToDelete = banners.find(b => b.id === bannerIdToDelete);
       
-      // Update the local state
       setBanners(banners.filter(banner => banner.id !== bannerIdToDelete));
       
       toast({
@@ -134,9 +134,9 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
 
   const handleToggleActive = async (banner: HeroBanner) => {
     try {
+      console.log(`Toggling banner ${banner.id} from ${banner.active} to ${!banner.active}`);
       await BannerService.toggleActive(banner.id, !banner.active);
       
-      // Update the local state
       setBanners(banners.map(b => 
         b.id === banner.id ? { ...b, active: !b.active } : b
       ));
@@ -160,17 +160,14 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
     setShowEditDialog(true);
   };
 
-  // Function to upload predefined banners
   const uploadPredefinedBanners = async () => {
     try {
       setLoading(true);
       
-      // Upload event banner image
       const eventBannerUrl = "/lovable-uploads/ae5772e4-e5b8-4b95-8052-0747161147db.png";
       const eventImageUrl = await uploadImageFromUrl(eventBannerUrl, "events");
       
       if (eventImageUrl) {
-        // Create the events banner
         await handleCreateBanner({
           page: "events",
           image_url: eventImageUrl,
@@ -180,12 +177,10 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
         });
       }
       
-      // Upload groomer banner image
       const groomerBannerUrl = "/lovable-uploads/db661ae8-128e-451b-9079-f53934630548.png";
       const groomerImageUrl = await uploadImageFromUrl(groomerBannerUrl, "pet-grooming");
       
       if (groomerImageUrl) {
-        // Create the grooming banner
         await handleCreateBanner({
           page: "pet-grooming",
           image_url: groomerImageUrl,
@@ -231,7 +226,7 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
             banners={banners}
             isLoading={loading}
             searchQuery={searchQuery}
-            activeTab={activeTab}
+            activeTab={activeTab === 'all' ? 'all' : activeTab}
             onToggleActive={handleToggleActive}
             onDeleteBanner={confirmDeleteBanner}
             onEditBanner={handleEditBanner}
@@ -239,14 +234,12 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
         </TabsContent>
       </CardContent>
 
-      {/* Add Banner Dialog */}
       <PageBannerDialog
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         onSave={handleCreateBanner}
       />
 
-      {/* Edit Banner Dialog */}
       <EditBannerDialog
         open={showEditDialog}
         onOpenChange={setShowEditDialog}
@@ -254,7 +247,6 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
         banner={selectedBanner}
       />
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

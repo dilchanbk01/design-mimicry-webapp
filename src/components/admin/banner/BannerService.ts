@@ -5,12 +5,17 @@ import { HeroBanner } from "./types";
 export const BannerService = {
   fetchBanners: async (): Promise<HeroBanner[]> => {
     try {
+      console.log("Fetching banners from Supabase");
       const { data, error } = await supabase
         .from('hero_banners')
-        .select('*')
-        .or('page.eq.events,page.eq.pet-grooming');
+        .select('*');
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching banners:", error);
+        throw error;
+      }
+      
+      console.log("Fetched banners:", data);
       return data || [];
     } catch (error) {
       console.error("Error fetching banners:", error);
@@ -77,6 +82,7 @@ export const BannerService = {
 
   toggleActive: async (id: string, active: boolean): Promise<void> => {
     try {
+      console.log(`Toggling banner ${id} active status to ${active}`);
       const { error } = await supabase
         .from('hero_banners')
         .update({ active })

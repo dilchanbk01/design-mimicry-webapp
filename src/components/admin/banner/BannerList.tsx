@@ -29,6 +29,11 @@ export function BannerList({
        banner.description?.toLowerCase().includes(searchQuery.toLowerCase())))
   );
 
+  console.log("Filtered banners:", filteredBanners);
+  console.log("Active tab:", activeTab);
+  console.log("Search query:", searchQuery);
+  console.log("All banners:", banners);
+
   if (isLoading) {
     return (
       <div className="space-y-3">
