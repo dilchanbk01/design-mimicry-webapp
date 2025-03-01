@@ -1,101 +1,91 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders } from "../_shared/cors.ts";
 
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
+const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
-
-interface EmailRequest {
-  to: string;
-  subject: string;
-  bookingType: "event" | "grooming";
-  bookingDetails: any;
-}
-
-const handler = async (req: Request): Promise<Response> => {
+serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const { to, subject, bookingType, bookingDetails }: EmailRequest = await req.json();
-    
-    console.log(`Received request to send ${bookingType} confirmation email to: ${to}`);
-    console.log("Booking details:", JSON.stringify(bookingDetails));
+    const { booking_id, user_email, booking_date, service_name, pet_name } = await req.json();
 
-    let htmlContent = "";
-    
-    if (bookingType === "event") {
-      htmlContent = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
-          <h1 style="color: #00D26A; text-align: center;">Event Booking Confirmation</h1>
-          <div style="padding: 20px; background-color: #f9f9f9; border-radius: 5px; margin-bottom: 20px;">
-            <h2 style="color: #333; margin-top: 0;">${bookingDetails.title}</h2>
-            <p><strong>Date:</strong> ${new Date(bookingDetails.date).toLocaleDateString()}</p>
-            <p><strong>Location:</strong> ${bookingDetails.location}</p>
-            <p><strong>Number of Tickets:</strong> ${bookingDetails.tickets}</p>
-          </div>
-          <p>Thank you for booking with us! We're excited to see you at the event.</p>
-          <p>If you have any questions, please don't hesitate to contact us.</p>
-          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
-            <p style="color: #888; font-size: 12px;">© ${new Date().getFullYear()} Petsu. All rights reserved.</p>
-          </div>
-        </div>
-      `;
-    } else if (bookingType === "grooming") {
-      htmlContent = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
-          <h1 style="color: #00D26A; text-align: center;">Grooming Appointment Confirmation</h1>
-          <div style="padding: 20px; background-color: #f9f9f9; border-radius: 5px; margin-bottom: 20px;">
-            <h2 style="color: #333; margin-top: 0;">Appointment with ${bookingDetails.groomerName}</h2>
-            <p><strong>Date:</strong> ${new Date(bookingDetails.date).toLocaleDateString()}</p>
-            <p><strong>Time:</strong> ${bookingDetails.time}</p>
-            <p><strong>Service:</strong> ${bookingDetails.serviceName}</p>
-            <p><strong>Service Type:</strong> ${bookingDetails.serviceType === 'salon' ? 'Salon Visit' : 'Home Visit'}</p>
-            ${bookingDetails.serviceType === 'home' ? `<p><strong>Address:</strong> ${bookingDetails.address}</p>` : ''}
-            <p><strong>Total Price:</strong> ₹${bookingDetails.price}</p>
-          </div>
-          <p>Thank you for choosing our grooming services! We look forward to pampering your pet.</p>
-          <p>If you need to reschedule or cancel, please contact us at least 24 hours in advance.</p>
-          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
-            <p style="color: #888; font-size: 12px;">© ${new Date().getFullYear()} Petsu. All rights reserved.</p>
-          </div>
-        </div>
-      `;
+    if (!booking_id || !user_email || !booking_date || !service_name) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
     }
 
-    const emailResponse = await resend.emails.send({
-      from: "Petsu Pet Services <onboarding@resend.dev>",
-      to: [to],
-      subject: subject,
-      html: htmlContent,
+    // Create a Supabase client with the service role key
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Format the date for display
+    const formattedDate = new Date(booking_date).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    // Format the time for display
+    const formattedTime = new Date(booking_date).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
 
-    return new Response(JSON.stringify(emailResponse), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
+    // Send the email
+    const { error } = await supabase.functions.invoke("send-email", {
+      body: {
+        to: user_email,
+        subject: "Your Petsu Booking Confirmation",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <img src="https://gllffexjqromdcqgoeec.supabase.co/storage/v1/object/public/public/petsu-logo.png" alt="Petsu Logo" style="max-width: 150px;">
+            </div>
+            <h2 style="color: #4CAF50; text-align: center;">Booking Confirmation</h2>
+            <p>Hello,</p>
+            <p>Your booking has been confirmed! Here are the details:</p>
+            <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
+              <p><strong>Service:</strong> ${service_name}</p>
+              <p><strong>Date:</strong> ${formattedDate}</p>
+              <p><strong>Time:</strong> ${formattedTime}</p>
+              ${pet_name ? `<p><strong>Pet:</strong> ${pet_name}</p>` : ''}
+              <p><strong>Booking ID:</strong> ${booking_id}</p>
+            </div>
+            <p>If you need to make any changes to your booking, please contact us at <a href="mailto:care@petsu.in">care@petsu.in</a>.</p>
+            <p>Thank you for choosing Petsu!</p>
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; color: #777; font-size: 12px;">
+              <p>© 2023 Petsu. All rights reserved.</p>
+              <p>690E JP nagar 2nd phase, 560078, Bangalore</p>
+            </div>
+          </div>
+        `,
       },
     });
-  } catch (error: any) {
-    console.error("Error in send-confirmation-email function:", error);
+
+    if (error) {
+      console.error("Error sending email:", error);
+      return new Response(
+        JSON.stringify({ error: "Failed to send email" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+      );
+    }
+
     return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      JSON.stringify({ message: "Email sent successfully" }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+    );
+  } catch (error) {
+    console.error("Error processing request:", error);
+    return new Response(
+      JSON.stringify({ error: "Internal server error" }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
-};
-
-serve(handler);
+});

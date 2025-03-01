@@ -73,7 +73,7 @@ export default function GroomerAuth() {
   const checkEmailExists = async (email: string) => {
     setEmailCheckLoading(true);
     try {
-      // Fix: Use a simpler query to avoid type instantiation issues
+      // Use a simpler query to avoid type instantiation issues
       const { data, error } = await supabase
         .from('profiles')
         .select('id')
