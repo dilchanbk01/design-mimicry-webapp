@@ -52,14 +52,49 @@ export function BannerDialog({
   resetForm
 }: BannerDialogProps) {
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+
+  // Reset image file when dialog opens/closes
+  useEffect(() => {
+    if (!open) {
+      setImageFile(null);
+      setImageError(null);
+    }
+  }, [open]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    setImageError(null);
+    
     if (file) {
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        setImageError("Please select a valid image file (JPEG, PNG, GIF, or WEBP)");
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setImageError("Image file is too large (max 5MB)");
+        return;
+      }
+      
       setImageFile(file);
       const objectUrl = URL.createObjectURL(file);
-      // This is handled by the parent component's previewUrl
+      // We don't set previewUrl here as it's managed by the parent component
     }
+  };
+
+  const handleSubmitWithValidation = (e: React.FormEvent) => {
+    // Validate inputs before submission
+    if (!editingBanner && !imageFile && !previewUrl) {
+      setImageError("Please select an image for the banner");
+      e.preventDefault();
+      return;
+    }
+    
+    onSubmit(e, imageFile);
   };
 
   return (
@@ -68,7 +103,7 @@ export function BannerDialog({
         <DialogHeader>
           <DialogTitle>{editingBanner ? "Edit Banner" : "Add New Banner"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={(e) => onSubmit(e, imageFile)} className="space-y-4">
+        <form onSubmit={handleSubmitWithValidation} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
             <Input
@@ -90,7 +125,7 @@ export function BannerDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="image">Banner Image</Label>
+            <Label htmlFor="image">Banner Image {!editingBanner && <span className="text-red-500">*</span>}</Label>
             <Input
               id="image"
               type="file"
@@ -98,6 +133,7 @@ export function BannerDialog({
               onChange={handleFileChange}
               className="cursor-pointer"
             />
+            {imageError && <p className="text-sm text-red-500">{imageError}</p>}
             {previewUrl && (
               <div className="mt-2 relative">
                 <img

@@ -84,7 +84,7 @@ export function useBannerManagement(searchQuery: string) {
       if (imageFile) {
         const fileExt = imageFile.name.split(".").pop();
         const fileName = `${crypto.randomUUID()}.${fileExt}`;
-        const filePath = `hero_banners/${fileName}`;
+        const filePath = `banners/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from("images")
@@ -95,6 +95,10 @@ export function useBannerManagement(searchQuery: string) {
         const { data } = supabase.storage.from("images").getPublicUrl(filePath);
         image_url = data.publicUrl;
         setPreviewUrl(image_url);
+      }
+
+      if (!image_url && !editingBanner) {
+        throw new Error("An image is required for new banners");
       }
 
       if (editingBanner) {
@@ -117,6 +121,10 @@ export function useBannerManagement(searchQuery: string) {
         });
       } else {
         // Create new banner
+        if (!image_url) {
+          throw new Error("An image is required for new banners");
+        }
+        
         const { error } = await supabase.from("hero_banners").insert({
           title,
           description,
@@ -136,11 +144,11 @@ export function useBannerManagement(searchQuery: string) {
       setDialogOpen(false);
       resetForm();
       fetchBanners();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving banner:", error);
       toast({
         title: "Error",
-        description: "Failed to save hero banner",
+        description: error.message || "Failed to save hero banner",
         variant: "destructive",
       });
     } finally {
