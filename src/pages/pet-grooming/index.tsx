@@ -55,12 +55,7 @@ export default function PetGrooming() {
         setCurrentSlide={setCurrentSlide} 
       />
       
-      <GroomingHeader 
-        isSearchOpen={isSearchOpen}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        setIsSearchOpen={setIsSearchOpen}
-      />
+      <GroomingHeader />
       
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-8">
@@ -79,7 +74,24 @@ export default function PetGrooming() {
           ) : filteredGroomers.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredGroomers.map(groomer => (
-                <GroomerCard key={groomer.id} groomer={groomer} />
+                <GroomerCard 
+                  key={groomer.id} 
+                  partner={{
+                    id: groomer.id,
+                    name: groomer.salon_name,
+                    location: groomer.address,
+                    experience: `${groomer.experience_years} years of experience`,
+                    price: `Starting from ₹${groomer.price}`,
+                    image: groomer.profile_image_url || '/placeholder.svg',
+                    providesHomeService: groomer.provides_home_service || false,
+                    providesSalonService: groomer.provides_salon_service || false,
+                    rating: 4.5 // Default rating or we could calculate this from reviews
+                  }}
+                  onViewDetails={() => {
+                    // Navigate to the groomer details page
+                    window.location.href = `/pet-grooming/groomer/${groomer.id}`;
+                  }}
+                />
               ))}
             </div>
           ) : (
