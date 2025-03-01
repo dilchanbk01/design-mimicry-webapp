@@ -34,7 +34,7 @@ export function PageBannerDialog({ open, onOpenChange, onSave }: PageBannerDialo
 
   // Debug logging
   useEffect(() => {
-    console.log("Image URL status:", { imageUrl, isUploading });
+    console.log("Banner dialog image URL status:", { imageUrl, isUploading });
   }, [imageUrl, isUploading]);
 
   useEffect(() => {
@@ -59,6 +59,14 @@ export function PageBannerDialog({ open, onOpenChange, onSave }: PageBannerDialo
 
     setIsSaving(true);
     try {
+      console.log("Saving banner with data:", {
+        title,
+        description,
+        image_url: imageUrl,
+        page,
+        active: true
+      });
+      
       await onSave({
         title,
         description,

@@ -2,12 +2,14 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { compressImage } from "@/utils/imageCompression";
+import { useToast } from "@/hooks/use-toast";
 
 export function useBannerImageUpload() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const { toast } = useToast();
 
   // Debug useEffect to track imageUrl changes
   useEffect(() => {
@@ -39,38 +41,6 @@ export function useBannerImageUpload() {
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `banners/${fileName}`;
       
-      // Create banners bucket if it doesn't exist
-      console.log("Checking if banners bucket exists");
-      try {
-        const { data: buckets } = await supabase.storage.listBuckets();
-        
-        // If the bucket doesn't exist, create it
-        if (!buckets?.find(bucket => bucket.name === 'banners')) {
-          console.log("Creating banners bucket");
-          const { error: createBucketError } = await supabase.storage.createBucket('banners', {
-            public: true
-          });
-          
-          if (createBucketError) {
-            console.error("Error creating bucket:", createBucketError);
-            throw createBucketError;
-          }
-          
-          // Set bucket to public
-          const { error: updateBucketError } = await supabase.storage.updateBucket('banners', {
-            public: true
-          });
-          
-          if (updateBucketError) {
-            console.error("Error making bucket public:", updateBucketError);
-          }
-        } else {
-          console.log("Banners bucket already exists");
-        }
-      } catch (bucketError) {
-        console.error("Bucket operation error:", bucketError);
-      }
-      
       // Upload to Supabase storage
       console.log("Uploading to storage");
       const { data, error: uploadError } = await supabase.storage
@@ -79,6 +49,11 @@ export function useBannerImageUpload() {
       
       if (uploadError) {
         console.error("Storage upload error:", uploadError);
+        toast({
+          title: "Upload Error",
+          description: uploadError.message,
+          variant: "destructive"
+        });
         throw uploadError;
       }
       
@@ -98,8 +73,18 @@ export function useBannerImageUpload() {
       // Important: Set the image URL
       setImageUrl(publicUrl);
       
+      toast({
+        title: "Upload successful",
+        description: "Image has been uploaded successfully"
+      });
+      
     } catch (error) {
       console.error("Error uploading image:", error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload image. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsUploading(false);
     }
@@ -135,34 +120,6 @@ export function useBannerImageUpload() {
       const fileName = `${pageName}_banner_${Date.now()}.jpg`;
       const filePath = `banners/${fileName}`;
       
-      // Ensure banners bucket exists
-      try {
-        const { data: buckets } = await supabase.storage.listBuckets();
-        
-        if (!buckets?.find(bucket => bucket.name === 'banners')) {
-          console.log("Creating banners bucket");
-          const { error: createBucketError } = await supabase.storage.createBucket('banners', {
-            public: true
-          });
-          
-          if (createBucketError) {
-            console.error("Error creating bucket:", createBucketError);
-            throw createBucketError;
-          }
-          
-          // Set bucket to public
-          const { error: updateBucketError } = await supabase.storage.updateBucket('banners', {
-            public: true
-          });
-          
-          if (updateBucketError) {
-            console.error("Error making bucket public:", updateBucketError);
-          }
-        }
-      } catch (bucketError) {
-        console.error("Bucket operation error:", bucketError);
-      }
-      
       // Upload to Supabase storage
       console.log("Uploading to storage");
       const { data, error: uploadError } = await supabase.storage
@@ -171,6 +128,11 @@ export function useBannerImageUpload() {
       
       if (uploadError) {
         console.error("Storage upload error:", uploadError);
+        toast({
+          title: "Upload Error",
+          description: uploadError.message,
+          variant: "destructive"
+        });
         throw uploadError;
       }
       
@@ -189,11 +151,21 @@ export function useBannerImageUpload() {
       // Set the image URL
       setImageUrl(publicUrl);
       
+      toast({
+        title: "Upload successful",
+        description: "Image has been uploaded successfully"
+      });
+      
       // Return the URL for direct creation
       return publicUrl;
       
     } catch (error) {
       console.error("Error uploading image from URL:", error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload image from URL. Please try again.",
+        variant: "destructive"
+      });
       return null;
     } finally {
       setIsUploading(false);

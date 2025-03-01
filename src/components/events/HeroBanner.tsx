@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getOptimizedImageUrl } from "@/utils/imageCompression";
+import { useToast } from "@/hooks/use-toast";
 
 interface HeroBannerProps {
   currentSlide: number;
@@ -16,20 +17,33 @@ interface HeroBanner {
 }
 
 export function HeroBanner({ currentSlide, setCurrentSlide }: HeroBannerProps) {
-  const { data: heroBanners = [], isLoading } = useQuery({
+  const { toast } = useToast();
+  
+  const { data: heroBanners = [], isLoading, error } = useQuery({
     queryKey: ['heroBanners'],
     queryFn: async () => {
       try {
+        console.log("Fetching hero banners for Events page");
         const { data, error } = await supabase
           .from('hero_banners')
           .select('id, image_url, title, description')
           .eq('active', true)
           .eq('page', 'events');
 
-        if (error) throw error;
-        return data;
+        if (error) {
+          console.error('Error fetching hero banners:', error);
+          throw error;
+        }
+        
+        console.log("Hero banners fetched:", data);
+        return data || [];
       } catch (error) {
         console.error('Error fetching hero banners:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load hero banners",
+          variant: "destructive"
+        });
         return [];
       }
     },
@@ -37,8 +51,15 @@ export function HeroBanner({ currentSlide, setCurrentSlide }: HeroBannerProps) {
     refetchOnWindowFocus: true, // Refetch when window gets focus to see new banners
   });
 
+  if (error) {
+    console.error("Error in hero banner query:", error);
+  }
+
   if (isLoading) return <div className="h-[300px] bg-gray-200 animate-pulse"></div>;
-  if (heroBanners.length === 0) return null;
+  if (!heroBanners || heroBanners.length === 0) {
+    console.log("No hero banners found");
+    return null;
+  }
 
   return (
     <div className="relative h-[300px]" data-testid="hero-banner-container">
@@ -59,6 +80,7 @@ export function HeroBanner({ currentSlide, setCurrentSlide }: HeroBannerProps) {
               height="300"
               loading={index === 0 ? "eager" : "lazy"}
               onError={(e) => {
+                console.error("Failed to load banner image:", banner.image_url);
                 const target = e.target as HTMLImageElement;
                 target.src = '/placeholder.svg';
               }}
