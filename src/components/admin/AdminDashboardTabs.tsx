@@ -1,7 +1,7 @@
 
 import { ReactNode } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarDays, Users, CircleDollarSign } from "lucide-react";
+import { CalendarDays, Users, CircleDollarSign, Image } from "lucide-react";
 
 interface AdminDashboardTabsProps {
   activeTab: string;
@@ -9,6 +9,7 @@ interface AdminDashboardTabsProps {
   eventsContent: ReactNode;
   payoutsContent: ReactNode;
   groomersContent: ReactNode;
+  bannersContent: ReactNode;
 }
 
 export function AdminDashboardTabs({
@@ -16,7 +17,8 @@ export function AdminDashboardTabs({
   setActiveTab,
   eventsContent,
   payoutsContent,
-  groomersContent
+  groomersContent,
+  bannersContent
 }: AdminDashboardTabsProps) {
   return (
     <Tabs 
@@ -24,7 +26,7 @@ export function AdminDashboardTabs({
       onValueChange={(value) => setActiveTab(value)}
       className="space-y-4"
     >
-      <TabsList className="w-full sm:w-auto grid grid-cols-3 md:flex">
+      <TabsList className="w-full sm:w-auto grid grid-cols-4 md:flex">
         <TabsTrigger value="events" className="flex items-center">
           <CalendarDays className="h-4 w-4 mr-2" />
           Events
@@ -36,6 +38,10 @@ export function AdminDashboardTabs({
         <TabsTrigger value="groomers" className="flex items-center">
           <Users className="h-4 w-4 mr-2" />
           Groomers
+        </TabsTrigger>
+        <TabsTrigger value="banners" className="flex items-center">
+          <Image className="h-4 w-4 mr-2" />
+          Banners
         </TabsTrigger>
       </TabsList>
 
@@ -49,6 +55,10 @@ export function AdminDashboardTabs({
 
       <TabsContent value="groomers">
         {groomersContent}
+      </TabsContent>
+
+      <TabsContent value="banners">
+        {bannersContent}
       </TabsContent>
     </Tabs>
   );

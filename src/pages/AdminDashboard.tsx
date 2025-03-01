@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { AdminAnalytics } from "@/components/admin/AdminAnalytics";
 import { EventsList } from "@/components/admin/EventsList";
 import { GroomersList } from "@/components/admin/GroomersList";
 import { SearchBar } from "@/components/admin/SearchBar";
+import { HeroBannerManagement } from "@/components/admin/HeroBannerManagement";
 import { PayoutRequestsSection } from "@/components/admin/PayoutRequestsSection";
 import { GroomerPayoutsSection } from "@/components/admin/GroomerPayoutsSection";
 import { AdminDashboardTabs } from "@/components/admin/AdminDashboardTabs";
@@ -117,6 +119,7 @@ export default function AdminDashboard() {
               eventsContent={renderEventsContent()}
               payoutsContent={renderPayoutsContent()}
               groomersContent={<GroomersList searchQuery={searchQuery} />}
+              bannersContent={<HeroBannerManagement searchQuery={searchQuery} />}
             />
           </div>
         </div>
