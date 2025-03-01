@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Stethoscope } from "lucide-react";
@@ -20,19 +19,17 @@ export default function VetAuth() {
   const checkEmailExists = async (email: string) => {
     setEmailCheckLoading(true);
     try {
-      // Simplified query to avoid TypeScript errors
-      const { data, error } = await supabase
+      const { count, error } = await supabase
         .from('profiles')
-        .select('id')
-        .eq('email', email)
-        .limit(1);
+        .select('*', { count: 'exact', head: true })
+        .eq('email', email);
       
       if (error) {
         console.error("Error checking email:", error);
         return false;
       }
       
-      return data && data.length > 0;
+      return count ? count > 0 : false;
     } catch (error) {
       console.error("Error checking email:", error);
       return false;
@@ -46,17 +43,14 @@ export default function VetAuth() {
     try {
       setLoading(true);
 
-      // Check if email is valid
       if (!email.includes("@")) {
         throw new Error("Please enter a valid email");
       }
 
-      // Check password length
       if (password.length < 6) {
         throw new Error("Password must be at least 6 characters");
       }
 
-      // Check if email already exists
       const emailExists = await checkEmailExists(email);
       if (emailExists) {
         toast({
@@ -107,7 +101,6 @@ export default function VetAuth() {
 
       if (error) throw error;
 
-      // Check if the user has a vet profile
       const { data: vetProfile, error: profileError } = await supabase
         .from("vet_profiles")
         .select("*")
@@ -115,7 +108,6 @@ export default function VetAuth() {
         .single();
 
       if (profileError && profileError.code !== "PGRST116") {
-        // PGRST116 is the error code for "No rows returned"
         throw profileError;
       }
 
@@ -124,11 +116,9 @@ export default function VetAuth() {
         description: "You have successfully signed in.",
       });
 
-      // Redirect based on profile status
       if (!vetProfile) {
         navigate("/vet-onboarding");
       } else {
-        // Redirect to find-vets page as we removed vet-dashboard
         navigate("/find-vets");
       }
 
@@ -194,7 +184,6 @@ export default function VetAuth() {
                         type="button"
                         className="text-xs text-primary hover:underline"
                         onClick={() => {
-                          // Implement forgot password functionality
                           toast({
                             title: "Password Reset",
                             description: "This feature is coming soon.",
