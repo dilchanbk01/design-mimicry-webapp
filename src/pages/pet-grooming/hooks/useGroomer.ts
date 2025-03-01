@@ -18,10 +18,11 @@ export function useGroomer(id: string | undefined) {
 
       if (error) throw error;
       
-      // Ensure we have all expected properties with defaults if needed
+      // Transform the response to match the GroomerProfile interface
       return {
         ...data,
-        is_available: data.is_available !== false // Ensure this property exists with default true
+        is_available: data.is_available !== false, // Ensure this property exists with default true
+        profile_images: data.profile_images || [] // Ensure profile_images is always an array
       } as GroomerProfile;
     },
     enabled: !!id
