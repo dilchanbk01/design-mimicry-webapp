@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { GroomerCard } from "./components/GroomerCard";
 import { GroomingHeader } from "./components/GroomingHeader";
@@ -47,8 +46,19 @@ export default function PetGrooming() {
   );
   
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      <Header transparent={false} />
+    <div className="flex flex-col min-h-screen" style={{ backgroundColor: "#0dcf6a" }}>
+      {/* Custom header with centered logo */}
+      <header className="bg-transparent absolute top-0 left-0 right-0 z-50">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-center">
+            <img 
+              src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png" 
+              alt="Petsu"
+              className="h-10"
+            />
+          </div>
+        </div>
+      </header>
       
       <GroomingHeroBanner 
         currentSlide={currentSlide} 
@@ -59,7 +69,7 @@ export default function PetGrooming() {
       
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-8">
-          <h2 className="text-2xl font-bold mb-6">Available Pet Groomers</h2>
+          <h2 className="text-2xl font-bold mb-6 text-white">Available Pet Groomers</h2>
           
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -95,9 +105,9 @@ export default function PetGrooming() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <p className="text-gray-500 mb-4">No pet groomers available in your area yet.</p>
-              <p className="text-gray-500">We're expanding our network! Check back soon.</p>
+            <div className="text-center py-12 text-white">
+              <p className="mb-4">No pet groomers available in your area yet.</p>
+              <p>We're expanding our network! Check back soon.</p>
             </div>
           )}
         </div>
