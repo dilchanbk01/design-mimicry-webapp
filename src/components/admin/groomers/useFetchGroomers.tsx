@@ -1,63 +1,49 @@
 
 import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Groomer, BankDetails, PayoutHistoryItem } from "./types";
+import type { GroomerProfile } from "@/components/admin/groomers/types";
 
-interface UseFetchGroomersReturn {
-  groomers: Groomer[];
-  loading: boolean;
-  fetchGroomers: () => Promise<void>;
-  fetchBankDetails: (groomerId: string) => Promise<BankDetails | null>;
-  fetchPayoutHistory: (groomerId: string) => Promise<PayoutHistoryItem[]>;
-}
-
-export function useFetchGroomers(toast: any): UseFetchGroomersReturn {
-  const [groomers, setGroomers] = useState<Groomer[]>([]);
+export const useFetchGroomers = () => {
+  const [groomers, setGroomers] = useState<GroomerProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const fetchGroomers = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
+      setError(null);
+      
       console.log("Fetching groomer profiles...");
+      
       const { data, error } = await supabase
-        .from('groomer_profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("groomer_profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
 
       if (error) {
-        console.error('Supabase error fetching groomers:', error);
-        throw error;
+        console.error("Error fetching groomers:", error);
+        setError(error.message);
+        toast({
+          title: "Error fetching groomers",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
       }
 
-      // Fetch user emails for each groomer
+      console.log("Groomer profiles fetched:", data);
+      
       if (data) {
-        console.log("Fetched groomer profiles:", data);
-        const groomersWithEmail = await Promise.all(
-          data.map(async (groomer) => {
-            const { data: userData, error: userError } = await supabase
-              .from('profiles')
-              .select('full_name')
-              .eq('id', groomer.user_id)
-              .maybeSingle();
-
-            if (userError && userError.code !== 'PGRST116') {
-              console.error('Error fetching user data:', userError);
-            }
-
-            return {
-              ...groomer,
-              email: userData?.full_name || 'Unknown user',
-            };
-          })
-        );
-
-        setGroomers(groomersWithEmail);
+        setGroomers(data as GroomerProfile[]);
       }
-    } catch (error) {
-      console.error('Error fetching groomers:', error);
+    } catch (err: any) {
+      console.error("Exception fetching groomers:", err);
+      setError(err.message);
       toast({
         title: "Error",
-        description: "Failed to fetch groomers data",
+        description: "Failed to fetch groomer profiles",
         variant: "destructive",
       });
     } finally {
@@ -65,57 +51,30 @@ export function useFetchGroomers(toast: any): UseFetchGroomersReturn {
     }
   };
 
-  const fetchBankDetails = async (groomerId: string): Promise<BankDetails | null> => {
-    try {
-      const { data, error } = await supabase
-        .from('groomer_bank_details')
-        .select('*')
-        .eq('groomer_id', groomerId)
-        .maybeSingle();
+  useEffect(() => {
+    fetchGroomers();
+    
+    // Set up a real-time subscription for new groomer profiles
+    const channel = supabase
+      .channel('groomer_profiles_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'groomer_profiles' },
+        () => {
+          console.log('Groomer profiles changed, refreshing data...');
+          fetchGroomers();
+        }
+      )
+      .subscribe();
 
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
-      return data || null;
-    } catch (error) {
-      console.error('Error fetching bank details:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch bank details",
-        variant: "destructive",
-      });
-      return null;
-    }
+  const refreshGroomers = () => {
+    fetchGroomers();
   };
 
-  const fetchPayoutHistory = async (groomerId: string): Promise<PayoutHistoryItem[]> => {
-    try {
-      const { data, error } = await supabase
-        .from('groomer_payouts')
-        .select('*')
-        .eq('groomer_id', groomerId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      return data || [];
-    } catch (error) {
-      console.error('Error fetching payout history:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch payout history",
-        variant: "destructive",
-      });
-      return [];
-    }
-  };
-
-  return {
-    groomers,
-    loading,
-    fetchGroomers,
-    fetchBankDetails,
-    fetchPayoutHistory
-  };
-}
+  return { groomers, loading, error, refreshGroomers };
+};
