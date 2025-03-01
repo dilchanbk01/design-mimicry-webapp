@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,6 @@ import { AdminAnalytics } from "@/components/admin/AdminAnalytics";
 import { EventsList } from "@/components/admin/EventsList";
 import { GroomersList } from "@/components/admin/GroomersList";
 import { SearchBar } from "@/components/admin/SearchBar";
-import { HeroBannerManagement } from "@/components/admin/HeroBannerManagement";
 import { PayoutRequestsSection } from "@/components/admin/PayoutRequestsSection";
 import { GroomerPayoutsSection } from "@/components/admin/GroomerPayoutsSection";
 import { AdminDashboardTabs } from "@/components/admin/AdminDashboardTabs";
@@ -41,14 +39,12 @@ export default function AdminDashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch analytics data
       const { data: analyticsData, error: analyticsError } = await supabase
         .from('event_analytics')
         .select('tickets_sold, total_amount');
 
       if (analyticsError) throw analyticsError;
 
-      // Get total events and pending events count
       const { data: eventsData, error: eventsError } = await supabase
         .from('events')
         .select('status');
@@ -73,7 +69,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // Render the Events tab content
   const renderEventsContent = () => (
     <>
       <AdminAnalytics analytics={analytics} />
@@ -81,7 +76,6 @@ export default function AdminDashboard() {
     </>
   );
 
-  // Render the Payouts tab content
   const renderPayoutsContent = () => (
     <PayoutsTabs
       activeTab={activePayoutTab}
@@ -123,7 +117,6 @@ export default function AdminDashboard() {
               eventsContent={renderEventsContent()}
               payoutsContent={renderPayoutsContent()}
               groomersContent={<GroomersList searchQuery={searchQuery} />}
-              bannersContent={<HeroBannerManagement searchQuery={searchQuery} />}
             />
           </div>
         </div>
