@@ -23,6 +23,7 @@ export interface Groomer {
   provides_salon_service: boolean;
   home_service_cost: number;
   price: number;
+  is_available?: boolean;
 }
 
 export interface PayoutHistoryItem {

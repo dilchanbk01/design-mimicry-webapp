@@ -9,9 +9,8 @@ import { GroomingHeroBanner } from "./components/GroomingHeroBanner";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Home, Store, Info } from "lucide-react";
+import { Home, Store } from "lucide-react";
 import { Footer } from "@/components/layout/Footer";
-import type { GroomingPartner, GroomerProfile } from "./types";
 import {
   Tooltip,
   TooltipContent,
@@ -109,8 +108,6 @@ export default function PetGrooming() {
               </Tooltip>
             </TooltipProvider>
           </div>
-          
-          {/* Removed informational section */}
         </div>
 
         {isLoading ? (

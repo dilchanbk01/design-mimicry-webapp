@@ -18,16 +18,25 @@ export interface GroomerProfile {
   address: string;
   contact_number: string;
   experience_years: number;
-  application_status: 'pending' | 'approved' | 'rejected';
+  application_status: string;
+  created_at: string;
+  specializations: string[];
+  profile_image_url: string | null;
   bio: string | null;
-  price: number;
+  admin_notes: string | null;
   provides_home_service: boolean;
   provides_salon_service: boolean;
-  specializations: string[];
-  created_at: string;
-  updated_at: string;
-  profile_image_url: string | null;
-  profile_images: string[];
+  price: number;
   home_service_cost: number;
-  is_available: boolean;
+  is_available?: boolean;
+}
+
+export interface BookingFormData {
+  petName: string;
+  petType: string;
+  petBreed: string;
+  date: Date | undefined;
+  time: string;
+  serviceType: 'salon' | 'home';
+  address?: string;
 }
