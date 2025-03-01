@@ -11,6 +11,7 @@ export default function GroomerAuth() {
   const { toast } = useToast();
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [emailCheckLoading, setEmailCheckLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -69,6 +70,29 @@ export default function GroomerAuth() {
     }
   };
 
+  const checkEmailExists = async (email: string) => {
+    setEmailCheckLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false,
+        }
+      });
+
+      // If there's no error with code 'user_not_found', the email exists
+      if (error && error.message.includes('user not found')) {
+        return false; // Email doesn't exist
+      }
+      return true; // Email exists
+    } catch (error) {
+      console.error("Error checking email:", error);
+      return false;
+    } finally {
+      setEmailCheckLoading(false);
+    }
+  };
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -77,6 +101,12 @@ export default function GroomerAuth() {
       if (isSignUp) {
         if (password !== confirmPassword) {
           throw new Error("Passwords do not match");
+        }
+
+        // Check if email already exists
+        const emailExists = await checkEmailExists(email);
+        if (emailExists) {
+          throw new Error("This email is already registered. Please sign in or use a different email.");
         }
 
         const { data, error } = await supabase.auth.signUp({
@@ -170,9 +200,9 @@ export default function GroomerAuth() {
           <Button
             type="submit"
             className="w-full"
-            disabled={loading}
+            disabled={loading || emailCheckLoading}
           >
-            {loading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
+            {loading || emailCheckLoading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
           </Button>
         </form>
         <p className="mt-4 text-center text-sm text-gray-600">

@@ -15,6 +15,30 @@ export default function VetAuth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [emailCheckLoading, setEmailCheckLoading] = useState(false);
+
+  const checkEmailExists = async (email: string) => {
+    setEmailCheckLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false,
+        }
+      });
+
+      // If there's an error with message containing 'user not found', the email doesn't exist
+      if (error && error.message.includes('user not found')) {
+        return false; // Email doesn't exist
+      }
+      return true; // Email exists
+    } catch (error) {
+      console.error("Error checking email:", error);
+      return false;
+    } finally {
+      setEmailCheckLoading(false);
+    }
+  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +53,12 @@ export default function VetAuth() {
       // Check password length
       if (password.length < 6) {
         throw new Error("Password must be at least 6 characters");
+      }
+
+      // Check if email already exists
+      const emailExists = await checkEmailExists(email);
+      if (emailExists) {
+        throw new Error("This email is already registered. Please sign in or use a different email.");
       }
 
       const { data, error } = await supabase.auth.signUp({
@@ -225,8 +255,8 @@ export default function VetAuth() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Creating account..." : "Create Account"}
+                  <Button type="submit" className="w-full" disabled={loading || emailCheckLoading}>
+                    {loading || emailCheckLoading ? "Creating account..." : "Create Account"}
                   </Button>
                 </CardFooter>
               </form>

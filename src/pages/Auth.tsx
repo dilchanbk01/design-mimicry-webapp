@@ -21,6 +21,7 @@ export default function Auth() {
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [loading, setLoading] = useState(false);
+  const [emailCheckLoading, setEmailCheckLoading] = useState(false);
 
   useEffect(() => {
     checkExistingSession();
@@ -40,6 +41,29 @@ export default function Auth() {
       navigate(redirectPath);
     } else {
       navigate("/");
+    }
+  };
+
+  const checkEmailExists = async (email: string) => {
+    setEmailCheckLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false,
+        }
+      });
+
+      // If there's no error with code 'user_not_found', the email exists
+      if (error && error.message.includes('user not found')) {
+        return false; // Email doesn't exist
+      }
+      return true; // Email exists
+    } catch (error) {
+      console.error("Error checking email:", error);
+      return false;
+    } finally {
+      setEmailCheckLoading(false);
     }
   };
 
@@ -88,6 +112,18 @@ export default function Auth() {
     }
 
     try {
+      // Check if email already exists
+      const emailExists = await checkEmailExists(email);
+      if (emailExists) {
+        toast({
+          title: "Email already in use",
+          description: "This email is already registered. Please sign in or use a different email.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -320,9 +356,9 @@ export default function Auth() {
                 <Button
                   type="submit"
                   className="w-full bg-green-600 hover:bg-green-700"
-                  disabled={loading}
+                  disabled={loading || emailCheckLoading}
                 >
-                  {loading ? "Creating account..." : "Create Account"}
+                  {loading || emailCheckLoading ? "Creating account..." : "Create Account"}
                 </Button>
               </form>
 
