@@ -20,7 +20,6 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
     setBannerPage,
     dialogOpen,
     setDialogOpen,
-    editingBanner,
     title,
     setTitle,
     description,
@@ -28,7 +27,6 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
     active,
     setActive,
     previewUrl,
-    handleEdit,
     handleSubmit,
     handleDelete,
     handleToggleActive,
@@ -61,7 +59,6 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
       <BannerList
         banners={banners}
         loading={loading}
-        onEdit={handleEdit}
         onDelete={handleDelete}
         onToggleActive={handleToggleActive}
       />
@@ -69,7 +66,6 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
       <BannerDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        editingBanner={editingBanner}
         onSubmit={handleSubmit}
         isUploading={isUploading}
         title={title}

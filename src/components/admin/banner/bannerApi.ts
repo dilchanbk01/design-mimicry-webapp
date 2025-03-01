@@ -26,20 +26,6 @@ export async function createBanner(banner: {
   if (error) throw error;
 }
 
-export async function updateBanner(id: string, updates: {
-  title: string;
-  description: string;
-  active: boolean;
-  image_url: string;
-}): Promise<void> {
-  const { error } = await supabase
-    .from("hero_banners")
-    .update(updates)
-    .eq("id", id);
-
-  if (error) throw error;
-}
-
 export async function deleteBanner(id: string): Promise<void> {
   const { error } = await supabase.from("hero_banners").delete().eq("id", id);
   if (error) throw error;

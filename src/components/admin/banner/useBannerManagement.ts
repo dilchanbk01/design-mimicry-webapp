@@ -5,7 +5,6 @@ import { HeroBanner } from "./types";
 import { 
   fetchBannersByPage, 
   createBanner, 
-  updateBanner, 
   deleteBanner, 
   toggleBannerStatus 
 } from "./bannerApi";
@@ -18,7 +17,6 @@ export function useBannerManagement(searchQuery: string) {
   const [isUploading, setIsUploading] = useState(false);
   const [bannerPage, setBannerPage] = useState<string>("events");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingBanner, setEditingBanner] = useState<HeroBanner | null>(null);
 
   // Form fields
   const [title, setTitle] = useState("");
@@ -52,23 +50,13 @@ export function useBannerManagement(searchQuery: string) {
     setDescription("");
     setActive(false);
     setPreviewUrl("");
-    setEditingBanner(null);
-  };
-
-  const handleEdit = (banner: HeroBanner) => {
-    setEditingBanner(banner);
-    setTitle(banner.title || "");
-    setDescription(banner.description || "");
-    setActive(banner.active);
-    setPreviewUrl(banner.image_url);
-    setDialogOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent, imageFile: File | null) => {
     e.preventDefault();
     
     // Validate inputs
-    if (!editingBanner && !imageFile && !previewUrl) {
+    if (!imageFile && !previewUrl) {
       toast({
         title: "Error",
         description: "Please select an image for the banner",
@@ -80,7 +68,7 @@ export function useBannerManagement(searchQuery: string) {
     setIsUploading(true);
 
     try {
-      let image_url = editingBanner?.image_url || "";
+      let image_url = "";
 
       // Upload new image if one was selected
       if (imageFile) {
@@ -99,34 +87,19 @@ export function useBannerManagement(searchQuery: string) {
         }
       }
 
-      if (editingBanner) {
-        // Update existing banner
-        await updateBanner(editingBanner.id, {
-          title,
-          description,
-          active,
-          image_url: image_url || editingBanner.image_url,
-        });
+      // Create new banner
+      await createBanner({
+        title,
+        description,
+        active,
+        image_url,
+        page: bannerPage,
+      });
 
-        toast({
-          title: "Success",
-          description: "Hero banner updated successfully",
-        });
-      } else {
-        // Create new banner
-        await createBanner({
-          title,
-          description,
-          active,
-          image_url,
-          page: bannerPage,
-        });
-
-        toast({
-          title: "Success",
-          description: "Hero banner created successfully",
-        });
-      }
+      toast({
+        title: "Success",
+        description: "Hero banner created successfully",
+      });
 
       setDialogOpen(false);
       resetForm();
@@ -193,7 +166,6 @@ export function useBannerManagement(searchQuery: string) {
     setBannerPage,
     dialogOpen,
     setDialogOpen,
-    editingBanner,
     title,
     setTitle,
     description,
@@ -201,7 +173,6 @@ export function useBannerManagement(searchQuery: string) {
     active,
     setActive,
     previewUrl,
-    handleEdit,
     handleSubmit,
     handleDelete,
     handleToggleActive,

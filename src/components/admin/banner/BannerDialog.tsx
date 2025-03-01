@@ -10,13 +10,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { HeroBanner } from "./types";
 import { toast } from "sonner";
 
 interface BannerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editingBanner: HeroBanner | null;
   onSubmit: (e: React.FormEvent, imageFile: File | null) => void;
   isUploading: boolean;
   title: string;
@@ -32,7 +30,6 @@ interface BannerDialogProps {
 export function BannerDialog({
   open,
   onOpenChange,
-  editingBanner,
   onSubmit,
   isUploading,
   title,
@@ -98,7 +95,7 @@ export function BannerDialog({
     setSubmitAttempted(true);
     
     // Validate inputs before submission
-    if (!editingBanner && !imageFile && !previewUrl) {
+    if (!imageFile && !previewUrl) {
       setImageError("Please select an image for the banner");
       return;
     }
@@ -110,7 +107,7 @@ export function BannerDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[525px]">
         <DialogHeader>
-          <DialogTitle>{editingBanner ? "Edit Banner" : "Add New Banner"}</DialogTitle>
+          <DialogTitle>Add New Banner</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmitWithValidation} className="space-y-4">
           <div className="space-y-2">
@@ -134,7 +131,7 @@ export function BannerDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="image">Banner Image {!editingBanner && <span className="text-red-500">*</span>}</Label>
+            <Label htmlFor="image">Banner Image <span className="text-red-500">*</span></Label>
             <Input
               id="image"
               type="file"
@@ -145,11 +142,11 @@ export function BannerDialog({
             />
             {(imageError && submitAttempted) && <p className="text-sm text-red-500">{imageError}</p>}
             
-            {/* Show either local preview or existing image */}
-            {(localPreview || previewUrl) && (
+            {/* Show local preview */}
+            {localPreview && (
               <div className="mt-2 relative">
                 <img
-                  src={localPreview || previewUrl}
+                  src={localPreview}
                   alt="Preview"
                   className="w-full h-40 object-cover rounded-md"
                 />
