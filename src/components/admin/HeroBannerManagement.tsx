@@ -3,13 +3,24 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { PageBannerDialog } from "./banner/PageBannerDialog";
+import { EditBannerDialog } from "./banner/EditBannerDialog";
 import { HeroBanner } from "./banner/types";
 import { BannerList } from "./banner/BannerList";
 import { BannerTabsBar } from "./banner/BannerTabsBar";
 import { BannerHeader } from "./banner/BannerHeader";
 import { useBannerImageUpload } from "./banner/useBannerImageUpload";
+import { BannerService } from "./banner/BannerService";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface HeroBannerManagementProps {
   searchQuery: string;
@@ -20,6 +31,11 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("events");
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedBanner, setSelectedBanner] = useState<HeroBanner | null>(null);
+  const [bannerIdToDelete, setBannerIdToDelete] = useState<string | null>(null);
+  
   const { toast } = useToast();
   const { uploadImageFromUrl } = useBannerImageUpload();
 
@@ -30,13 +46,8 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
   const fetchBanners = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('hero_banners')
-        .select('*')
-        .or('page.eq.events,page.eq.pet-grooming');
-
-      if (error) throw error;
-      setBanners(data || []);
+      const data = await BannerService.fetchBanners();
+      setBanners(data);
     } catch (error) {
       console.error("Error fetching banners:", error);
       toast({
@@ -51,39 +62,8 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
 
   const handleCreateBanner = async (banner: Partial<HeroBanner>) => {
     try {
-      console.log("Creating banner with data:", banner);
-      
-      // Ensure required fields are present
-      if (!banner.image_url || !banner.page) {
-        throw new Error("Missing required fields: image_url and page are required");
-      }
-      
-      // Create a properly typed banner object with required fields
-      const bannerToInsert = {
-        image_url: banner.image_url,
-        page: banner.page,
-        title: banner.title || null,
-        description: banner.description || null,
-        active: banner.active || false
-      };
-      
-      console.log("Inserting banner:", bannerToInsert);
-      
-      // Insert a single object rather than an array
-      const { error } = await supabase
-        .from('hero_banners')
-        .insert(bannerToInsert);
-
-      if (error) {
-        console.error("Insert error:", error);
-        throw error;
-      }
-      
-      console.log("Banner created successfully");
-      
-      // Refresh the banner list
+      await BannerService.createBanner(banner);
       fetchBanners();
-      
       toast({
         title: "Success",
         description: "Banner created successfully",
@@ -99,21 +79,41 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
     }
   };
 
-  const handleDeleteBanner = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this banner?")) {
-      return;
-    }
-
+  const handleUpdateBanner = async (id: string, banner: Partial<HeroBanner>) => {
     try {
-      const { error } = await supabase
-        .from('hero_banners')
-        .delete()
-        .eq('id', id);
+      await BannerService.updateBanner(id, banner);
+      fetchBanners();
+      toast({
+        title: "Success",
+        description: "Banner updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating banner:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update banner",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
 
-      if (error) throw error;
+  const confirmDeleteBanner = (id: string) => {
+    setBannerIdToDelete(id);
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteBanner = async () => {
+    if (!bannerIdToDelete) return;
+    
+    try {
+      await BannerService.deleteBanner(bannerIdToDelete);
+      
+      // Find the banner to get its image URL
+      const bannerToDelete = banners.find(b => b.id === bannerIdToDelete);
       
       // Update the local state
-      setBanners(banners.filter(banner => banner.id !== id));
+      setBanners(banners.filter(banner => banner.id !== bannerIdToDelete));
       
       toast({
         title: "Success",
@@ -126,17 +126,15 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
         description: "Failed to delete banner",
         variant: "destructive"
       });
+    } finally {
+      setShowDeleteDialog(false);
+      setBannerIdToDelete(null);
     }
   };
 
   const handleToggleActive = async (banner: HeroBanner) => {
     try {
-      const { error } = await supabase
-        .from('hero_banners')
-        .update({ active: !banner.active })
-        .eq('id', banner.id);
-
-      if (error) throw error;
+      await BannerService.toggleActive(banner.id, !banner.active);
       
       // Update the local state
       setBanners(banners.map(b => 
@@ -155,6 +153,11 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
         variant: "destructive"
       });
     }
+  };
+
+  const handleEditBanner = (banner: HeroBanner) => {
+    setSelectedBanner(banner);
+    setShowEditDialog(true);
   };
 
   // Function to upload predefined banners
@@ -230,16 +233,45 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
             searchQuery={searchQuery}
             activeTab={activeTab}
             onToggleActive={handleToggleActive}
-            onDeleteBanner={handleDeleteBanner}
+            onDeleteBanner={confirmDeleteBanner}
+            onEditBanner={handleEditBanner}
           />
         </TabsContent>
       </CardContent>
 
+      {/* Add Banner Dialog */}
       <PageBannerDialog
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         onSave={handleCreateBanner}
       />
+
+      {/* Edit Banner Dialog */}
+      <EditBannerDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        onUpdate={handleUpdateBanner}
+        banner={selectedBanner}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the banner
+              and remove the image from storage.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteBanner} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

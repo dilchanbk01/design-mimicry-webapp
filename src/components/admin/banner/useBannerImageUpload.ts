@@ -16,6 +16,7 @@ export function useBannerImageUpload() {
     console.log("imageUrl state changed:", imageUrl);
   }, [imageUrl]);
 
+  // Upload image from file input
   const uploadImage = async (file: File) => {
     if (!file) return;
     
@@ -28,56 +29,27 @@ export function useBannerImageUpload() {
       const localPreview = URL.createObjectURL(file);
       setImagePreview(localPreview);
       
-      // Simulate upload progress
+      // Start progress simulation
       const progressInterval = setInterval(() => {
         setUploadProgress((prev) => Math.min(prev + 10, 90));
       }, 200);
       
-      // Compress the image
-      const compressedFile = await compressImage(file);
+      // Process and upload the file
+      const uploadResult = await processAndUploadFile(file);
       
-      // Generate a unique file name
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-      const filePath = `banners/${fileName}`;
-      
-      // Upload to Supabase storage
-      console.log("Uploading to storage");
-      const { data, error: uploadError } = await supabase.storage
-        .from('banners')
-        .upload(filePath, compressedFile);
-      
-      if (uploadError) {
-        console.error("Storage upload error:", uploadError);
-        toast({
-          title: "Upload Error",
-          description: uploadError.message,
-          variant: "destructive"
-        });
-        throw uploadError;
-      }
-      
-      // Get the public URL
-      console.log("Getting public URL");
-      const { data: urlData } = supabase.storage
-        .from('banners')
-        .getPublicUrl(filePath);
-      
-      const publicUrl = urlData.publicUrl;
-      console.log("Public URL:", publicUrl);
-      
-      // Clear the interval and set the upload progress to 100%
+      // Clear the interval and set progress to 100%
       clearInterval(progressInterval);
       setUploadProgress(100);
       
-      // Important: Set the image URL
-      setImageUrl(publicUrl);
+      // Set the image URL
+      setImageUrl(uploadResult);
       
       toast({
         title: "Upload successful",
         description: "Image has been uploaded successfully"
       });
       
+      return uploadResult;
     } catch (error) {
       console.error("Error uploading image:", error);
       toast({
@@ -85,12 +57,51 @@ export function useBannerImageUpload() {
         description: "Failed to upload image. Please try again.",
         variant: "destructive"
       });
+      return null;
     } finally {
       setIsUploading(false);
     }
   };
 
-  // Utility function to upload image from URL
+  // Process and upload a file to Supabase storage
+  const processAndUploadFile = async (file: File) => {
+    // Compress the image
+    const compressedFile = await compressImage(file);
+    
+    // Generate a unique file name
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+    const filePath = `banners/${fileName}`;
+    
+    // Upload to Supabase storage
+    console.log("Uploading to storage");
+    const { data, error: uploadError } = await supabase.storage
+      .from('banners')
+      .upload(filePath, compressedFile);
+    
+    if (uploadError) {
+      console.error("Storage upload error:", uploadError);
+      toast({
+        title: "Upload Error",
+        description: uploadError.message,
+        variant: "destructive"
+      });
+      throw uploadError;
+    }
+    
+    // Get the public URL
+    console.log("Getting public URL");
+    const { data: urlData } = supabase.storage
+      .from('banners')
+      .getPublicUrl(filePath);
+    
+    const publicUrl = urlData.publicUrl;
+    console.log("Public URL:", publicUrl);
+    
+    return publicUrl;
+  };
+
+  // Upload image from URL
   const uploadImageFromUrl = async (imageUrl: string, pageName: string = 'events') => {
     setIsUploading(true);
     setUploadProgress(10);
@@ -113,52 +124,22 @@ export function useBannerImageUpload() {
         setUploadProgress((prev) => Math.min(prev + 10, 90));
       }, 200);
       
-      // Compress the image
-      const compressedFile = await compressImage(file);
+      // Process and upload the file
+      const uploadedUrl = await processAndUploadFile(file);
       
-      // Generate a unique file name
-      const fileName = `${pageName}_banner_${Date.now()}.jpg`;
-      const filePath = `banners/${fileName}`;
-      
-      // Upload to Supabase storage
-      console.log("Uploading to storage");
-      const { data, error: uploadError } = await supabase.storage
-        .from('banners')
-        .upload(filePath, compressedFile);
-      
-      if (uploadError) {
-        console.error("Storage upload error:", uploadError);
-        toast({
-          title: "Upload Error",
-          description: uploadError.message,
-          variant: "destructive"
-        });
-        throw uploadError;
-      }
-      
-      // Get the public URL
-      const { data: urlData } = supabase.storage
-        .from('banners')
-        .getPublicUrl(filePath);
-      
-      const publicUrl = urlData.publicUrl;
-      console.log("Public URL:", publicUrl);
-      
-      // Clear the interval and set the upload progress to 100%
+      // Clear the interval and set progress to 100%
       clearInterval(progressInterval);
       setUploadProgress(100);
       
       // Set the image URL
-      setImageUrl(publicUrl);
+      setImageUrl(uploadedUrl);
       
       toast({
         title: "Upload successful",
         description: "Image has been uploaded successfully"
       });
       
-      // Return the URL for direct creation
-      return publicUrl;
-      
+      return uploadedUrl;
     } catch (error) {
       console.error("Error uploading image from URL:", error);
       toast({
@@ -172,11 +153,59 @@ export function useBannerImageUpload() {
     }
   };
 
+  // Delete an image from storage
+  const deleteImage = async (imageUrl: string) => {
+    if (!imageUrl) return false;
+    
+    try {
+      // Extract the file path from the URL
+      const urlParts = imageUrl.split('/');
+      const fileName = urlParts[urlParts.length - 1];
+      const filePath = `banners/${fileName}`;
+      
+      console.log("Deleting file:", filePath);
+      
+      const { error } = await supabase.storage
+        .from('banners')
+        .remove([filePath]);
+      
+      if (error) {
+        console.error("Error deleting image:", error);
+        toast({
+          title: "Deletion Error",
+          description: error.message,
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      toast({
+        title: "Image deleted",
+        description: "Image has been deleted successfully"
+      });
+      
+      return true;
+    } catch (error) {
+      console.error("Error deleting image:", error);
+      toast({
+        title: "Deletion failed",
+        description: "Failed to delete image. It may still be referenced elsewhere.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
   const resetUpload = () => {
     setImagePreview(null);
     setImageUrl(null);
     setUploadProgress(0);
     setIsUploading(false);
+  };
+
+  const setExistingImage = (url: string) => {
+    setImageUrl(url);
+    setImagePreview(url);
   };
 
   return {
@@ -185,7 +214,9 @@ export function useBannerImageUpload() {
     uploadProgress,
     uploadImage,
     uploadImageFromUrl,
+    deleteImage,
     resetUpload,
+    setExistingImage,
     imageUrl
   };
 }

@@ -1,7 +1,7 @@
 
 import { HeroBanner } from "./types";
 import { Button } from "@/components/ui/button";
-import { Image } from "lucide-react";
+import { Image, Edit, Trash2, Check, X } from "lucide-react";
 
 interface BannerListProps {
   banners: HeroBanner[];
@@ -10,6 +10,7 @@ interface BannerListProps {
   activeTab: string;
   onToggleActive: (banner: HeroBanner) => void;
   onDeleteBanner: (id: string) => void;
+  onEditBanner: (banner: HeroBanner) => void;
 }
 
 export function BannerList({
@@ -18,7 +19,8 @@ export function BannerList({
   searchQuery,
   activeTab,
   onToggleActive,
-  onDeleteBanner
+  onDeleteBanner,
+  onEditBanner
 }: BannerListProps) {
   const filteredBanners = banners.filter(banner => 
     (activeTab === 'all' || banner.page === activeTab) &&
@@ -73,11 +75,21 @@ export function BannerList({
                 </div>
                 <div className="flex space-x-2">
                   <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onEditBanner(banner)}
+                    className="bg-white text-gray-800"
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Edit
+                  </Button>
+                  <Button
                     variant={banner.active ? "outline" : "default"}
                     size="sm"
                     onClick={() => onToggleActive(banner)}
                     className={banner.active ? "bg-white text-gray-800" : ""}
                   >
+                    {banner.active ? <X className="h-4 w-4 mr-1" /> : <Check className="h-4 w-4 mr-1" />}
                     {banner.active ? "Deactivate" : "Activate"}
                   </Button>
                   <Button
@@ -85,6 +97,7 @@ export function BannerList({
                     size="sm"
                     onClick={() => onDeleteBanner(banner.id)}
                   >
+                    <Trash2 className="h-4 w-4 mr-1" />
                     Delete
                   </Button>
                 </div>
