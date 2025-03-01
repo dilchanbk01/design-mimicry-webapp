@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -69,32 +68,18 @@ export default function GroomerAuth() {
   const checkEmailExists = async (email: string) => {
     setEmailCheckLoading(true);
     try {
-      // Use a direct query instead of RPC to avoid TypeScript errors
-      const { data, error } = await supabase.auth.admin.listUsers({
-        filters: {
-          email: email
-        }
-      }).catch(() => {
-        // Fallback if admin API fails (likely due to permission)
-        return supabase
-          .from('profiles')
-          .select('id', { count: 'exact' })
-          .eq('id', supabase.auth.admin.listUsers)
-          .limit(1);
-      });
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .limit(1);
       
       if (error) {
         console.error("Error checking email:", error);
         return false;
       }
       
-      // For admin API, check users array length
-      if (data && Array.isArray(data.users)) {
-        return data.users.length > 0;
-      }
-      
-      // For fallback query, check if data exists and has entries
-      return data && (Array.isArray(data) ? data.length > 0 : false);
+      return data && data.length > 0;
     } catch (error) {
       console.error("Error checking email:", error);
       return false;

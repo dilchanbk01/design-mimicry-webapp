@@ -20,7 +20,7 @@ export default function VetAuth() {
   const checkEmailExists = async (email: string) => {
     setEmailCheckLoading(true);
     try {
-      // Fix: Use a simpler query to avoid type instantiation issues
+      // Simplified query to avoid TypeScript errors
       const { data, error } = await supabase
         .from('profiles')
         .select('id')
