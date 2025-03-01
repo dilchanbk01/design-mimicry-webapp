@@ -307,6 +307,7 @@ export type Database = {
           is_available: boolean | null
           price: number | null
           profile_image_url: string | null
+          profile_images: string[] | null
           provides_home_service: boolean | null
           provides_salon_service: boolean | null
           salon_name: string
@@ -329,6 +330,7 @@ export type Database = {
           is_available?: boolean | null
           price?: number | null
           profile_image_url?: string | null
+          profile_images?: string[] | null
           provides_home_service?: boolean | null
           provides_salon_service?: boolean | null
           salon_name: string
@@ -351,6 +353,7 @@ export type Database = {
           is_available?: boolean | null
           price?: number | null
           profile_image_url?: string | null
+          profile_images?: string[] | null
           provides_home_service?: boolean | null
           provides_salon_service?: boolean | null
           salon_name?: string
