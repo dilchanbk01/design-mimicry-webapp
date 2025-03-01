@@ -33,6 +33,14 @@ export function useBannerImageUpload() {
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `banners/${fileName}`;
       
+      // Check if banners bucket exists, create if not
+      const { data: buckets } = await supabase.storage.listBuckets();
+      if (!buckets?.find(bucket => bucket.name === 'banners')) {
+        await supabase.storage.createBucket('banners', {
+          public: true
+        });
+      }
+      
       // Upload to Supabase storage
       const { data, error } = await supabase.storage
         .from('banners')
@@ -83,6 +91,14 @@ export const uploadBannerImage = async (file: File): Promise<string> => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
     const filePath = `banners/${fileName}`;
+    
+    // Check if banners bucket exists, create if not
+    const { data: buckets } = await supabase.storage.listBuckets();
+    if (!buckets?.find(bucket => bucket.name === 'banners')) {
+      await supabase.storage.createBucket('banners', {
+        public: true
+      });
+    }
     
     // Upload to Supabase storage
     const { data, error } = await supabase.storage

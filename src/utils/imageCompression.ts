@@ -1,5 +1,6 @@
 
 import imageCompression from 'browser-image-compression';
+import { supabase } from "@/integrations/supabase/client";
 
 export async function compressImage(file: File): Promise<File> {
   const options = {
@@ -34,22 +35,38 @@ export function getOptimizedImageUrl(url: string, width = 800): string {
   return url;
 }
 
-// Add the missing uploadBannerImage function
+// Upload banner image to Supabase storage
 export async function uploadBannerImage(file: File): Promise<string> {
   // First compress the image
   const compressedFile = await compressImage(file);
   
   try {
-    // Create form data for the API request
-    const formData = new FormData();
-    formData.append('file', compressedFile);
+    // Generate a unique file name
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+    const filePath = `banners/${fileName}`;
     
-    // Simulate a delay to show upload progress (in a real app, this would be an actual API call)
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Check if banners bucket exists, create if not
+    const { data: buckets } = await supabase.storage.listBuckets();
+    if (!buckets?.find(bucket => bucket.name === 'banners')) {
+      await supabase.storage.createBucket('banners', {
+        public: true
+      });
+    }
     
-    // Return a mock URL or placeholder for now
-    // In a real app, this would be the URL returned from your backend
-    return URL.createObjectURL(compressedFile);
+    // Upload to Supabase storage
+    const { data, error } = await supabase.storage
+      .from('banners')
+      .upload(filePath, compressedFile);
+    
+    if (error) throw error;
+    
+    // Get the public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('banners')
+      .getPublicUrl(filePath);
+    
+    return publicUrl;
   } catch (error) {
     console.error('Error uploading banner image:', error);
     throw error;
