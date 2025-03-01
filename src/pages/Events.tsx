@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapPin, Plus } from "lucide-react";
@@ -73,7 +72,6 @@ export default function Events() {
 
       if (error) throw error;
       
-      // Filter out past events
       const now = new Date();
       const futureEvents = data.filter(event => {
         const eventDate = new Date(event.date);

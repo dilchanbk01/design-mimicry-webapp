@@ -16,7 +16,7 @@ interface HeroBanner {
 }
 
 export function HeroBanner({ currentSlide, setCurrentSlide }: HeroBannerProps) {
-  const { data: heroBanners = [] } = useQuery({
+  const { data: heroBanners = [], isLoading } = useQuery({
     queryKey: ['heroBanners'],
     queryFn: async () => {
       try {
@@ -33,17 +33,20 @@ export function HeroBanner({ currentSlide, setCurrentSlide }: HeroBannerProps) {
         return [];
       }
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: true, // Refetch when window gets focus to see new banners
   });
 
+  if (isLoading) return <div className="h-[300px] bg-gray-200 animate-pulse"></div>;
   if (heroBanners.length === 0) return null;
 
   return (
-    <div className="relative h-[300px]">
+    <div className="relative h-[300px]" data-testid="hero-banner-container">
       <div className="absolute inset-0 overflow-hidden">
         {heroBanners.map((banner, index) => (
           <div
             key={banner.id}
+            data-hero-banner
             className={`absolute inset-0 transition-opacity duration-1000 ${
               index === currentSlide ? 'opacity-100' : 'opacity-0'
             }`}
@@ -76,20 +79,22 @@ export function HeroBanner({ currentSlide, setCurrentSlide }: HeroBannerProps) {
         ))}
       </div>
 
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-        {heroBanners.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => setCurrentSlide(index)}
-            className={`w-2 h-2 rounded-full transition-all ${
-              index === currentSlide
-                ? 'bg-white w-4'
-                : 'bg-white/50'
-            }`}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
-      </div>
+      {heroBanners.length > 1 && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+          {heroBanners.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentSlide(index)}
+              className={`w-2 h-2 rounded-full transition-all ${
+                index === currentSlide
+                  ? 'bg-white w-4'
+                  : 'bg-white/50'
+              }`}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

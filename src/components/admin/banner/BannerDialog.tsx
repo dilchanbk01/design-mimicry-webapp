@@ -11,6 +11,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { HeroBanner } from "./types";
+import { toast } from "sonner";
 
 interface BannerDialogProps {
   open: boolean;
@@ -46,6 +47,7 @@ export function BannerDialog({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   // Reset state when dialog opens/closes
   useEffect(() => {
@@ -53,6 +55,7 @@ export function BannerDialog({
       setImageFile(null);
       setImageError(null);
       setLocalPreview(null);
+      setSubmitAttempted(false);
     }
   }, [open]);
 
@@ -82,11 +85,17 @@ export function BannerDialog({
       reader.readAsDataURL(file);
       
       setImageFile(file);
+
+      // Show a toast notification that the image was selected
+      toast.success("Image selected successfully", {
+        description: "Preview is now visible",
+      });
     }
   };
 
   const handleSubmitWithValidation = (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitAttempted(true);
     
     // Validate inputs before submission
     if (!editingBanner && !imageFile && !previewUrl) {
@@ -134,7 +143,7 @@ export function BannerDialog({
               className="cursor-pointer"
               disabled={isUploading}
             />
-            {imageError && <p className="text-sm text-red-500">{imageError}</p>}
+            {(imageError && submitAttempted) && <p className="text-sm text-red-500">{imageError}</p>}
             
             {/* Show either local preview or existing image */}
             {(localPreview || previewUrl) && (
@@ -144,8 +153,15 @@ export function BannerDialog({
                   alt="Preview"
                   className="w-full h-40 object-cover rounded-md"
                 />
+                <div className="absolute top-2 right-2 bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
+                  Preview
+                </div>
               </div>
             )}
+            
+            <p className="text-xs text-gray-500 mt-1">
+              Selected banners will appear on the Events and Grooming pages based on the page selection.
+            </p>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -157,7 +173,12 @@ export function BannerDialog({
               className="h-4 w-4 rounded border-gray-300"
               disabled={isUploading}
             />
-            <Label htmlFor="active">Active</Label>
+            <Label htmlFor="active">
+              Active
+              <span className="ml-1 text-xs text-gray-500">
+                (Make this banner visible on the website)
+              </span>
+            </Label>
           </div>
 
           <DialogFooter>
