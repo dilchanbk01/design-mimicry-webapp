@@ -48,9 +48,14 @@ export function HeroBannerManagement({ searchQuery }: HeroBannerManagementProps)
 
   const handleCreateBanner = async (banner: Partial<HeroBanner>) => {
     try {
+      // Ensure required fields are present
+      if (!banner.image_url || !banner.page) {
+        throw new Error("Missing required fields: image_url and page are required");
+      }
+      
       const { error } = await supabase
         .from('hero_banners')
-        .insert([banner]);
+        .insert([banner]);  // Pass as an array to match the expected type
 
       if (error) throw error;
       

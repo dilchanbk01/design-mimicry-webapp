@@ -1,39 +1,55 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import { compressImage } from "@/utils/imageCompression";
+import { useState } from "react";
 
-export async function uploadBannerImage(imageFile: File): Promise<string> {
-  if (!imageFile) {
-    throw new Error("No image file provided");
-  }
+export function useBannerImageUpload() {
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
-  try {
-    // Compress the image before uploading
-    const compressedFile = await compressImage(imageFile);
+  const uploadImage = async (file: File) => {
+    if (!file) return;
     
-    const fileExt = compressedFile.name.split(".").pop();
-    const fileName = `${crypto.randomUUID()}.${fileExt}`;
-    const filePath = `banners/${fileName}`;
+    setIsUploading(true);
+    setUploadProgress(10);
     
-    // Upload the file
-    const { data, error } = await supabase.storage
-      .from("images")
-      .upload(filePath, compressedFile, {
-        cacheControl: '3600',
-        upsert: true
-      });
-
-    if (error) {
-      console.error("Upload error:", error);
-      throw new Error(`Failed to upload image: ${error.message}`);
+    try {
+      // Create a local preview
+      const localPreview = URL.createObjectURL(file);
+      setImagePreview(localPreview);
+      
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => Math.min(prev + 10, 90));
+      }, 200);
+      
+      // Use the imported function from parent directory
+      const { uploadBannerImage } = await import("../../../utils/imageCompression");
+      const url = await uploadBannerImage(file);
+      setImageUrl(url);
+      setUploadProgress(100);
+      
+      clearInterval(progressInterval);
+    } catch (error) {
+      console.error("Error uploading image:", error);
+    } finally {
+      setIsUploading(false);
     }
-    
-    // Get the public URL
-    const { data: urlData } = supabase.storage.from("images").getPublicUrl(filePath);
-    
-    return urlData.publicUrl;
-  } catch (error: any) {
-    console.error("Error in uploadBannerImage:", error);
-    throw new Error(`Image upload failed: ${error.message}`);
-  }
+  };
+
+  const resetUpload = () => {
+    setImagePreview(null);
+    setImageUrl(null);
+    setUploadProgress(0);
+    setIsUploading(false);
+  };
+
+  return {
+    imagePreview,
+    isUploading,
+    uploadProgress,
+    uploadImage,
+    resetUpload,
+    imageUrl
+  };
 }
