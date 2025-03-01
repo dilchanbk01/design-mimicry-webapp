@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Stethoscope } from "lucide-react";
@@ -19,18 +20,19 @@ export default function VetAuth() {
   const checkEmailExists = async (email: string) => {
     setEmailCheckLoading(true);
     try {
-      // Use profiles table to check if user exists
-      const { count, error } = await supabase
+      // Fix: Use a simpler query to avoid type instantiation issues
+      const { data, error } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('email', email);
+        .select('id')
+        .eq('email', email)
+        .limit(1);
       
       if (error) {
         console.error("Error checking email:", error);
         return false;
       }
       
-      return count > 0;
+      return data && data.length > 0;
     } catch (error) {
       console.error("Error checking email:", error);
       return false;

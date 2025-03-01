@@ -47,18 +47,20 @@ export default function Auth() {
   const checkEmailExists = async (email: string) => {
     setEmailCheckLoading(true);
     try {
-      // Use profiles table to check if user exists
-      const { count, error } = await supabase
+      // Fix: Use count() explicitly to avoid type instantiation issue
+      const { data, error } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('email', email);
+        .select('id', { count: 'exact' })
+        .eq('email', email)
+        .limit(1);
       
       if (error) {
         console.error("Error checking email:", error);
         return false;
       }
       
-      return count > 0;
+      // Check if we got any results
+      return data && data.length > 0;
     } catch (error) {
       console.error("Error checking email:", error);
       return false;
