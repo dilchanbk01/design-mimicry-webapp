@@ -76,8 +76,8 @@ const Index = () => {
               height="200"
             />
             <h2 
-              className="text-[#f8db14] mt-[-21px] sm:mt-[-23px] mb-2 text-[20px] sm:text-[30px] font-medium"
-              style={{ fontFamily: "'Fredoka', sans-serif" }}
+              className="text-[#003fbf] mt-[-21px] sm:mt-[-23px] mb-2 text-[20px] sm:text-[30px] font-medium"
+              style={{ fontFamily: "'Shrikhand', cursive" }}
             >
               Making Pet Care Effortless
             </h2>

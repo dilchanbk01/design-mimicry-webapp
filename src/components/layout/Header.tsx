@@ -80,7 +80,6 @@ export function Header({ isScrolled, selectedCity, onCitySelect, transparent = f
                       width="32"
                       height="32"
                     />
-                    <span className="font-bold text-lg">Petsu</span>
                   </Link>
                 </div>
                 <nav className="flex-grow p-4">
