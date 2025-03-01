@@ -1,16 +1,15 @@
 
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-
-interface HeroBanner {
-  id: string;
-  image_url: string;
-  title: string | null;
-  description: string | null;
-  active: boolean;
-  page: string;
-}
+import { HeroBanner } from "./types";
+import { 
+  fetchBannersByPage, 
+  createBanner, 
+  updateBanner, 
+  deleteBanner, 
+  toggleBannerStatus 
+} from "./bannerApi";
+import { uploadBannerImage } from "./useBannerImageUpload";
 
 export function useBannerManagement(searchQuery: string) {
   const { toast } = useToast();
@@ -34,16 +33,8 @@ export function useBannerManagement(searchQuery: string) {
   const fetchBanners = async () => {
     setLoading(true);
     try {
-      let query = supabase.from("hero_banners").select("*").eq("page", bannerPage);
-
-      if (searchQuery) {
-        query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      setBanners(data || []);
+      const data = await fetchBannersByPage(bannerPage, searchQuery);
+      setBanners(data);
     } catch (error) {
       console.error("Error fetching hero banners:", error);
       toast({
@@ -82,61 +73,13 @@ export function useBannerManagement(searchQuery: string) {
 
       // Upload new image if one was selected
       if (imageFile) {
-        const fileExt = imageFile.name.split(".").pop();
-        const fileName = `${crypto.randomUUID()}.${fileExt}`;
-        const filePath = `banners/${fileName}`;
-
-        // Check if the storage bucket exists
-        const { data: bucketData, error: bucketError } = await supabase
-          .storage
-          .getBucket('images');
-
-        if (bucketError && bucketError.message.includes('does not exist')) {
-          // Create the bucket if it doesn't exist
-          const { error: createBucketError } = await supabase
-            .storage
-            .createBucket('images', { public: true });
-          
-          if (createBucketError) {
-            throw new Error(`Failed to create storage bucket: ${createBucketError.message}`);
-          }
+        try {
+          image_url = await uploadBannerImage(imageFile);
+          setPreviewUrl(image_url);
+        } catch (error: any) {
+          console.error("Error uploading image:", error);
+          throw new Error(`Failed to upload image: ${error.message}`);
         }
-
-        const { error: uploadError } = await supabase.storage
-          .from("images")
-          .upload(filePath, imageFile, {
-            cacheControl: '3600',
-            upsert: false
-          });
-
-        if (uploadError) {
-          console.error("Upload error:", uploadError);
-          if (uploadError.message.includes("already exists")) {
-            // Handle file already exists error by generating a new name
-            const newFileName = `${crypto.randomUUID()}-${Date.now()}.${fileExt}`;
-            const newFilePath = `banners/${newFileName}`;
-            
-            const { error: retryUploadError } = await supabase.storage
-              .from("images")
-              .upload(newFilePath, imageFile, {
-                cacheControl: '3600',
-                upsert: false
-              });
-            
-            if (retryUploadError) throw retryUploadError;
-            
-            const { data } = supabase.storage.from("images").getPublicUrl(newFilePath);
-            image_url = data.publicUrl;
-          } else {
-            throw uploadError;
-          }
-        } else {
-          // Get the public URL of the uploaded image
-          const { data } = supabase.storage.from("images").getPublicUrl(filePath);
-          image_url = data.publicUrl;
-        }
-        
-        setPreviewUrl(image_url);
       }
 
       if (!image_url && !editingBanner) {
@@ -145,17 +88,12 @@ export function useBannerManagement(searchQuery: string) {
 
       if (editingBanner) {
         // Update existing banner
-        const { error } = await supabase
-          .from("hero_banners")
-          .update({
-            title,
-            description,
-            active,
-            image_url: image_url || editingBanner.image_url,
-          })
-          .eq("id", editingBanner.id);
-
-        if (error) throw error;
+        await updateBanner(editingBanner.id, {
+          title,
+          description,
+          active,
+          image_url: image_url || editingBanner.image_url,
+        });
 
         toast({
           title: "Success",
@@ -167,15 +105,13 @@ export function useBannerManagement(searchQuery: string) {
           throw new Error("An image is required for new banners");
         }
         
-        const { error } = await supabase.from("hero_banners").insert({
+        await createBanner({
           title,
           description,
           active,
           image_url,
           page: bannerPage,
         });
-
-        if (error) throw error;
 
         toast({
           title: "Success",
@@ -202,9 +138,7 @@ export function useBannerManagement(searchQuery: string) {
     if (!confirm("Are you sure you want to delete this banner?")) return;
 
     try {
-      const { error } = await supabase.from("hero_banners").delete().eq("id", id);
-
-      if (error) throw error;
+      await deleteBanner(id);
 
       toast({
         title: "Success",
@@ -224,12 +158,7 @@ export function useBannerManagement(searchQuery: string) {
 
   const handleToggleActive = async (id: string, currentActive: boolean) => {
     try {
-      const { error } = await supabase
-        .from("hero_banners")
-        .update({ active: !currentActive })
-        .eq("id", id);
-
-      if (error) throw error;
+      await toggleBannerStatus(id, currentActive);
 
       toast({
         title: "Success",
