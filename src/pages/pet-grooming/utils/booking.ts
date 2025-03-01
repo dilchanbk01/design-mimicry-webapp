@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import type { GroomingPackage } from "../types/packages";
 
-// Function to send confirmation email
+// Function to send confirmation email to customer
 export const sendConfirmationEmail = async (
   userEmail: string,
   groomerId: string,
@@ -38,6 +38,46 @@ export const sendConfirmationEmail = async (
     return response;
   } catch (err) {
     console.error("Error sending confirmation email:", err);
+    throw err;
+  }
+};
+
+// Function to send booking notification to groomer
+export const sendGroomerNotificationEmail = async (
+  groomerEmail: string,
+  customerName: string,
+  customerEmail: string,
+  selectedDate: Date,
+  selectedTime: string,
+  serviceName: string,
+  serviceType: 'salon' | 'home',
+  homeAddress: string,
+  petDetails: string,
+  totalPrice: number
+) => {
+  try {
+    const response = await supabase.functions.invoke('send-groomer-notification', {
+      body: {
+        to: groomerEmail,
+        subject: `New Grooming Appointment Booked`,
+        bookingDetails: {
+          customerName: customerName,
+          customerEmail: customerEmail,
+          date: format(selectedDate, 'yyyy-MM-dd'),
+          time: selectedTime,
+          serviceName: serviceName,
+          serviceType: serviceType,
+          address: serviceType === 'home' ? homeAddress : 'At your salon',
+          petDetails: petDetails,
+          price: totalPrice
+        }
+      }
+    });
+
+    console.log("Groomer notification email response:", response);
+    return response;
+  } catch (err) {
+    console.error("Error sending groomer notification email:", err);
     throw err;
   }
 };

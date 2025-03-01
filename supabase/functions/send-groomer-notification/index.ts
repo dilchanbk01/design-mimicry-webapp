@@ -1,127 +1,128 @@
 
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Resend } from "npm:resend@2.0.0";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface GroomerNotificationRequest {
-  groomerEmail: string;
-  groomerName: string;
+interface BookingDetails {
   customerName: string;
   customerEmail: string;
-  customerPhone: string | null;
   date: string;
   time: string;
   serviceName: string;
-  serviceType: string;
+  serviceType: 'salon' | 'home';
   address: string;
   petDetails: string;
+  price: number;
 }
 
-const handler = async (req: Request): Promise<Response> => {
+interface RequestBody {
+  to: string;
+  subject: string;
+  bookingDetails: BookingDetails;
+}
+
+serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, {
+      headers: corsHeaders,
+    });
   }
 
   try {
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      {
+        global: {
+          headers: { Authorization: req.headers.get("Authorization")! },
+        },
+      }
     );
 
-    // Get the request body
-    const reqData: GroomerNotificationRequest = await req.json();
+    const { to, subject, bookingDetails }: RequestBody = await req.json();
+    
+    const { customerName, customerEmail, date, time, serviceName, serviceType, address, petDetails, price } = bookingDetails;
 
-    const {
-      groomerEmail,
-      groomerName,
-      customerName,
-      customerEmail,
-      customerPhone,
-      date,
-      time,
-      serviceName,
-      serviceType,
-      address,
-      petDetails,
-    } = reqData;
-
-    if (!groomerEmail) {
-      throw new Error("Groomer email is required");
+    // Basic validation
+    if (!to || !subject || !bookingDetails) {
+      throw new Error("Missing required fields");
     }
 
-    const formattedDate = new Date(date).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    console.log(`Sending groomer notification email to: ${to}`);
 
-    const emailResponse = await resend.emails.send({
-      from: "Petsu <notifications@petsu.lovable.dev>",
-      to: [groomerEmail],
-      subject: `New Booking: ${customerName} has booked an appointment`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
-          <div style="text-align: center; margin-bottom: 20px;">
-            <h1 style="color: #4CAF50; margin-bottom: 10px;">New Grooming Appointment!</h1>
-            <p style="font-size: 16px; color: #374151;">Hi ${groomerName}, you've received a new booking</p>
-          </div>
-          
-          <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-            <h2 style="color: #4CAF50; margin-top: 0;">Appointment Details</h2>
-            <p><strong>Date:</strong> ${formattedDate}</p>
-            <p><strong>Time:</strong> ${time}</p>
-            <p><strong>Service:</strong> ${serviceName}</p>
-            <p><strong>Service Type:</strong> ${serviceType}</p>
-            ${serviceType === 'Home Visit' ? 
-              `<p><strong>Client Address:</strong> ${address}</p>` : 
-              `<p><strong>Location:</strong> Your salon</p>`
-            }
-          </div>
-          
-          <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-            <h2 style="color: #4CAF50; margin-top: 0;">Customer Information</h2>
-            <p><strong>Name:</strong> ${customerName}</p>
-            <p><strong>Email:</strong> ${customerEmail}</p>
-            ${customerPhone ? `<p><strong>Phone:</strong> ${customerPhone}</p>` : ''}
-            <p><strong>Pet Details:</strong> ${petDetails}</p>
-          </div>
-          
-          <div style="text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px;">
-            <p>This is an automated message from Petsu. Please do not reply to this email.</p>
-          </div>
-        </div>
-      `,
-    });
+    // Use Resend to send the email
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      throw new Error("RESEND_API_KEY is not set");
+    }
 
-    console.log("Email sent successfully:", emailResponse);
-
-    return new Response(JSON.stringify(emailResponse), {
-      status: 200,
+    const resendResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...corsHeaders,
+        Authorization: `Bearer ${resendApiKey}`,
       },
+      body: JSON.stringify({
+        from: "Petsu Grooming <no-reply@resend.dev>",
+        to: [to],
+        subject: subject,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+            <h1 style="color: #4CAF50; text-align: center;">New Grooming Appointment</h1>
+            <p style="font-size: 16px;">You have a new grooming appointment booking!</p>
+            
+            <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
+              <h2 style="color: #333; font-size: 18px; margin-top: 0;">Customer Information</h2>
+              <p><strong>Name:</strong> ${customerName}</p>
+              <p><strong>Email:</strong> ${customerEmail}</p>
+            </div>
+            
+            <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
+              <h2 style="color: #333; font-size: 18px; margin-top: 0;">Appointment Details</h2>
+              <p><strong>Date:</strong> ${date}</p>
+              <p><strong>Time:</strong> ${time}</p>
+              <p><strong>Service:</strong> ${serviceName}</p>
+              <p><strong>Service Type:</strong> ${serviceType === 'home' ? 'Home Visit' : 'Salon Visit'}</p>
+              <p><strong>Location:</strong> ${address}</p>
+              <p><strong>Pet Details:</strong> ${petDetails}</p>
+              <p><strong>Price:</strong> ₹${price}</p>
+            </div>
+            
+            <p style="font-size: 14px; color: #777; text-align: center; margin-top: 30px;">
+              This is an automated notification from Petsu. Please do not reply to this email.
+            </p>
+          </div>
+        `,
+      }),
     });
-  } catch (error: any) {
+
+    const resendData = await resendResponse.json();
+    console.log("Resend API response:", resendData);
+
+    if (!resendResponse.ok) {
+      throw new Error(`Failed to send email: ${JSON.stringify(resendData)}`);
+    }
+
+    return new Response(JSON.stringify(resendData), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    });
+  } catch (error) {
     console.error("Error in send-groomer-notification function:", error);
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({
+        error: error.message || "An error occurred while sending the notification email",
+      }),
       {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
   }
-};
-
-serve(handler);
+});
