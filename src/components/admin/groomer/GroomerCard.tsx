@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,14 @@ export function GroomerCard({
   onViewPayoutHistory, 
   onStatusChange 
 }: GroomerCardProps) {
+  // Track application status in local state to ensure UI consistency
+  const [applicationStatus, setApplicationStatus] = useState(groomer.application_status);
   
+  // Update local state when groomer prop changes
+  useEffect(() => {
+    setApplicationStatus(groomer.application_status);
+  }, [groomer.application_status]);
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
@@ -34,9 +41,15 @@ export function GroomerCard({
     }
   };
 
-  // Force re-evaluate the status from the prop each render to prevent stale UI
-  const applicationStatus = groomer.application_status;
+  // Explicitly check if the application is pending
   const isPending = applicationStatus === 'pending';
+  
+  console.log("GroomerCard:", { 
+    groomerId: groomer.id, 
+    status: groomer.application_status, 
+    localStatus: applicationStatus,
+    isPending
+  });
 
   return (
     <div 
@@ -47,7 +60,7 @@ export function GroomerCard({
         <div className="flex-grow">
           <div className="flex items-center gap-2 mb-1">
             <h3 className="font-semibold text-lg">{groomer.salon_name}</h3>
-            {getStatusBadge(groomer.application_status)}
+            {getStatusBadge(applicationStatus)}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 mt-2">
@@ -116,20 +129,28 @@ export function GroomerCard({
             Payout History
           </Button>
 
-          {/* Always check application status directly from the groomer prop */}
+          {/* Directly check application status to render approval/rejection buttons */}
           {isPending && (
             <div className="flex flex-col gap-2 w-full">
               <Button 
                 size="sm" 
                 variant="outline"
-                onClick={() => onStatusChange(groomer, 'rejected')}
+                onClick={() => {
+                  onStatusChange(groomer, 'rejected');
+                  // Update local state immediately for UI feedback
+                  setApplicationStatus('rejected');
+                }}
                 className="text-red-600 hover:bg-red-50 flex items-center justify-center w-full"
               >
                 <X className="h-4 w-4 mr-1" /> Reject
               </Button>
               <Button 
                 size="sm"
-                onClick={() => onStatusChange(groomer, 'approved')}
+                onClick={() => {
+                  onStatusChange(groomer, 'approved');
+                  // Update local state immediately for UI feedback
+                  setApplicationStatus('approved');
+                }}
                 className="bg-green-600 hover:bg-green-700 flex items-center justify-center w-full"
               >
                 <Check className="h-4 w-4 mr-1" /> Approve

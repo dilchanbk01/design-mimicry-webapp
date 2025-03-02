@@ -28,7 +28,7 @@ export function useGroomers(initialFilter = "all") {
   const fetchGroomers = useCallback(async () => {
     setLoading(true);
     try {
-      console.log("Fetching groomers...");
+      console.log("useGroomers: Fetching all groomers...");
       const { data, error } = await supabase
         .from('groomer_profiles')
         .select('*')
@@ -39,9 +39,9 @@ export function useGroomers(initialFilter = "all") {
         throw error;
       }
 
-      console.log("Groomers data received:", data);
+      console.log("useGroomers: Groomers data received:", data);
 
-      // Fetch user emails for each groomer
+      // Fetch user email for each groomer
       if (data && data.length > 0) {
         const groomersWithEmail = await Promise.all(
           data.map(async (groomer) => {
@@ -62,11 +62,18 @@ export function useGroomers(initialFilter = "all") {
           })
         );
 
-        console.log("Groomers with email data:", groomersWithEmail);
+        console.log("useGroomers: Groomers with email data:", groomersWithEmail);
         setGroomers(groomersWithEmail);
-        applyStatusFilter(activeFilter);
+        
+        // Apply the active filter now that we have data
+        if (activeFilter === 'all') {
+          setFilteredGroomers(groomersWithEmail);
+        } else {
+          const filtered = groomersWithEmail.filter(g => g.application_status === activeFilter);
+          setFilteredGroomers(filtered);
+        }
       } else {
-        console.log("No groomers found");
+        console.log("useGroomers: No groomers found");
         setGroomers([]);
         setFilteredGroomers([]);
       }
@@ -83,6 +90,7 @@ export function useGroomers(initialFilter = "all") {
   }, [activeFilter, toast]);
 
   const filterGroomers = useCallback((query: string) => {
+    console.log("useGroomers: Filtering groomers by query:", query);
     const filtered = groomers.filter(groomer => 
       groomer.salon_name.toLowerCase().includes(query.toLowerCase()) ||
       groomer.address.toLowerCase().includes(query.toLowerCase()) ||
@@ -94,6 +102,7 @@ export function useGroomers(initialFilter = "all") {
   }, [groomers]);
 
   const applyStatusFilter = useCallback((filter: string) => {
+    console.log("useGroomers: Applying status filter:", filter);
     let filtered;
     if (filter === "all") {
       filtered = groomers;
@@ -111,11 +120,13 @@ export function useGroomers(initialFilter = "all") {
       );
     }
     
+    console.log("useGroomers: Filtered groomers:", filtered);
     setFilteredGroomers(filtered);
     setActiveFilter(filter);
   }, [groomers, searchQuery]);
 
   useEffect(() => {
+    console.log("useGroomers: Initial fetch");
     fetchGroomers();
     
     // Set up real-time subscription to groomer_profiles changes
@@ -125,8 +136,8 @@ export function useGroomers(initialFilter = "all") {
         event: '*', 
         schema: 'public', 
         table: 'groomer_profiles'
-      }, () => {
-        console.log("Groomer profiles changed, refreshing data");
+      }, (payload) => {
+        console.log("useGroomers: Realtime update received:", payload);
         fetchGroomers();
       })
       .subscribe();
@@ -135,14 +146,6 @@ export function useGroomers(initialFilter = "all") {
       subscription.unsubscribe();
     };
   }, [fetchGroomers]);
-
-  useEffect(() => {
-    if (searchQuery) {
-      filterGroomers(searchQuery);
-    } else {
-      applyStatusFilter(activeFilter);
-    }
-  }, [searchQuery, groomers, activeFilter, filterGroomers, applyStatusFilter]);
 
   const handleViewBankDetails = async (groomer: GroomerProfile) => {
     setSelectedGroomer(groomer);
@@ -204,6 +207,8 @@ export function useGroomers(initialFilter = "all") {
     if (!selectedGroomer || !newStatus) return;
 
     try {
+      console.log(`useGroomers: Updating groomer ${selectedGroomer.id} status to ${newStatus}`);
+      
       const { error } = await supabase
         .from('groomer_profiles')
         .update({ application_status: newStatus })
@@ -211,23 +216,30 @@ export function useGroomers(initialFilter = "all") {
 
       if (error) throw error;
 
-      // Update local state
-      setGroomers(prevGroomers => 
-        prevGroomers.map(g => 
-          g.id === selectedGroomer.id 
-            ? { ...g, application_status: newStatus }
-            : g
-        )
+      // Update local state immediately
+      const updatedGroomers = groomers.map(g => 
+        g.id === selectedGroomer.id 
+          ? { ...g, application_status: newStatus }
+          : g
       );
       
-      // We need to update the filtered groomers immediately as well
-      setFilteredGroomers(prevFiltered => 
-        prevFiltered.map(g => 
-          g.id === selectedGroomer.id 
-            ? { ...g, application_status: newStatus }
-            : g
-        )
-      );
+      setGroomers(updatedGroomers);
+      
+      // Update filtered groomers as well
+      // This will remove the item from the filtered list if we're on a status-specific tab
+      if (activeFilter !== 'all' && activeFilter !== newStatus) {
+        setFilteredGroomers(prevFiltered => 
+          prevFiltered.filter(g => g.id !== selectedGroomer.id)
+        );
+      } else {
+        setFilteredGroomers(prevFiltered => 
+          prevFiltered.map(g => 
+            g.id === selectedGroomer.id 
+              ? { ...g, application_status: newStatus }
+              : g
+          )
+        );
+      }
 
       toast({
         title: "Status Updated",
@@ -251,13 +263,16 @@ export function useGroomers(initialFilter = "all") {
   };
 
   const handleStatusChange = (groomer: GroomerProfile, status: 'approved' | 'rejected') => {
+    console.log(`useGroomers: Preparing to change status for ${groomer.id} to ${status}`);
     setSelectedGroomer(groomer);
     setNewStatus(status);
     setShowStatusDialog(true);
   };
 
   const getPendingCount = useCallback(() => {
-    return groomers.filter(g => g.application_status === 'pending').length;
+    const count = groomers.filter(g => g.application_status === 'pending').length;
+    console.log(`useGroomers: Pending count: ${count}`);
+    return count;
   }, [groomers]);
 
   return {

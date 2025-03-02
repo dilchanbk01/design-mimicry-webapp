@@ -44,8 +44,9 @@ export function GroomersList({ searchQuery }: GroomersListProps) {
     handleStatusChange
   } = useGroomers();
 
-  // Force a re-fetch to ensure we have the latest data
+  // Force a re-fetch on mount to ensure we have the latest data
   useEffect(() => {
+    console.log("GroomersList: Fetching groomers on mount");
     fetchGroomers();
     // Run only on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -53,6 +54,7 @@ export function GroomersList({ searchQuery }: GroomersListProps) {
 
   // Use useCallback to prevent re-creation of the function on each render
   const memoizedFilterGroomers = useCallback((query: string) => {
+    console.log("GroomersList: Applying search filter:", query);
     if (query) {
       filterGroomers(query);
     } else {
@@ -67,12 +69,20 @@ export function GroomersList({ searchQuery }: GroomersListProps) {
   }, [searchQuery, memoizedFilterGroomers]);
 
   const handleRefresh = () => {
+    console.log("GroomersList: Manual refresh triggered");
     fetchGroomers();
     toast({
       title: "Refreshed",
       description: "Groomer list has been refreshed.",
     });
   };
+
+  console.log("GroomersList render:", { 
+    filteredGroomers, 
+    activeFilter, 
+    pendingCount,
+    totalGroomers: groomers.length
+  });
 
   return (
     <Card className="w-full">
