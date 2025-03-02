@@ -24,8 +24,7 @@ const Index = () => {
 
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      // Setting isScrolled to false to hide the header on scroll
-      setIsScrolled(false);
+      setIsScrolled(currentScrollY > lastScrollY && currentScrollY > 50);
       lastScrollY = currentScrollY;
     };
 
@@ -62,26 +61,10 @@ const Index = () => {
         isScrolled={isScrolled}
         selectedCity={selectedCity}
         onCitySelect={() => setIsCityDialogOpen(true)}
-        transparent={true}
       />
 
       <main className="flex-grow">
-        <div className="max-w-4xl mx-auto px-4 pt-16 pb-20">
-          <div className="flex flex-col items-center mb-14 mt-2">
-            <img
-              src="/lovable-uploads/0fab9a9b-a614-463c-bac7-5446c69c4197.png"
-              alt="Petsu"
-              className="h-50 sm:pt-0 -mt-50 sm:my-0"
-              width="200"
-              height="200"
-            />
-            <h2 
-              className="text-[#003fbf] mt-[-21px] sm:mt-[-23px] mb-2 text-[20px] sm:text-[30px] font-medium"
-              style={{ fontFamily: "'Shrikhand', cursive" }}
-            >
-              Making Pet Care Effortless
-            </h2>
-          </div>
+        <div className="max-w-4xl mx-auto px-4 pt-24 pb-20">
           <div className="space-y-12">
             <ServicesGrid onEssentialsClick={() => setIsNotifyDialogOpen(true)} />
             <PartnerCards

@@ -1,71 +1,32 @@
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Clock, CheckCircle2, ArrowLeft, LogOut } from "lucide-react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Clock } from "lucide-react";
 
 export default function GroomerPending() {
   const navigate = useNavigate();
-  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check auth status when component mounts
-    checkAuthStatus();
-    
-    // Only set up subscription if we have a userId
-    if (userId) {
-      // Set up real-time subscription to profile changes
-      const subscription = supabase
-        .channel('groomer-status-changes')
-        .on('postgres_changes', { 
-          event: 'UPDATE', 
-          schema: 'public', 
-          table: 'groomer_profiles',
-          filter: `user_id=eq.${userId}`
-        }, handleProfileChange)
-        .subscribe();
-      
-      return () => {
-        subscription.unsubscribe();
-      };
-    }
-  }, [userId]);
+    checkStatus();
+  }, []);
 
-  const checkAuthStatus = async () => {
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) {
+  const checkStatus = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
       navigate("/groomer-auth");
       return;
     }
-    
-    setUserId(data.user.id);
-    checkStatus(data.user.id);
-  };
-
-  const handleProfileChange = (payload: any) => {
-    const newStatus = payload.new.application_status;
-    if (newStatus === "approved") {
-      navigate("/groomer-dashboard");
-    } else if (newStatus === "rejected") {
-      navigate("/groomer-auth");
-    }
-  };
-
-  const checkStatus = async (userId: string) => {
-    if (!userId) return;
 
     const { data: profile } = await supabase
       .from("groomer_profiles")
       .select("application_status")
-      .eq("user_id", userId)
-      .maybeSingle();
+      .eq("user_id", user.id)
+      .single();
 
     if (profile?.application_status === "approved") {
       navigate("/groomer-dashboard");
-    } else if (profile?.application_status === "rejected") {
-      navigate("/groomer-auth");
     }
   };
 
@@ -76,53 +37,21 @@ export default function GroomerPending() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Card className="max-w-md w-full">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-2">
-            <div className="bg-amber-100 p-4 rounded-full">
-              <Clock className="h-10 w-10 text-amber-500" />
-            </div>
-          </div>
-          <CardTitle className="text-2xl">Application Under Review</CardTitle>
-          <CardDescription className="text-base mt-2">
-            Your application is currently being reviewed by our team
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
-            <div className="flex items-start">
-              <CheckCircle2 className="h-5 w-5 text-amber-500 mt-0.5 mr-2" />
-              <div>
-                <p className="text-sm text-amber-800">
-                  We'll review your information usually within 24-48 hours and notify you once your application is approved.
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <p className="text-sm text-gray-500 text-center">
-            Have questions? Contact us at support@petals.com
-          </p>
-        </CardContent>
-        <CardFooter className="flex flex-col gap-2">
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => navigate("/")}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Return to Home
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full text-gray-500"
-            onClick={handleSignOut}
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
-          </Button>
-        </CardFooter>
-      </Card>
+      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
+        <div className="mb-6 flex justify-center">
+          <Clock className="h-16 w-16 text-primary" />
+        </div>
+        <h1 className="text-2xl font-bold mb-4">Application Under Review</h1>
+        <p className="text-gray-600 mb-8">
+          Your application is currently being reviewed by our team. We'll notify you once it's approved.
+        </p>
+        <Button
+          variant="outline"
+          onClick={handleSignOut}
+        >
+          Sign Out
+        </Button>
+      </div>
     </div>
   );
 }

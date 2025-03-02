@@ -101,11 +101,9 @@ export default function EventDetail() {
 
   return (
     <div className="min-h-screen bg-[#00D26A] flex flex-col">
-      <div className="absolute top-0 left-0 right-0 z-10">
-        <EventHeader />
-      </div>
+      <EventHeader />
 
-      <main className="flex-grow">
+      <main className="pt-16 flex-grow">
         <EventImage imageUrl={event.image_url} altText={event.title} />
 
         <div className="bg-white rounded-t-3xl -mt-6 relative z-10">

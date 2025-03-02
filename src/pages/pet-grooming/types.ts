@@ -29,6 +29,4 @@ export interface GroomerProfile {
   profile_image_url: string | null;
   home_service_cost: number;
   is_available: boolean;
-  admin_notes?: string | null;
-  email?: string;
 }

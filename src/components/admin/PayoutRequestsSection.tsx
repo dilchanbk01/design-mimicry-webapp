@@ -1,94 +1,102 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { PayoutRequest } from "./payout/types";
-import { StatusBadge } from "./payout/StatusBadge";
-import { RequestDetailsDialog } from "./payout/RequestDetailsDialog";
-import { ActionConfirmationDialog } from "./payout/ActionConfirmationDialog";
-import { PaymentProcessingDialog } from "./payout/PaymentProcessingDialog";
-import { PaymentHistory } from "./payout/PaymentHistory";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { format } from "date-fns";
+import { Check, X, ChevronDown, ChevronUp, ChevronsUpDown, FileCheck, Ban, Mail } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  CircleDollarSign,
-  Filter
-} from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
-interface PayoutRequestsSectionProps {
-  searchQuery: string;
+interface PayoutRequest {
+  id: string;
+  event_id: string;
+  organizer_id: string;
+  status: string;
+  processed_at: string | null;
+  created_at: string;
+  amount: number | null;
+  event_title?: string;
+  organizer_name?: string;
+  organizer_email?: string;
 }
 
-export function PayoutRequestsSection({ searchQuery }: PayoutRequestsSectionProps) {
+export function PayoutRequestsSection() {
   const { toast } = useToast();
   const [payoutRequests, setPayoutRequests] = useState<PayoutRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortColumn, setSortColumn] = useState<string>("created_at");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [selectedRequest, setSelectedRequest] = useState<PayoutRequest | null>(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isConfirmingAction, setIsConfirmingAction] = useState(false);
-  const [actionType, setActionType] = useState<"approve" | "reject">("approve");
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState<number>(0);
+  const [actionDialog, setActionDialog] = useState<{ open: boolean; action: string; request: PayoutRequest | null }>({
+    open: false,
+    action: "",
+    request: null,
+  });
 
   useEffect(() => {
     fetchPayoutRequests();
-  }, [searchQuery, statusFilter]);
+  }, [sortColumn, sortDirection]);
 
   const fetchPayoutRequests = async () => {
     try {
       setLoading(true);
-      
-      let query = supabase
-        .from('payout_requests')
+
+      // Fetch payout requests with event details
+      const { data, error } = await supabase
+        .from("payout_requests")
         .select(`
           *,
-          events:event_id (
+          events!inner (
+            id,
             title,
             organizer_name,
             organizer_email
           )
         `)
-        .order('created_at', { ascending: false });
-      
-      if (statusFilter) {
-        query = query.eq('status', statusFilter);
-      }
-      
-      const { data, error } = await query;
-      
+        .order(sortColumn, { ascending: sortDirection === "asc" });
+
       if (error) throw error;
-      
-      // Format the data and filter based on search query
-      const formattedData = data
-        ?.map(item => ({
-          ...item,
-          event_title: item.events?.title,
-          organizer_name: item.events?.organizer_name,
-          organizer_email: item.events?.organizer_email
-        }))
-        .filter(item => {
-          if (!searchQuery) return true;
-          
-          const searchLower = searchQuery.toLowerCase();
-          return (
-            (item.event_title?.toLowerCase().includes(searchLower) || false) ||
-            (item.organizer_name?.toLowerCase().includes(searchLower) || false) ||
-            (item.organizer_email?.toLowerCase().includes(searchLower) || false) ||
-            (item.account_name.toLowerCase().includes(searchLower)) ||
-            (item.account_number.includes(searchQuery)) ||
-            (item.ifsc_code.toLowerCase().includes(searchLower))
-          );
-        });
-      
-      setPayoutRequests(formattedData || []);
+
+      // Transform data to include event_title and other fields
+      const transformedData = data.map((item) => ({
+        ...item,
+        event_title: item.events?.title || "Unknown Event",
+        organizer_name: item.events?.organizer_name || "Unknown Organizer",
+        organizer_email: item.events?.organizer_email || "",
+      }));
+
+      setPayoutRequests(transformedData);
     } catch (error) {
-      console.error('Error fetching payout requests:', error);
+      console.error("Error fetching payout requests:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch payout requests",
+        description: "Failed to load payout requests",
         variant: "destructive",
       });
     } finally {
@@ -96,283 +104,410 @@ export function PayoutRequestsSection({ searchQuery }: PayoutRequestsSectionProp
     }
   };
 
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const getSortIcon = (column: string) => {
+    if (sortColumn !== column) return <ChevronsUpDown className="h-4 w-4" />;
+    return sortDirection === "asc" ? (
+      <ChevronUp className="h-4 w-4" />
+    ) : (
+      <ChevronDown className="h-4 w-4" />
+    );
+  };
+
   const handleViewDetails = (request: PayoutRequest) => {
     setSelectedRequest(request);
-    setIsDetailsOpen(true);
+    setShowDetails(true);
   };
 
-  const handleApprove = (request: PayoutRequest) => {
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "waiting_for_review":
+        return <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">Awaiting Review</Badge>;
+      case "processing":
+        return <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">Processing</Badge>;
+      case "payment_sent":
+        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">Payment Sent</Badge>;
+      case "rejected":
+        return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">Rejected</Badge>;
+      default:
+        return <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">Pending</Badge>;
+    }
+  };
+
+  const handleProcessRequest = (request: PayoutRequest) => {
     setSelectedRequest(request);
-    setActionType("approve");
-    setIsConfirmingAction(true);
+    
+    // For analyzing event revenue
+    fetchEventAnalytics(request.event_id);
+    
+    setShowReviewForm(true);
   };
 
-  const handleReject = (request: PayoutRequest) => {
-    setSelectedRequest(request);
-    setActionType("reject");
-    setIsConfirmingAction(true);
+  const fetchEventAnalytics = async (eventId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('event_analytics')
+        .select('*')
+        .eq('event_id', eventId)
+        .single();
+        
+      if (error) throw error;
+      
+      if (data) {
+        setPaymentAmount(data.total_amount || 0);
+      }
+    } catch (error) {
+      console.error("Error fetching event analytics:", error);
+    }
   };
 
-  const confirmAction = async () => {
+  const handleRejectRequest = (request: PayoutRequest) => {
+    setActionDialog({
+      open: true,
+      action: "reject",
+      request,
+    });
+  };
+
+  const handleSendPayment = async () => {
     if (!selectedRequest) return;
     
     try {
-      if (actionType === "approve") {
-        // First change status to processing
-        const { error } = await supabase
-          .from('payout_requests')
-          .update({ status: 'processing' })
-          .eq('id', selectedRequest.id);
-        
-        if (error) throw error;
-        
-        setIsConfirmingAction(false);
-        setIsProcessingPayment(true);
-      } else {
-        // Reject the request
-        const { error } = await supabase
-          .from('payout_requests')
-          .update({ 
-            status: 'rejected',
-            processed_at: new Date().toISOString()
-          })
-          .eq('id', selectedRequest.id);
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Request Rejected",
-          description: "The payout request has been rejected",
-        });
-        
-        setIsConfirmingAction(false);
-        fetchPayoutRequests();
-      }
+      const now = new Date().toISOString();
+      
+      // Update the payout request status
+      const { error } = await supabase
+        .from("payout_requests")
+        .update({
+          status: "payment_sent",
+          processed_at: now,
+          amount: paymentAmount
+        })
+        .eq("id", selectedRequest.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Payment has been marked as sent",
+      });
+
+      // Refresh list
+      fetchPayoutRequests();
+      setShowReviewForm(false);
     } catch (error) {
-      console.error('Error updating payout request:', error);
+      console.error("Error updating payout request:", error);
       toast({
         title: "Error",
         description: "Failed to update payout request",
         variant: "destructive",
       });
-      setIsConfirmingAction(false);
     }
   };
 
-  const completePayment = async (amount: number) => {
-    if (!selectedRequest) return;
-    
+  const confirmAction = async () => {
+    if (!actionDialog.request) return;
+
     try {
+      const now = new Date().toISOString();
+      let newStatus = "";
+      let actionMessage = "";
+
+      switch (actionDialog.action) {
+        case "reject":
+          newStatus = "rejected";
+          actionMessage = "Payout request has been rejected";
+          break;
+      }
+
       const { error } = await supabase
-        .from('payout_requests')
-        .update({ 
-          status: 'payment_sent',
-          processed_at: new Date().toISOString(),
-          amount: amount
+        .from("payout_requests")
+        .update({
+          status: newStatus,
+          processed_at: now,
         })
-        .eq('id', selectedRequest.id);
-      
+        .eq("id", actionDialog.request.id);
+
       if (error) throw error;
-      
+
       toast({
-        title: "Payment Completed",
-        description: "The payment has been marked as sent",
+        title: "Success",
+        description: actionMessage,
       });
-      
-      setIsProcessingPayment(false);
+
+      // Refresh list
       fetchPayoutRequests();
     } catch (error) {
-      console.error('Error completing payment:', error);
+      console.error("Error updating payout request:", error);
       toast({
         title: "Error",
-        description: "Failed to complete payment",
+        description: "Failed to update payout request",
         variant: "destructive",
       });
-      setIsProcessingPayment(false);
+    } finally {
+      setActionDialog({ open: false, action: "", request: null });
     }
-  };
-
-  const getFilterButtonClass = (status: string | null) => {
-    return `px-3 py-1 text-xs rounded-full ${
-      statusFilter === status
-        ? 'bg-blue-100 text-blue-800'
-        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-    }`;
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center p-4">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-700"></div>
+      <div className="space-y-3">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="w-full h-10 animate-pulse bg-gray-200 rounded"></div>
+        ))}
       </div>
     );
   }
 
+  const getActionButtons = (request: PayoutRequest) => {
+    switch (request.status) {
+      case "waiting_for_review":
+      case "processing":
+        return (
+          <div className="flex space-x-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleProcessRequest(request);
+              }}
+            >
+              Process Payment
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRejectRequest(request);
+              }}
+            >
+              <X className="h-4 w-4 mr-1" /> Reject
+            </Button>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-2 items-center mb-4">
-        <div className="flex items-center mr-2">
-          <Filter className="h-4 w-4 mr-1 text-gray-500" />
-          <span className="text-sm text-gray-500">Filter:</span>
-        </div>
-        <button
-          className={getFilterButtonClass(null)}
-          onClick={() => setStatusFilter(null)}
-        >
-          All
-        </button>
-        <button
-          className={getFilterButtonClass('waiting_for_review')}
-          onClick={() => setStatusFilter('waiting_for_review')}
-        >
-          <Clock className="h-3 w-3 inline mr-1" />
-          Awaiting Review
-        </button>
-        <button
-          className={getFilterButtonClass('processing')}
-          onClick={() => setStatusFilter('processing')}
-        >
-          <CircleDollarSign className="h-3 w-3 inline mr-1" />
-          Processing
-        </button>
-        <button
-          className={getFilterButtonClass('payment_sent')}
-          onClick={() => setStatusFilter('payment_sent')}
-        >
-          <CheckCircle className="h-3 w-3 inline mr-1" />
-          Completed
-        </button>
-        <button
-          className={getFilterButtonClass('rejected')}
-          onClick={() => setStatusFilter('rejected')}
-        >
-          <XCircle className="h-3 w-3 inline mr-1" />
-          Rejected
-        </button>
-      </div>
-      
-      <PaymentHistory />
-      
-      {payoutRequests.length > 0 ? (
-        <div className="border rounded-md overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Event</TableHead>
-                <TableHead>Organizer</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Bank Details</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {payoutRequests.map((request) => (
-                <TableRow key={request.id}>
-                  <TableCell className="font-medium">{request.event_title || "Unknown Event"}</TableCell>
-                  <TableCell>
-                    {request.organizer_name || "Unknown"}
-                    {request.organizer_email && (
-                      <div className="text-xs text-gray-500">{request.organizer_email}</div>
-                    )}
-                  </TableCell>
-                  <TableCell><StatusBadge status={request.status} /></TableCell>
-                  <TableCell className="text-sm">
-                    <div className="font-medium">{request.account_name}</div>
-                    <div className="text-xs text-gray-500">
-                      {request.account_number} • {request.ifsc_code}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleViewDetails(request)}
-                      >
-                        Details
-                      </Button>
-                      {request.status === 'waiting_for_review' && (
-                        <>
-                          <Button 
-                            variant="default" 
-                            size="sm" 
-                            onClick={() => handleApprove(request)}
-                          >
-                            Approve
-                          </Button>
-                          <Button 
-                            variant="destructive" 
-                            size="sm" 
-                            onClick={() => handleReject(request)}
-                          >
-                            Reject
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+    <div>
+      <h3 className="text-lg font-medium mb-4">Payout Requests</h3>
+
+      {payoutRequests.length === 0 ? (
+        <div className="text-center py-8 border rounded-md bg-gray-50">
+          <p className="text-gray-500">No payout requests found</p>
         </div>
       ) : (
-        <div className="text-center p-8 border rounded-md">
-          <p className="text-gray-500">No payout requests found{statusFilter ? ` with status: ${statusFilter}` : ''}.</p>
-        </div>
-      )}
-      
-      {selectedRequest && (
         <>
-          <RequestDetailsDialog
-            open={isDetailsOpen}
-            onOpenChange={setIsDetailsOpen}
-            request={selectedRequest}
-            actionButtons={
-              selectedRequest.status === 'waiting_for_review' ? (
-                <div className="flex gap-2">
-                  <Button 
-                    variant="default" 
-                    size="sm" 
-                    onClick={() => {
-                      setIsDetailsOpen(false);
-                      handleApprove(selectedRequest);
-                    }}
+          <div className="rounded-md border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead
+                    className="w-[200px] cursor-pointer"
+                    onClick={() => handleSort("events.title")}
                   >
-                    Approve
-                  </Button>
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    onClick={() => {
-                      setIsDetailsOpen(false);
-                      handleReject(selectedRequest);
-                    }}
+                    <div className="flex items-center">
+                      Event {getSortIcon("events.title")}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => handleSort("created_at")}
                   >
-                    Reject
-                  </Button>
+                    <div className="flex items-center">
+                      Requested {getSortIcon("created_at")}
+                    </div>
+                  </TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {payoutRequests.map((request) => (
+                  <TableRow key={request.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => handleViewDetails(request)}>
+                    <TableCell className="font-medium">{request.event_title}</TableCell>
+                    <TableCell>{format(new Date(request.created_at), "MMM d, yyyy")}</TableCell>
+                    <TableCell>{getStatusBadge(request.status)}</TableCell>
+                    <TableCell className="text-right">
+                      <div onClick={(e) => e.stopPropagation()}>
+                        {getActionButtons(request)}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Details Dialog */}
+          <Dialog open={showDetails} onOpenChange={setShowDetails}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Payout Request Details</DialogTitle>
+                <DialogDescription>
+                  Review the details of this payout request
+                </DialogDescription>
+              </DialogHeader>
+
+              {selectedRequest && (
+                <div className="space-y-4 py-2">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-gray-500">Event</p>
+                      <p>{selectedRequest.event_title}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-gray-500">Status</p>
+                      <p>{getStatusBadge(selectedRequest.status)}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-gray-500">Organizer</p>
+                    <p>{selectedRequest.organizer_name}</p>
+                    <p className="text-sm text-gray-500">{selectedRequest.organizer_email}</p>
+                  </div>
+
+                  {selectedRequest.amount && (
+                    <div className="pt-2 border-t">
+                      <p className="text-sm font-medium text-gray-500 mb-1">Payment</p>
+                      <p className="font-medium text-green-600">₹{selectedRequest.amount}</p>
+                    </div>
+                  )}
+
+                  <div className="pt-2 border-t">
+                    <p className="text-sm font-medium text-gray-500 mb-2">Timeline</p>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Requested</span>
+                        <span>{format(new Date(selectedRequest.created_at), "MMM d, yyyy")}</span>
+                      </div>
+                      {selectedRequest.processed_at && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">Processed</span>
+                          <span>{format(new Date(selectedRequest.processed_at), "MMM d, yyyy")}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              ) : null
-            }
-          />
-          <ActionConfirmationDialog
-            open={isConfirmingAction}
-            onOpenChange={setIsConfirmingAction}
-            onConfirm={confirmAction}
-            actionType={actionType}
-            request={selectedRequest}
-          />
-          <PaymentProcessingDialog
-            open={isProcessingPayment}
-            onOpenChange={setIsProcessingPayment}
-            paymentAmount={selectedRequest.amount || 0}
-            onPaymentAmountChange={(amount) => {
-              // Since we can't directly modify selectedRequest, we'll handle this in the onSendPayment
-              // This is just a placeholder to satisfy the prop requirement
-            }}
-            onSendPayment={() => completePayment(selectedRequest.amount || 0)}
-            request={selectedRequest}
-          />
+              )}
+
+              <DialogFooter className="sm:justify-start">
+                {selectedRequest && getActionButtons(selectedRequest)}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Payment Processing Dialog */}
+          <Dialog open={showReviewForm} onOpenChange={setShowReviewForm}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Process Payment</DialogTitle>
+                <DialogDescription>
+                  Enter payment details for this payout request
+                </DialogDescription>
+              </DialogHeader>
+
+              {selectedRequest && (
+                <div className="space-y-4">
+                  <Card className="bg-gray-50">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">Event Details</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="font-medium">{selectedRequest.event_title}</p>
+                      <p className="text-sm text-gray-600">Organizer: {selectedRequest.organizer_name}</p>
+                      <p className="text-sm text-gray-600">{selectedRequest.organizer_email}</p>
+                    </CardContent>
+                  </Card>
+
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium">
+                      Payment Amount (₹)
+                      <Input 
+                        type="number" 
+                        value={paymentAmount}
+                        onChange={(e) => setPaymentAmount(Number(e.target.value))}
+                        className="mt-1"
+                      />
+                    </label>
+                    
+                    <p className="text-xs text-gray-500 italic">
+                      Note: Contact the organizer directly to obtain their bank details for processing this payment.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowReviewForm(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSendPayment}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Check className="h-4 w-4 mr-1" /> Mark as Paid
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Action Confirmation Dialog */}
+          <Dialog open={actionDialog.open} onOpenChange={(open) => setActionDialog({ ...actionDialog, open })}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>
+                  {actionDialog.action === "reject" && "Reject Payout Request"}
+                </DialogTitle>
+                <DialogDescription>
+                  {actionDialog.action === "reject" && "Reject the payout request. The organizer will be able to submit a new request."}
+                </DialogDescription>
+              </DialogHeader>
+
+              {actionDialog.request && (
+                <div className="py-3">
+                  <div className="bg-gray-50 p-3 rounded-md">
+                    <p className="font-medium">{actionDialog.request.event_title}</p>
+                    <p className="text-sm text-gray-600">Organizer: {actionDialog.request.organizer_name}</p>
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setActionDialog({ open: false, action: "", request: null })}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={confirmAction}
+                >
+                  <Ban className="h-4 w-4 mr-1" /> Reject
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </div>

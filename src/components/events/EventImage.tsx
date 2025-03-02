@@ -8,13 +8,13 @@ interface EventImageProps {
 
 export function EventImage({ imageUrl, altText }: EventImageProps) {
   return (
-    <div className="relative w-full h-72">
+    <div className="relative w-full h-64">
       <img
         src={imageUrl ? getOptimizedImageUrl(imageUrl, 1200) : '/placeholder.svg'}
         alt={altText}
         className="w-full h-full object-cover"
         width="1200"
-        height="288"
+        height="256"
         onError={(e) => {
           const target = e.target as HTMLImageElement;
           target.src = '/placeholder.svg';
