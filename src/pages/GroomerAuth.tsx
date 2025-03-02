@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Scissors } from "lucide-react";
 
 export default function GroomerAuth() {
   const navigate = useNavigate();
@@ -14,6 +16,7 @@ export default function GroomerAuth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
     checkExistingSession();
@@ -22,8 +25,12 @@ export default function GroomerAuth() {
   // Check if user is already authenticated and redirect appropriately
   const checkExistingSession = async () => {
     try {
+      setCheckingAuth(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return; // No user session exists, stay on auth page
+      if (!user) {
+        setCheckingAuth(false);
+        return; // No user session exists, stay on auth page
+      }
 
       // User is already authenticated, check if they have a groomer profile
       const { data: profile, error } = await supabase
@@ -34,6 +41,7 @@ export default function GroomerAuth() {
 
       if (error && error.code !== 'PGRST116') {
         console.error("Error checking groomer profile:", error);
+        setCheckingAuth(false);
         return;
       }
 
@@ -46,6 +54,7 @@ export default function GroomerAuth() {
       }
     } catch (error) {
       console.error("Error checking session:", error);
+      setCheckingAuth(false);
     }
   };
 
@@ -135,61 +144,89 @@ export default function GroomerAuth() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-primary flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
-        <h1 className="text-3xl font-bold text-center mb-6">
-          {isSignUp ? "Create Groomer Account" : "Sign In as Groomer"}
-        </h1>
-        <form onSubmit={handleAuth} className="space-y-4">
-          <Input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <Input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-          />
-          {isSignUp && (
-            <Input
-              type="password"
-              placeholder="Confirm Password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              minLength={6}
-            />
-          )}
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={loading}
-          >
-            {loading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
-          </Button>
-        </form>
-        <p className="mt-4 text-center text-sm text-gray-600">
-          {isSignUp ? "Already have an account? " : "Don't have an account? "}
-          <button
-            type="button"
-            onClick={() => {
-              setIsSignUp(!isSignUp);
-              setPassword("");
-              setConfirmPassword("");
-            }}
-            className="text-primary hover:underline"
-          >
-            {isSignUp ? "Sign In" : "Sign Up"}
-          </button>
-        </p>
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-primary/10 flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-primary rounded-full border-t-transparent"></div>
       </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-primary/10 flex items-center justify-center px-4">
+      <Card className="max-w-md w-full">
+        <CardHeader className="space-y-2 text-center">
+          <div className="flex justify-center">
+            <div className="bg-primary/10 p-3 rounded-full">
+              <Scissors className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <CardTitle className="text-2xl">
+            {isSignUp ? "Create Groomer Account" : "Sign In as Groomer"}
+          </CardTitle>
+          <CardDescription>
+            {isSignUp 
+              ? "Sign up to offer your grooming services"
+              : "Welcome back! Sign in to manage your grooming business"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleAuth} className="space-y-4">
+            <div className="space-y-2">
+              <Input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+            </div>
+            {isSignUp && (
+              <div className="space-y-2">
+                <Input
+                  type="password"
+                  placeholder="Confirm Password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+              </div>
+            )}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading}
+            >
+              {loading ? "Processing..." : isSignUp ? "Sign Up" : "Sign In"}
+            </Button>
+          </form>
+          <div className="mt-6 text-center text-sm">
+            {isSignUp ? "Already have an account? " : "Don't have an account? "}
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setPassword("");
+                setConfirmPassword("");
+              }}
+              className="text-primary hover:underline font-medium"
+            >
+              {isSignUp ? "Sign In" : "Sign Up"}
+            </button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

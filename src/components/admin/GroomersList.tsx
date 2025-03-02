@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { Scissors } from "lucide-react";
+import { Scissors, RefreshCcw } from "lucide-react";
 import { GroomerProfile } from "@/pages/pet-grooming/types";
 import { GroomerCard } from "./groomer/GroomerCard";
 import { BankDetailsDialog } from "./groomer/BankDetailsDialog";
@@ -40,6 +40,23 @@ export function GroomersList({ searchQuery }: GroomersListProps) {
 
   useEffect(() => {
     fetchGroomers();
+    
+    // Set up real-time subscription to groomer_profiles changes
+    const subscription = supabase
+      .channel('admin-groomer-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'groomer_profiles'
+      }, () => {
+        console.log("Groomer profiles changed, refreshing data");
+        fetchGroomers();
+      })
+      .subscribe();
+    
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -254,20 +271,30 @@ export function GroomersList({ searchQuery }: GroomersListProps) {
     setShowStatusDialog(true);
   };
 
+  const pendingCount = groomers.filter(g => g.application_status === 'pending').length;
+
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-xl flex items-center">
-          <Scissors className="h-5 w-5 mr-2 text-purple-600" />
-          Groomers Management
-        </CardTitle>
+        <div>
+          <CardTitle className="text-xl flex items-center">
+            <Scissors className="h-5 w-5 mr-2 text-purple-600" />
+            Groomers Management
+          </CardTitle>
+          {pendingCount > 0 && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 mt-1">
+              {pendingCount} pending application{pendingCount !== 1 && 's'}
+            </span>
+          )}
+        </div>
         <Button 
           variant="outline" 
           size="sm" 
           onClick={handleRefresh}
-          className="ml-auto"
+          className="flex items-center gap-1"
         >
-          Refresh List
+          <RefreshCcw className="h-3.5 w-3.5" />
+          Refresh
         </Button>
       </CardHeader>
       <CardContent>
