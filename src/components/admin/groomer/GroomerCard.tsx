@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Scissors, MapPin, Phone, Mail, Clock, DollarSign } from "lucide-react";
+import { Scissors, MapPin, Phone, Mail, Clock, DollarSign, Check, X } from "lucide-react";
 import { format } from "date-fns";
 import { GroomerProfile } from "@/pages/pet-grooming/types";
 
@@ -118,16 +118,16 @@ export function GroomerCard({
                 size="sm" 
                 variant="outline"
                 onClick={() => onStatusChange(groomer, 'rejected')}
-                className="text-red-600 hover:bg-red-50"
+                className="text-red-600 hover:bg-red-50 flex items-center"
               >
-                Reject
+                <X className="h-4 w-4 mr-1" /> Reject
               </Button>
               <Button 
                 size="sm"
                 onClick={() => onStatusChange(groomer, 'approved')}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-green-600 hover:bg-green-700 flex items-center"
               >
-                Approve
+                <Check className="h-4 w-4 mr-1" /> Approve
               </Button>
             </>
           )}
