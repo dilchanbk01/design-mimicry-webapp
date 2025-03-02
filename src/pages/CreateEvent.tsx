@@ -92,40 +92,70 @@ export default function CreateEvent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Basic validation
+    if (!formData.title || !formData.date || !formData.time || !formData.location) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setLoading(true);
+    console.log("Submitting event...", formData);
 
     try {
+      // Get authenticated user
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not authenticated");
+      
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+      
+      console.log("Authenticated user:", user.id);
 
+      // Handle image upload if present
       let imageUrl = "";
       if (formData.image) {
+        console.log("Uploading image...");
         const fileExt = formData.image.name.split(".").pop();
         const fileName = `${Math.random()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage
+        
+        const { error: uploadError, data } = await supabase.storage
           .from("events")
           .upload(fileName, formData.image);
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error("Image upload error:", uploadError);
+          throw uploadError;
+        }
+        
+        console.log("Image uploaded successfully:", data);
         
         const { data: { publicUrl } } = supabase.storage
           .from("events")
           .getPublicUrl(fileName);
           
         imageUrl = publicUrl;
+        console.log("Image public URL:", imageUrl);
       }
 
+      // Format date and time for database
       const eventDateTime = new Date(`${formData.date}T${formData.time}`);
+      console.log("Event date/time:", eventDateTime.toISOString());
 
-      const { error } = await supabase.from("events").insert({
+      // Insert event into database
+      const { error, data: insertedEvent } = await supabase.from("events").insert({
         title: formData.title,
         description: formData.description,
         date: eventDateTime.toISOString(),
         location: formData.location,
-        price: formData.price,
+        price: formData.isFreeEvent ? 0 : formData.price,
         capacity: formData.capacity,
         image_url: imageUrl || 'https://placehold.co/600x400?text=No+Image',
-        duration: 120,
+        duration: 120, // Default duration in minutes
         event_type: formData.type,
         organizer_name: formData.organizerName,
         organizer_email: formData.organizerEmail,
@@ -134,9 +164,14 @@ export default function CreateEvent() {
         pet_types: formData.selectedPets.join(","),
         organizer_id: user.id,
         status: 'pending'
-      });
+      }).select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Event insertion error:", error);
+        throw error;
+      }
+      
+      console.log("Event created successfully:", insertedEvent);
 
       toast({
         title: "Success!",
@@ -209,17 +244,19 @@ export default function CreateEvent() {
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={4}
+              required
             />
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label>Maximum Attendees</label>
+                <label className="text-sm font-medium">Maximum Attendees</label>
                 <input
                   type="number"
                   min="1"
                   value={formData.capacity}
-                  onChange={(e) => setFormData(prev => ({ ...prev, capacity: parseInt(e.target.value) }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, capacity: parseInt(e.target.value) || 0 }))}
                   className="mt-1 w-full rounded-md border border-input px-3 py-2"
+                  required
                 />
               </div>
               <div>
@@ -240,15 +277,16 @@ export default function CreateEvent() {
                   
                   {!formData.isFreeEvent && (
                     <div>
-                      <label>Ticket Price (₹)</label>
+                      <label className="text-sm font-medium">Ticket Price (₹)</label>
                       <input
                         type="number"
                         min="0"
                         step="1"
                         value={formData.price}
-                        onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) }))}
+                        onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
                         className="mt-1 w-full rounded-md border border-input px-3 py-2"
                         disabled={formData.isFreeEvent}
+                        required={!formData.isFreeEvent}
                       />
                     </div>
                   )}
