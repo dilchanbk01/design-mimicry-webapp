@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,29 +8,40 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 
 export default function GroomerPending() {
   const navigate = useNavigate();
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    checkStatus();
+    // Check auth status when component mounts
+    checkAuthStatus();
     
-    // Set up real-time subscription to profile changes
-    const subscription = supabase
-      .channel('groomer-status-changes')
-      .on('postgres_changes', { 
-        event: 'UPDATE', 
-        schema: 'public', 
-        table: 'groomer_profiles',
-        filter: `user_id=eq.${getUserId()}`
-      }, handleProfileChange)
-      .subscribe();
-    
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+    // Only set up subscription if we have a userId
+    if (userId) {
+      // Set up real-time subscription to profile changes
+      const subscription = supabase
+        .channel('groomer-status-changes')
+        .on('postgres_changes', { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'groomer_profiles',
+          filter: `user_id=eq.${userId}`
+        }, handleProfileChange)
+        .subscribe();
+      
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
+  }, [userId]);
 
-  const getUserId = () => {
-    const user = supabase.auth.getUser();
-    return user?.data?.user?.id;
+  const checkAuthStatus = async () => {
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) {
+      navigate("/groomer-auth");
+      return;
+    }
+    
+    setUserId(data.user.id);
+    checkStatus(data.user.id);
   };
 
   const handleProfileChange = (payload: any) => {
@@ -42,18 +53,14 @@ export default function GroomerPending() {
     }
   };
 
-  const checkStatus = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      navigate("/groomer-auth");
-      return;
-    }
+  const checkStatus = async (userId: string) => {
+    if (!userId) return;
 
     const { data: profile } = await supabase
       .from("groomer_profiles")
       .select("application_status")
-      .eq("user_id", user.id)
-      .single();
+      .eq("user_id", userId)
+      .maybeSingle();
 
     if (profile?.application_status === "approved") {
       navigate("/groomer-dashboard");
