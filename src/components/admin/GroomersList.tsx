@@ -1,42 +1,18 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Scissors, MapPin, Phone, Mail, Clock, DollarSign, User, Calendar } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { format } from "date-fns";
-
-interface Groomer {
-  id: string;
-  user_id: string;
-  salon_name: string;
-  address: string;
-  contact_number: string;
-  experience_years: number;
-  application_status: 'pending' | 'approved' | 'rejected';
-  created_at: string;
-  specializations: string[];
-  profile_image_url: string | null;
-  bio: string | null;
-  admin_notes: string | null;
-  email?: string;
-  provides_home_service: boolean;
-  provides_salon_service: boolean;
-  home_service_cost: number;
-  price: number;
-}
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { Scissors } from "lucide-react";
+import { GroomerProfile } from "@/pages/pet-grooming/types";
+import { GroomerCard } from "./groomer/GroomerCard";
+import { BankDetailsDialog } from "./groomer/BankDetailsDialog";
+import { PayoutHistoryDialog } from "./groomer/PayoutHistoryDialog";
+import { StatusUpdateDialog } from "./groomer/StatusUpdateDialog";
+import { GroomersFilter } from "./groomer/GroomersFilter";
+import { EmptyGroomersList } from "./groomer/EmptyGroomersList";
 
 interface BankDetails {
   account_name: string;
@@ -50,10 +26,10 @@ interface GroomersListProps {
 
 export function GroomersList({ searchQuery }: GroomersListProps) {
   const { toast } = useToast();
-  const [groomers, setGroomers] = useState<Groomer[]>([]);
-  const [filteredGroomers, setFilteredGroomers] = useState<Groomer[]>([]);
+  const [groomers, setGroomers] = useState<GroomerProfile[]>([]);
+  const [filteredGroomers, setFilteredGroomers] = useState<GroomerProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedGroomer, setSelectedGroomer] = useState<Groomer | null>(null);
+  const [selectedGroomer, setSelectedGroomer] = useState<GroomerProfile | null>(null);
   const [bankDetails, setBankDetails] = useState<BankDetails | null>(null);
   const [showBankDetailsDialog, setShowBankDetailsDialog] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
@@ -170,13 +146,13 @@ export function GroomersList({ searchQuery }: GroomersListProps) {
     });
   };
 
-  const handleViewBankDetails = async (groomer: Groomer) => {
+  const handleViewBankDetails = async (groomer: GroomerProfile) => {
     setSelectedGroomer(groomer);
     await fetchBankDetails(groomer.id);
     setShowBankDetailsDialog(true);
   };
 
-  const handleViewPayoutHistory = async (groomer: Groomer) => {
+  const handleViewPayoutHistory = async (groomer: GroomerProfile) => {
     setSelectedGroomer(groomer);
     await fetchPayoutHistory(groomer.id);
     setShowPayoutsDialog(true);
@@ -272,30 +248,10 @@ export function GroomersList({ searchQuery }: GroomersListProps) {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Pending</Badge>;
-      case 'approved':
-        return <Badge variant="outline" className="bg-green-100 text-green-800">Approved</Badge>;
-      case 'rejected':
-        return <Badge variant="outline" className="bg-red-100 text-red-800">Rejected</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
-  };
-
-  const getPayoutStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Pending</Badge>;
-      case 'approved':
-        return <Badge variant="outline" className="bg-green-100 text-green-800">Approved</Badge>;
-      case 'rejected':
-        return <Badge variant="outline" className="bg-red-100 text-red-800">Rejected</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
+  const handleStatusChange = (groomer: GroomerProfile, status: 'approved' | 'rejected') => {
+    setSelectedGroomer(groomer);
+    setNewStatus(status);
+    setShowStatusDialog(true);
   };
 
   return (
@@ -316,12 +272,10 @@ export function GroomersList({ searchQuery }: GroomersListProps) {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="all" onValueChange={setActiveFilter}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="all">All Groomers</TabsTrigger>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="approved">Approved</TabsTrigger>
-            <TabsTrigger value="rejected">Rejected</TabsTrigger>
-          </TabsList>
+          <GroomersFilter 
+            activeFilter={activeFilter} 
+            onFilterChange={setActiveFilter} 
+          />
           
           {loading ? (
             <div className="space-y-3">
@@ -330,238 +284,47 @@ export function GroomersList({ searchQuery }: GroomersListProps) {
               ))}
             </div>
           ) : filteredGroomers.length === 0 ? (
-            <div className="text-center py-8">
-              <Scissors className="h-10 w-10 mx-auto text-gray-400 mb-2" />
-              <p className="text-gray-500">
-                {searchQuery 
-                  ? "No groomers matching your search" 
-                  : `No ${activeFilter === 'all' ? '' : activeFilter} groomers found`}
-              </p>
-            </div>
+            <EmptyGroomersList 
+              searchQuery={searchQuery} 
+              activeFilter={activeFilter} 
+            />
           ) : (
             <div className="space-y-4">
               {filteredGroomers.map(groomer => (
-                <div 
+                <GroomerCard
                   key={groomer.id}
-                  className="border p-4 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex flex-col lg:flex-row justify-between">
-                    <div className="flex-grow">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-lg">{groomer.salon_name}</h3>
-                        {getStatusBadge(groomer.application_status)}
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 mt-2">
-                        <p className="text-sm flex items-center">
-                          <MapPin className="h-4 w-4 mr-1 text-gray-400" /> 
-                          {groomer.address}
-                        </p>
-                        <p className="text-sm flex items-center">
-                          <Phone className="h-4 w-4 mr-1 text-gray-400" /> 
-                          {groomer.contact_number}
-                        </p>
-                        <p className="text-sm flex items-center">
-                          <Mail className="h-4 w-4 mr-1 text-gray-400" /> 
-                          {groomer.email}
-                        </p>
-                        <p className="text-sm flex items-center">
-                          <Clock className="h-4 w-4 mr-1 text-gray-400" /> 
-                          Experience: {groomer.experience_years} years
-                        </p>
-                        <p className="text-sm flex items-center">
-                          <DollarSign className="h-4 w-4 mr-1 text-gray-400" /> 
-                          Pricing: ₹{groomer.price || 0} baseline, 
-                          {groomer.provides_home_service ? ` ₹${groomer.home_service_cost || 0} home service` : ' No home service'}
-                        </p>
-                        <p className="text-sm">
-                          <span className="text-gray-500 mr-1">Specializations:</span> 
-                          {groomer.specializations ? groomer.specializations.join(', ') : 'None'}
-                        </p>
-                      </div>
-
-                      {groomer.bio && (
-                        <p className="text-sm mt-2 text-gray-600 line-clamp-2">
-                          <span className="font-medium">Bio:</span> {groomer.bio}
-                        </p>
-                      )}
-
-                      {groomer.admin_notes && (
-                        <p className="text-sm mt-1 text-red-600 italic">
-                          <span className="font-medium">Admin Notes:</span> {groomer.admin_notes}
-                        </p>
-                      )}
-
-                      <div className="mt-3 text-xs text-gray-500">
-                        Applied on {format(new Date(groomer.created_at), 'PPP')}
-                      </div>
-                    </div>
-                    
-                    <div className="mt-3 lg:mt-0 flex flex-wrap lg:flex-col gap-2 self-end">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => handleViewBankDetails(groomer)}
-                        className="text-blue-600 hover:bg-blue-50"
-                      >
-                        Bank Details
-                      </Button>
-                      
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => handleViewPayoutHistory(groomer)}
-                        className="text-purple-600 hover:bg-purple-50"
-                      >
-                        Payout History
-                      </Button>
-
-                      {groomer.application_status === 'pending' && (
-                        <>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedGroomer(groomer);
-                              setNewStatus('rejected');
-                              setShowStatusDialog(true);
-                            }}
-                            className="text-red-600 hover:bg-red-50"
-                          >
-                            Reject
-                          </Button>
-                          <Button 
-                            size="sm"
-                            onClick={() => {
-                              setSelectedGroomer(groomer);
-                              setNewStatus('approved');
-                              setShowStatusDialog(true);
-                            }}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            Approve
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                  groomer={groomer}
+                  onViewBankDetails={handleViewBankDetails}
+                  onViewPayoutHistory={handleViewPayoutHistory}
+                  onStatusChange={handleStatusChange}
+                />
               ))}
             </div>
           )}
         </Tabs>
       </CardContent>
 
-      {/* Bank Details Dialog */}
-      <AlertDialog open={showBankDetailsDialog} onOpenChange={setShowBankDetailsDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Bank Details - {selectedGroomer?.salon_name}</AlertDialogTitle>
-          </AlertDialogHeader>
-          {bankDetails ? (
-            <div className="space-y-4">
-              <div className="border p-3 rounded-md bg-gray-50">
-                <p className="mb-2"><span className="font-medium">Account Name:</span> {bankDetails.account_name}</p>
-                <p className="mb-2"><span className="font-medium">Account Number:</span> {bankDetails.account_number}</p>
-                <p><span className="font-medium">IFSC Code:</span> {bankDetails.ifsc_code}</p>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <User className="h-4 w-4" />
-                <p>Account holder: {bankDetails.account_name}</p>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-4">
-              <p className="text-gray-500">No bank details found for this groomer.</p>
-            </div>
-          )}
-          <AlertDialogFooter>
-            <AlertDialogAction>Close</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <BankDetailsDialog
+        open={showBankDetailsDialog}
+        onOpenChange={setShowBankDetailsDialog}
+        selectedGroomer={selectedGroomer}
+        bankDetails={bankDetails}
+      />
 
-      {/* Status Update Dialog */}
-      <AlertDialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {newStatus === 'approved' ? 'Approve' : 'Reject'} Groomer Application
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to {newStatus === 'approved' ? 'approve' : 'reject'} the application from {selectedGroomer?.salon_name}?
-              
-              {newStatus === 'approved' ? (
-                <p className="mt-2">This will allow them to receive bookings on the platform.</p>
-              ) : (
-                <p className="mt-2">They will need to reapply or contact support if rejected.</p>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                handleUpdateStatus();
-              }}
-              className={newStatus === 'approved' ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}
-            >
-              {newStatus === 'approved' ? 'Approve' : 'Reject'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <StatusUpdateDialog
+        open={showStatusDialog}
+        onOpenChange={setShowStatusDialog}
+        selectedGroomer={selectedGroomer}
+        newStatus={newStatus}
+        onConfirm={handleUpdateStatus}
+      />
 
-      {/* Payout History Dialog */}
-      <AlertDialog open={showPayoutsDialog} onOpenChange={setShowPayoutsDialog}>
-        <AlertDialogContent className="max-w-2xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Payout History - {selectedGroomer?.salon_name}</AlertDialogTitle>
-          </AlertDialogHeader>
-          {payoutHistory.length > 0 ? (
-            <div className="max-h-96 overflow-y-auto space-y-3">
-              {payoutHistory.map((payout) => (
-                <div key={payout.id} className="border p-3 rounded-md">
-                  <div className="flex justify-between items-center mb-2">
-                    <div className="font-medium">₹{payout.amount.toFixed(2)}</div>
-                    {getPayoutStatusBadge(payout.status)}
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                    <div className="flex items-center gap-1 text-gray-600">
-                      <Calendar className="h-3.5 w-3.5" />
-                      <span>Requested: {format(new Date(payout.created_at), 'PPP')}</span>
-                    </div>
-                    {payout.processed_at && (
-                      <div className="flex items-center gap-1 text-gray-600">
-                        <Clock className="h-3.5 w-3.5" />
-                        <span>Processed: {format(new Date(payout.processed_at), 'PPP')}</span>
-                      </div>
-                    )}
-                    {payout.week_start && payout.week_end && (
-                      <div className="col-span-2 text-gray-600">
-                        <span>Period: {format(new Date(payout.week_start), 'MMM d')} - {format(new Date(payout.week_end), 'MMM d, yyyy')}</span>
-                      </div>
-                    )}
-                    {payout.notes && (
-                      <div className="col-span-2 italic text-gray-600">
-                        <span>Notes: {payout.notes}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-4">
-              <p className="text-gray-500">No payout history found for this groomer.</p>
-            </div>
-          )}
-          <AlertDialogFooter>
-            <AlertDialogAction>Close</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <PayoutHistoryDialog
+        open={showPayoutsDialog}
+        onOpenChange={setShowPayoutsDialog}
+        selectedGroomer={selectedGroomer}
+        payoutHistory={payoutHistory}
+      />
     </Card>
   );
 }
