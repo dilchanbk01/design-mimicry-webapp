@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -43,12 +43,17 @@ export function GroomersList({ searchQuery }: GroomersListProps) {
     handleStatusChange
   } = useGroomers();
 
+  // Use useCallback to prevent re-creation of the function on each render
+  const memoizedFilterGroomers = useCallback((query: string) => {
+    if (query) {
+      filterGroomers(query);
+    }
+  }, [filterGroomers]);
+
   // Initialize search filtering when searchQuery prop changes
   React.useEffect(() => {
-    if (searchQuery) {
-      filterGroomers(searchQuery);
-    }
-  }, [searchQuery, filterGroomers]);
+    memoizedFilterGroomers(searchQuery);
+  }, [searchQuery, memoizedFilterGroomers]);
 
   const handleRefresh = () => {
     fetchGroomers();

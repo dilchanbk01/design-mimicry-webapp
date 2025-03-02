@@ -34,6 +34,9 @@ export function GroomerCard({
     }
   };
 
+  // Add local state to ensure rendering consistency
+  const [isPending] = useState(groomer.application_status === 'pending');
+
   return (
     <div 
       key={groomer.id}
@@ -112,24 +115,25 @@ export function GroomerCard({
             Payout History
           </Button>
 
-          {groomer.application_status === 'pending' && (
-            <>
+          {/* Use both the local isPending state and the current status to determine if approval buttons should show */}
+          {(isPending || groomer.application_status === 'pending') && (
+            <div className="flex flex-col gap-2 w-full">
               <Button 
                 size="sm" 
                 variant="outline"
                 onClick={() => onStatusChange(groomer, 'rejected')}
-                className="text-red-600 hover:bg-red-50 flex items-center"
+                className="text-red-600 hover:bg-red-50 flex items-center justify-center w-full"
               >
                 <X className="h-4 w-4 mr-1" /> Reject
               </Button>
               <Button 
                 size="sm"
                 onClick={() => onStatusChange(groomer, 'approved')}
-                className="bg-green-600 hover:bg-green-700 flex items-center"
+                className="bg-green-600 hover:bg-green-700 flex items-center justify-center w-full"
               >
                 <Check className="h-4 w-4 mr-1" /> Approve
               </Button>
-            </>
+            </div>
           )}
         </div>
       </div>
