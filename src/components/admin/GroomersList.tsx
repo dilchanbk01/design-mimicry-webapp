@@ -1,5 +1,5 @@
 
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -20,6 +20,7 @@ interface GroomersListProps {
 export function GroomersList({ searchQuery }: GroomersListProps) {
   const { toast } = useToast();
   const {
+    groomers,
     filteredGroomers,
     loading,
     selectedGroomer,
@@ -43,15 +44,25 @@ export function GroomersList({ searchQuery }: GroomersListProps) {
     handleStatusChange
   } = useGroomers();
 
+  // Force a re-fetch to ensure we have the latest data
+  useEffect(() => {
+    fetchGroomers();
+    // Run only on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Use useCallback to prevent re-creation of the function on each render
   const memoizedFilterGroomers = useCallback((query: string) => {
     if (query) {
       filterGroomers(query);
+    } else {
+      // If no query, apply the current active filter
+      applyStatusFilter(activeFilter);
     }
-  }, [filterGroomers]);
+  }, [filterGroomers, applyStatusFilter, activeFilter]);
 
   // Initialize search filtering when searchQuery prop changes
-  React.useEffect(() => {
+  useEffect(() => {
     memoizedFilterGroomers(searchQuery);
   }, [searchQuery, memoizedFilterGroomers]);
 

@@ -34,8 +34,9 @@ export function GroomerCard({
     }
   };
 
-  // Add local state to ensure rendering consistency
-  const [isPending] = useState(groomer.application_status === 'pending');
+  // Force re-evaluate the status from the prop each render to prevent stale UI
+  const applicationStatus = groomer.application_status;
+  const isPending = applicationStatus === 'pending';
 
   return (
     <div 
@@ -115,8 +116,8 @@ export function GroomerCard({
             Payout History
           </Button>
 
-          {/* Use both the local isPending state and the current status to determine if approval buttons should show */}
-          {(isPending || groomer.application_status === 'pending') && (
+          {/* Always check application status directly from the groomer prop */}
+          {isPending && (
             <div className="flex flex-col gap-2 w-full">
               <Button 
                 size="sm" 

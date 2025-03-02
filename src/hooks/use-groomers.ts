@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { GroomerProfile } from "@/pages/pet-grooming/types";
@@ -25,36 +25,7 @@ export function useGroomers(initialFilter = "all") {
   const [activeFilter, setActiveFilter] = useState<string>(initialFilter);
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    fetchGroomers();
-    
-    // Set up real-time subscription to groomer_profiles changes
-    const subscription = supabase
-      .channel('admin-groomer-changes')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'groomer_profiles'
-      }, () => {
-        console.log("Groomer profiles changed, refreshing data");
-        fetchGroomers();
-      })
-      .subscribe();
-    
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (searchQuery) {
-      filterGroomers(searchQuery);
-    } else {
-      applyStatusFilter(activeFilter);
-    }
-  }, [searchQuery, groomers, activeFilter]);
-
-  const fetchGroomers = async () => {
+  const fetchGroomers = useCallback(async () => {
     setLoading(true);
     try {
       console.log("Fetching groomers...");
@@ -109,9 +80,9 @@ export function useGroomers(initialFilter = "all") {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeFilter, toast]);
 
-  const filterGroomers = (query: string) => {
+  const filterGroomers = useCallback((query: string) => {
     const filtered = groomers.filter(groomer => 
       groomer.salon_name.toLowerCase().includes(query.toLowerCase()) ||
       groomer.address.toLowerCase().includes(query.toLowerCase()) ||
@@ -120,9 +91,9 @@ export function useGroomers(initialFilter = "all") {
     );
     setFilteredGroomers(filtered);
     setSearchQuery(query);
-  };
+  }, [groomers]);
 
-  const applyStatusFilter = (filter: string) => {
+  const applyStatusFilter = useCallback((filter: string) => {
     let filtered;
     if (filter === "all") {
       filtered = groomers;
@@ -142,7 +113,36 @@ export function useGroomers(initialFilter = "all") {
     
     setFilteredGroomers(filtered);
     setActiveFilter(filter);
-  };
+  }, [groomers, searchQuery]);
+
+  useEffect(() => {
+    fetchGroomers();
+    
+    // Set up real-time subscription to groomer_profiles changes
+    const subscription = supabase
+      .channel('admin-groomer-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'groomer_profiles'
+      }, () => {
+        console.log("Groomer profiles changed, refreshing data");
+        fetchGroomers();
+      })
+      .subscribe();
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [fetchGroomers]);
+
+  useEffect(() => {
+    if (searchQuery) {
+      filterGroomers(searchQuery);
+    } else {
+      applyStatusFilter(activeFilter);
+    }
+  }, [searchQuery, groomers, activeFilter, filterGroomers, applyStatusFilter]);
 
   const handleViewBankDetails = async (groomer: GroomerProfile) => {
     setSelectedGroomer(groomer);
@@ -220,6 +220,7 @@ export function useGroomers(initialFilter = "all") {
         )
       );
       
+      // We need to update the filtered groomers immediately as well
       setFilteredGroomers(prevFiltered => 
         prevFiltered.map(g => 
           g.id === selectedGroomer.id 
@@ -236,6 +237,9 @@ export function useGroomers(initialFilter = "all") {
       setShowStatusDialog(false);
       setSelectedGroomer(null);
       setNewStatus(null);
+      
+      // Re-fetch all groomers to get the latest data
+      fetchGroomers();
     } catch (error) {
       console.error('Error updating groomer status:', error);
       toast({
@@ -252,27 +256,9 @@ export function useGroomers(initialFilter = "all") {
     setShowStatusDialog(true);
   };
 
-  const closeStatusDialog = () => {
-    setShowStatusDialog(false);
-    setSelectedGroomer(null);
-    setNewStatus(null);
-  };
-
-  const closeBankDetailsDialog = () => {
-    setShowBankDetailsDialog(false);
-    setSelectedGroomer(null);
-    setBankDetails(null);
-  };
-
-  const closePayoutsDialog = () => {
-    setShowPayoutsDialog(false);
-    setSelectedGroomer(null);
-    setPayoutHistory([]);
-  };
-
-  const getPendingCount = () => {
+  const getPendingCount = useCallback(() => {
     return groomers.filter(g => g.application_status === 'pending').length;
-  };
+  }, [groomers]);
 
   return {
     groomers,
@@ -281,13 +267,13 @@ export function useGroomers(initialFilter = "all") {
     selectedGroomer,
     bankDetails,
     showBankDetailsDialog,
-    setShowBankDetailsDialog: (show: boolean) => setShowBankDetailsDialog(show),
+    setShowBankDetailsDialog,
     showStatusDialog,
-    setShowStatusDialog: (show: boolean) => setShowStatusDialog(show),
+    setShowStatusDialog,
     newStatus,
     payoutHistory,
     showPayoutsDialog,
-    setShowPayoutsDialog: (show: boolean) => setShowPayoutsDialog(show),
+    setShowPayoutsDialog,
     activeFilter,
     searchQuery,
     pendingCount: getPendingCount(),
@@ -297,9 +283,6 @@ export function useGroomers(initialFilter = "all") {
     handleViewBankDetails,
     handleViewPayoutHistory,
     handleUpdateStatus,
-    handleStatusChange,
-    closeStatusDialog,
-    closeBankDetailsDialog,
-    closePayoutsDialog
+    handleStatusChange
   };
 }
