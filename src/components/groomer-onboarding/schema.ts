@@ -11,6 +11,8 @@ export interface GroomerFormData {
   providesHomeService: boolean;
   providesSalonService: boolean;
   profileImage?: File;
+  price?: number;
+  homeServiceCost?: number;
 }
 
 export const initialFormData: GroomerFormData = {
@@ -24,4 +26,6 @@ export const initialFormData: GroomerFormData = {
   bio: "",
   providesHomeService: false,
   providesSalonService: true,
+  price: 500, // Default price
+  homeServiceCost: 100, // Default home service cost
 };

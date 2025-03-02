@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { GroomerFormFields } from "@/components/groomer-onboarding/GroomerFormFields";
 import { GroomerFormData, initialFormData } from "@/components/groomer-onboarding/schema";
+import { compressImage } from "@/utils/imageCompression";
 
 export default function GroomerOnboarding() {
   const navigate = useNavigate();
@@ -112,12 +113,15 @@ export default function GroomerOnboarding() {
       let profileImageUrl = null;
 
       if (formData.profileImage) {
-        const fileExt = formData.profileImage.name.split('.').pop();
+        // Compress image before uploading
+        const compressedImage = await compressImage(formData.profileImage);
+        
+        const fileExt = compressedImage.name.split('.').pop();
         const filePath = `${user.id}-${Date.now()}.${fileExt}`;
         
         const { error: uploadError, data: uploadData } = await supabase.storage
           .from('groomer-profiles')
-          .upload(filePath, formData.profileImage);
+          .upload(filePath, compressedImage);
 
         if (uploadError) throw uploadError;
 
@@ -146,6 +150,8 @@ export default function GroomerOnboarding() {
         profile_image_url: profileImageUrl,
         provides_home_service: formData.providesHomeService,
         provides_salon_service: formData.providesSalonService,
+        price: formData.price || 500, // Default price if not specified
+        home_service_cost: formData.homeServiceCost || 100, // Default home service cost if not specified
         application_status: 'pending'
       });
 
@@ -160,6 +166,8 @@ export default function GroomerOnboarding() {
         profile_image_url: profileImageUrl,
         provides_home_service: formData.providesHomeService,
         provides_salon_service: formData.providesSalonService,
+        price: formData.price || 500, // Default price if not specified
+        home_service_cost: formData.homeServiceCost || 100, // Default home service cost if not specified
         application_status: 'pending'
       }).select();
 

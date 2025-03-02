@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -78,24 +77,30 @@ export function GroomersList({ searchQuery }: GroomersListProps) {
   const fetchGroomers = async () => {
     setLoading(true);
     try {
+      console.log("Fetching groomers...");
       const { data, error } = await supabase
         .from('groomer_profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching groomers:", error);
+        throw error;
+      }
+
+      console.log("Groomers data received:", data);
 
       // Fetch user emails for each groomer
-      if (data) {
+      if (data && data.length > 0) {
         const groomersWithEmail = await Promise.all(
           data.map(async (groomer) => {
             const { data: userData, error: userError } = await supabase
               .from('profiles')
               .select('full_name')
               .eq('id', groomer.user_id)
-              .single();
+              .maybeSingle();
 
-            if (userError && userError.code !== 'PGRST116') {
+            if (userError) {
               console.error('Error fetching user data:', userError);
             }
 
@@ -106,14 +111,19 @@ export function GroomersList({ searchQuery }: GroomersListProps) {
           })
         );
 
+        console.log("Groomers with email data:", groomersWithEmail);
         setGroomers(groomersWithEmail);
         applyStatusFilter(activeFilter);
+      } else {
+        console.log("No groomers found");
+        setGroomers([]);
+        setFilteredGroomers([]);
       }
     } catch (error) {
-      console.error('Error fetching groomers:', error);
+      console.error('Error in fetchGroomers:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch groomers data",
+        description: "Failed to fetch groomers data. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -150,6 +160,26 @@ export function GroomersList({ searchQuery }: GroomersListProps) {
     }
     
     setFilteredGroomers(filtered);
+  };
+
+  const handleRefresh = () => {
+    fetchGroomers();
+    toast({
+      title: "Refreshed",
+      description: "Groomer list has been refreshed.",
+    });
+  };
+
+  const handleViewBankDetails = async (groomer: Groomer) => {
+    setSelectedGroomer(groomer);
+    await fetchBankDetails(groomer.id);
+    setShowBankDetailsDialog(true);
+  };
+
+  const handleViewPayoutHistory = async (groomer: Groomer) => {
+    setSelectedGroomer(groomer);
+    await fetchPayoutHistory(groomer.id);
+    setShowPayoutsDialog(true);
   };
 
   const fetchBankDetails = async (groomerId: string) => {
@@ -194,18 +224,6 @@ export function GroomersList({ searchQuery }: GroomersListProps) {
         variant: "destructive",
       });
     }
-  };
-
-  const handleViewBankDetails = async (groomer: Groomer) => {
-    setSelectedGroomer(groomer);
-    await fetchBankDetails(groomer.id);
-    setShowBankDetailsDialog(true);
-  };
-
-  const handleViewPayoutHistory = async (groomer: Groomer) => {
-    setSelectedGroomer(groomer);
-    await fetchPayoutHistory(groomer.id);
-    setShowPayoutsDialog(true);
   };
 
   const handleUpdateStatus = async () => {
@@ -282,11 +300,19 @@ export function GroomersList({ searchQuery }: GroomersListProps) {
 
   return (
     <Card className="w-full">
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-xl flex items-center">
           <Scissors className="h-5 w-5 mr-2 text-purple-600" />
           Groomers Management
         </CardTitle>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh}
+          className="ml-auto"
+        >
+          Refresh List
+        </Button>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="all" onValueChange={setActiveFilter}>
@@ -345,12 +371,12 @@ export function GroomersList({ searchQuery }: GroomersListProps) {
                         </p>
                         <p className="text-sm flex items-center">
                           <DollarSign className="h-4 w-4 mr-1 text-gray-400" /> 
-                          Pricing: ₹{groomer.price} baseline, 
-                          {groomer.provides_home_service ? ` ₹${groomer.home_service_cost} home service` : ' No home service'}
+                          Pricing: ₹{groomer.price || 0} baseline, 
+                          {groomer.provides_home_service ? ` ₹${groomer.home_service_cost || 0} home service` : ' No home service'}
                         </p>
                         <p className="text-sm">
                           <span className="text-gray-500 mr-1">Specializations:</span> 
-                          {groomer.specializations.join(', ')}
+                          {groomer.specializations ? groomer.specializations.join(', ') : 'None'}
                         </p>
                       </div>
 
