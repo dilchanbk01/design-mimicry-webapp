@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { 
   Table, 
@@ -140,7 +141,7 @@ export function GroomersList({ searchQuery }: GroomersListProps) {
                 <TableCell>
                   <Badge 
                     variant={
-                      groomer.application_status === 'approved' ? 'success' : 
+                      groomer.application_status === 'approved' ? 'default' : 
                       groomer.application_status === 'rejected' ? 'destructive' : 
                       'outline'
                     }
