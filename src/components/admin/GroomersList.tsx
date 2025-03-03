@@ -36,6 +36,8 @@ export function GroomersList({ searchQuery }: GroomersListProps) {
         .select('*');
 
       if (error) throw error;
+      
+      console.log("Fetched groomer data:", data);
       setGroomers(data || []);
     } catch (error) {
       console.error('Error fetching groomers:', error);
